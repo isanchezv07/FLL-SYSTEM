@@ -1,0 +1,62 @@
+---
+import { ViewTransitions } from 'astro:transitions';
+
+export function getStaticPaths() {
+  return [
+    { params: { id: '1' }, props: { title: 'Misión 01: Surface Brushing', points: 20, desc: 'Remueve los depósitos de tierra del sitio.' } },
+    { params: { id: '2' }, props: { title: 'Misión 02: Map Reveal', points: 10, desc: 'Desplaza las secciones para revelar partes del mapa.' } },
+    { params: { id: '3' }, props: { title: 'Misión 03: Mineshaft Explorer', points: 40, desc: 'Envía la vagoneta de tu equipo al otro lado.' } },
+    { params: { id: '4' }, props: { title: 'Misión 04: Careful Recovery', points: 40, desc: 'Retira el artefacto sin que toque la mina.' } },
+    { params: { id: '5' }, props: { title: 'Misión 05: Who Lived Here?', points: 30, desc: 'Interactúa con las piezas habitacionales.' } },
+    { params: { id: '6' }, props: { title: 'Misión 06: Forge', points: 20, desc: 'Interactúa con el mecanismo de la forja.' } },
+    { params: { id: '7' }, props: { title: 'Misión 07: Heavy Lifting', points: 30, desc: 'Levanta objetos pesados hasta la base.' } },
+    { params: { id: '8' }, props: { title: 'Misión 08: Silo', points: 20, desc: 'Libera los recursos del silo.' } },
+    { params: { id: '9' }, props: { title: 'Misión 09: What\'s on Sale?', points: 20, desc: 'Descubre los elementos en el mercado.' } },
+    { params: { id: '10' }, props: { title: 'Misión 10: Tip the Scales', points: 30, desc: 'Inclina la balanza y pesa los artefactos.' } },
+    { params: { id: '11' }, props: { title: 'Misión 11: Angler Artifacts', points: 25, desc: 'Recupera los artefactos cuidadosamente.' } },
+    { params: { id: '12' }, props: { title: 'Misión 12: Salvage Operation', points: 30, desc: 'Realiza una operación de rescate en el borde.' } },
+    { params: { id: '13' }, props: { title: 'Misión 13: Statue Rebuild', points: 30, desc: 'Levanta la estatua caída hasta que quede erguida.' } },
+    { params: { id: '14' }, props: { title: 'Misión 14: Forum', points: 35, desc: 'Entrega artefactos al foro.' } },
+    { params: { id: '15' }, props: { title: 'Misión 15: Site Marking', points: 20, desc: 'Despliega banderas para marcar sitios.' } }
+  ];
+}
+
+const { id } = Astro.params;
+const { title, points, desc } = Astro.props;
+---
+
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Torneo FLL</title>
+    
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="App FLL" />
+    <link rel="apple-touch-icon" href="/icono.png" /> <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="theme-color" content="#00853E" />
+    <ViewTransitions />
+  </head>
+  <body style="font-family: sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background-color: white;">
+    
+    <a href="/test" style="display: inline-block; padding: 10px 20px; background-color: #00853E; color: white; text-decoration: none; border-radius: 5px; margin-bottom: 20px; transition: background-color 0.2s;">
+      ← Regresar al Mapa
+    </a>
+
+    <h1>{title}</h1>
+    <h2 style="color: #00853E;">Valor Máximo: {points} Puntos</h2>
+    
+    <hr style="border: 1px solid #eee; margin: 20px 0;" />
+
+    <div style="background-color: #f9f9f9; padding: 20px; border-radius: 10px;">
+      <h3 style="margin-top: 0;">Descripción de la misión</h3>
+      <p style="font-size: 18px; line-height: 1.6;">{desc}</p>
+    </div>
+
+    <div style="margin-top: 40px; padding: 20px; border: 2px dashed #ccc; border-radius: 10px; text-align: center; color: #666;">
+      <p>Zona para añadir calculadoras, videos o modelos 3D en el futuro.</p>
+    </div>
+
+  </body>
+</html>

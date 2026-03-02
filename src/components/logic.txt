@@ -1,0 +1,82 @@
+---
+import { ViewTransitions } from 'astro:transitions';
+
+// 1. IMPORTAMOS TUS COMPONENTES DE REACT AQUÍ ARRIBA
+import Mision1Component from '../../components/misiones/Mision1.jsx';
+import Mision2Component from '../../components/misiones/Mision2.jsx';
+// Importa los demás cuando los vayas creando...
+
+export function getStaticPaths() {
+  return [
+    { 
+      params: { id: '1' }, 
+      props: { 
+        title: 'Misión 01: Surface Brushing', 
+        points: 20, 
+        desc: 'Remueve los depósitos de tierra del sitio.',
+        // 2. LE ASIGNAMOS EL COMPONENTE A ESTA MISIÓN
+        ComponenteReact: Mision1Component 
+      } 
+    },
+    { 
+      params: { id: '2' }, 
+      props: { 
+        title: 'Misión 02: Map Reveal', 
+        points: 10, 
+        desc: 'Desplaza las secciones para revelar partes del mapa.',
+        ComponenteReact: Mision2Component 
+      } 
+    },
+    // Para las misiones que aún no tienen componente, puedes poner null
+    { 
+      params: { id: '3' }, 
+      props: { 
+        title: 'Misión 03: Mineshaft Explorer', 
+        points: 40, 
+        desc: 'Envía la vagoneta de tu equipo al otro lado.',
+        ComponenteReact: null 
+      } 
+    }
+    // ... agrega el resto de las misiones ...
+  ];
+}
+
+const { id } = Astro.params;
+// 3. RECIBIMOS EL COMPONENTE EN LAS PROPS
+const { title, points, desc, ComponenteReact } = Astro.props;
+---
+
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>{title}</title>
+    <ViewTransitions />
+  </head>
+  <body style="font-family: sans-serif; background-color: #f4f4f4; margin: 0; padding: 20px;">
+    
+    <div style="max-width: 1000px; margin: 0 auto;">
+      
+      <a href="/" style="display: inline-block; padding: 10px 20px; background-color: #00853E; color: white; text-decoration: none; border-radius: 5px; margin-bottom: 20px;">
+        ← Regresar al Mapa
+      </a>
+
+      <div style="background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+        <h1>{title}</h1>
+        <h2 style="color: #00853E;">Valor Máximo: {points} Puntos</h2>
+        <p style="font-size: 18px; line-height: 1.6; color: #555;">{desc}</p>
+      </div>
+
+      {ComponenteReact ? (
+        // MUY IMPORTANTE EL client:load para que funcione el JavaScript de React
+        <ComponenteReact client:load />
+      ) : (
+        <div style="padding: 40px; text-align: center; border: 2px dashed #ccc; border-radius: 10px;">
+          <p style="color: #666; font-size: 18px;">Herramienta para esta misión en construcción 🚧</p>
+        </div>
+      )}
+
+    </div>
+
+  </body>
+</html>
