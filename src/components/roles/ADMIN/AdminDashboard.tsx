@@ -1,495 +1,612 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import {
-  Users, Trophy, BarChart3, Settings, Menu, X,
-  ChevronLeft, ChevronRight, Monitor, ShieldHalf, Edit, Eye
-} from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { io } from 'socket.io-client';
+import * as ReactRouter from 'react-router-dom';
+const { useHistory } = ReactRouter;
 
-import TeamsDisplay from '../../TeamsDisplay';
+// Get the current hostname for dynamic connection
+const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
 
-type Tab = 'usuarios' | 'matches' | 'reportes' | 'configuracion' | 'displays' | 'teams';
-
-interface Usuario {
-  id: number;
+interface User {
+  id: string;
   username: string;
-  password: string;
   role: string;
+  createdAt: string;
 }
 
 interface Match {
-  id: number;
+  id: string;
+  type: string;
+  number: number;
   date: string;
-  redTeam: { name: string; score: number; detailedScore?: any };
-  blueTeam: { name: string; score: number; detailedScore?: any };
-  timeRemaining: number;
-  status: 'ongoing' | 'finished' | 'scheduled';
+  redTeam: {
+    name: string;
+    score: number;
+  };
+  blueTeam: {
+    name: string;
+    score: number;
+  };
+  winner: 'red' | 'blue' | 'tie';
 }
 
-const AdminDashboard: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<Tab>('usuarios');
-  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+interface Bracket {
+  id: string;
+  name: string;
+  matches: Match[];
+  teams: string[];
+  status: 'pending' | 'active' | 'completed';
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export default function AdminDashboard() {
+  const [activeTab, setActiveTab] = useState<'users' | 'matches' | 'scores' | 'brackets'>('users');
+  const [users, setUsers] = useState<User[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [editingMatch, setEditingMatch] = useState<Match | null>(null);
-  const [editFormData, setEditFormData] = useState({
-    redScore: 0,
-    blueScore: 0
-  });
-
-  // Verifica si está autenticado
-  useEffect(() => {
-    const isAuth = localStorage.getItem('isAuthenticated');
-    if (!isAuth) {
-      window.location.href = '/login';
-    }
-  }, []);
-
-  // Función para cerrar sesión
-  const handleLogout = () => {
-    localStorage.removeItem('auth-token');
-    localStorage.clear();
-    window.location.href = '/login';
-  };
+  const [brackets, setBrackets] = useState<Bracket[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        if (activeTab === 'usuarios') {
-          const res = await axios.get('/api/users');
-          setUsuarios(res.data);
-        } else if (activeTab === 'matches') {
-          const res = await axios.get('/api/matches');
-          setMatches(res.data);
-        }
-      } catch (error) {
-        console.error('Error cargando datos:', error);
-      }
-      setLoading(false);
-    };
-
-    fetchData();
-  }, [activeTab]);
-
-  const getWinner = (match: Match) => {
-    if (match.redTeam.score > match.blueTeam.score) return 'Rojo';
-    if (match.blueTeam.score > match.redTeam.score) return 'Azul';
-    return 'Empate';
-  };
-
-  const formatDate = (dateString: string) =>
-    new Date(dateString).toLocaleString('es-ES', {
-      year: 'numeric', month: '2-digit', day: '2-digit',
-      hour: '2-digit', minute: '2-digit'
-    });
-
-  const handleEditMatch = (match: Match) => {
-    setEditingMatch(match);
-    setEditFormData({
-      redScore: match.redTeam.score,
-      blueScore: match.blueTeam.score
-    });
-  };
-
-  const handleSaveEdit = async () => {
-    if (!editingMatch) return;
+    // Check if we're in a browser environment
+    const isClient = typeof window !== 'undefined';
     
-    try {
-      const updatedMatch = {
-        ...editingMatch,
-        redTeam: { ...editingMatch.redTeam, score: editFormData.redScore },
-        blueTeam: { ...editingMatch.blueTeam, score: editFormData.blueScore }
-      };
-      
-      await axios.put(`/api/matches/${editingMatch.id}`, updatedMatch);
-      setEditingMatch(null);
-      
-      // Refresh matches list
-      const res = await axios.get('/api/matches');
-      setMatches(res.data);
-    } catch (error) {
-      console.error('Error updating match:', error);
-      alert('Error al actualizar el match');
-    }
-  };
-
-  const handleLoadMatch = async (match: Match) => {
-    if (!window.confirm('¿Estás seguro de que quieres cargar este match como el match actual? Esto reemplazará el match en curso.')) {
+    if (!isClient) {
       return;
     }
+
+    const isAuthenticated = localStorage.getItem('isAuthenticated');
+    const role = localStorage.getItem('role');
     
+    if (!isAuthenticated || isAuthenticated !== 'true' || role !== 'admin') {
+      // Redirect to login
+      window.location.href = '/login';
+      return;
+    }
+
+    setIsAuthenticated(true);
+    fetchData();
+
+    // Configurar WebSocket para actualizaciones en tiempo real
+    console.log('Connecting to WebSocket at:', `http://${hostname}:3000`);
+    const socket = io(`http://${hostname}:3000`, {
+      transports: ['websocket', 'polling'],
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+    });
+    
+    socket.on('connect', () => {
+      console.log('AdminDashboard WebSocket connected successfully');
+    });
+    
+    socket.on('connect_error', (error) => {
+      console.error('AdminDashboard WebSocket connection error:', error);
+    });
+    
+    socket.on('usersUpdate', () => {
+      console.log('Users updated, refreshing...');
+      fetchData();
+    });
+    
+    socket.on('matchesUpdate', () => {
+      console.log('Matches updated, refreshing...');
+      fetchData();
+    });
+    
+    socket.on('bracketsUpdate', () => {
+      console.log('Brackets updated, refreshing...');
+      fetchData();
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
+
+  const fetchData = async () => {
+    // Check if we're in a browser environment
+    const isClient = typeof window !== 'undefined';
+    
+    if (!isClient) {
+      return;
+    }
+
     try {
-      await axios.post(`/api/matches/${match.id}/load`);
-      alert('Match cargado exitosamente. Redirigiendo al Score Controller...');
-      window.location.href = '/control';
+      setLoading(true);
+      setError('');
+      
+      // Fetch users
+      const usersResponse = await fetch('/api/users');
+      if (usersResponse.ok) {
+        const usersData = await usersResponse.json();
+        setUsers(usersData);
+      } else {
+        console.error('Failed to fetch users');
+      }
+
+      // Fetch matches
+      const matchesResponse = await fetch('/api/matches');
+      if (matchesResponse.ok) {
+        const matchesData = await matchesResponse.json();
+        setMatches(matchesData);
+      } else {
+        console.error('Failed to fetch matches');
+      }
+
+      // Fetch brackets
+      const bracketsResponse = await fetch('/api/brackets');
+      if (bracketsResponse.ok) {
+        const bracketsData = await bracketsResponse.json();
+        setBrackets(bracketsData);
+      } else {
+        console.error('Failed to fetch brackets');
+      }
+      
     } catch (error) {
-      console.error('Error loading match:', error);
-      alert('Error al cargar el match');
+      console.error('Error fetching data:', error);
+      setError('Error al cargar los datos');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const roleTitles: Record<string, string> = {
-    admin: 'ADMIN',
-    scorekeeper: 'SCOREKEEPER',
-    inspector: 'INSPECTOR',
-    head_ref: 'HEAD REFEREE',
-    blue_ref: 'BLUE REFEREE',
-    red_ref: 'RED REFEREE',
+  const handleLogout = () => {
+    // Check if we're in a browser environment
+    const isClient = typeof window !== 'undefined';
+    
+    if (isClient) {
+      // Limpiar completamente localStorage
+      localStorage.clear();
+      // Redirigir al login
+      window.location.href = '/login';
+    }
   };
-  const roles = Object.keys(roleTitles);
 
-  const tabConfig = [
-    { key: 'usuarios', label: 'Usuarios', icon: Users },
-    { key: 'matches', label: 'Partidos', icon: Trophy },
-    { key: 'teams', label: 'Match Maker', icon: ShieldHalf},
-    { key: 'displays', label: 'Displays', icon: Monitor },
-  ];
+  const handleCreateUser = async () => {
+    // Check if we're in a browser environment
+    const isClient = typeof window !== 'undefined';
+    
+    if (!isClient) {
+      return;
+    }
 
-  return (
-    <div className="flex min-h-screen bg-gray-50">
-      {/* Botón móvil */}
-      <button
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="md:hidden fixed top-4 left-4 z-50 bg-white shadow-md text-gray-600 p-2 rounded-md"
-      >
-        {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
-      </button>
+    const username = prompt('Nombre de usuario:');
+    const role = prompt('Rol (user/admin):');
+    
+    if (!username || !role) {
+      alert('Username y role son requeridos');
+      return;
+    }
 
-      {sidebarOpen && (
-        <div
-          onClick={() => setSidebarOpen(false)}
-          className="fixed inset-0 bg-black bg-opacity-25 z-40 md:hidden"
-        />
-      )}
+    try {
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ username, role })
+      });
 
-      {/* Sidebar */}
-      <aside
-        className={`
-          fixed top-0 left-0 bg-white border-r border-gray-200 z-50
-          transform transition-all duration-300 ease-in-out
-          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-          md:translate-x-0 md:static md:flex md:flex-col
-          ${sidebarCollapsed ? 'md:w-16' : 'md:w-64'}
-          w-64 h-screen
-        `}
-      >
-        {/* Header */}
-        <div className={`p-4 border-b border-gray-200 ${sidebarCollapsed ? 'px-2' : ''}`}>
-          <div className="flex items-center justify-between">
-            <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'space-x-3'}`}>
-              <div className="w-8 h-8 bg-gray-900 rounded-md flex items-center justify-center">
-                <Trophy className="w-5 h-5 text-white" />
-              </div>
-              {!sidebarCollapsed && (
-                <div>
-                  <h1 className="text-lg font-semibold text-gray-900">Admin</h1>
-                </div>
-              )}
-            </div>
-            <button
-              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              className="hidden md:flex items-center justify-center w-6 h-6 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600"
-            >
-              {sidebarCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
-            </button>
+      if (response.ok) {
+        fetchData();
+        alert('Usuario creado exitosamente');
+      } else {
+        const errorData = await response.json();
+        alert(errorData.error || 'Error al crear usuario');
+      }
+    } catch (error) {
+      console.error('Error creating user:', error);
+      alert('Error de conexión');
+    }
+  };
+
+  const handleDeleteUser = async (userId: string, username: string) => {
+    if (!confirm(`¿Estás seguro de eliminar el usuario "${username}"?`)) return;
+    
+    try {
+      const response = await fetch(`/api/users/${userId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        fetchData();
+        alert('Usuario eliminado exitosamente');
+      } else {
+        const errorData = await response.json();
+        alert(errorData.error || 'Error al eliminar usuario');
+      }
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      alert('Error de conexión');
+    }
+  };
+
+  const handleCreateBracket = async () => {
+    // Check if we're in a browser environment
+    const isClient = typeof window !== 'undefined';
+    
+    if (!isClient) {
+      return;
+    }
+
+    const name = prompt('Nombre del bracket:');
+    
+    if (!name) {
+      alert('El nombre es requerido');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/brackets', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          name, 
+          status: 'pending', 
+          teams: [], 
+          matches: [] 
+        })
+      });
+
+      if (response.ok) {
+        fetchData();
+        alert('Bracket creado exitosamente');
+      } else {
+        const errorData = await response.json();
+        alert(errorData.error || 'Error al crear bracket');
+      }
+    } catch (error) {
+      console.error('Error creating bracket:', error);
+      alert('Error de conexión');
+    }
+  };
+
+  const renderUsers = () => (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-semibold">Usuarios</h3>
+        <button
+          onClick={handleCreateUser}
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+        >
+          Nuevo Usuario
+        </button>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Usuario
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Rol
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Creado
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Acciones
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {users.map(user => (
+              <tr key={user.id}>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  {user.username}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <span className={`px-2 py-1 rounded text-xs font-medium ${
+                    user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'
+                  }`}>
+                    {user.role}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {new Date(user.createdAt).toLocaleDateString()}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  {user.role !== 'admin' && (
+                    <button
+                      onClick={() => handleDeleteUser(user.id, user.username)}
+                      className="text-red-600 hover:text-red-900"
+                    >
+                      Eliminar
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
+  const renderMatches = () => (
+    <div className="space-y-4">
+      <h3 className="text-lg font-semibold mb-4">Matches</h3>
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Tipo
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                #
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Equipo Rojo
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Score Rojo
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Equipo Azul
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Score Azul
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Ganador
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Fecha
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {matches.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="px-6 py-4 text-center text-gray-500">
+                  No hay matches registrados
+                </td>
+              </tr>
+            ) : (
+              matches.map(match => (
+                <tr key={match.id}>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {match.type}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {match.number}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {match.redTeam?.name || 'N/A'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-600">
+                    {match.redTeam?.score || 0}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {match.blueTeam?.name || 'N/A'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
+                    {match.blueTeam?.score || 0}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <span className={`font-medium ${
+                      match.winner === 'red' ? 'text-red-600' : 
+                      match.winner === 'blue' ? 'text-blue-600' : 
+                      'text-gray-600'
+                    }`}>
+                      {match.winner === 'red' ? 'Rojo' : 
+                       match.winner === 'blue' ? 'Azul' : 
+                       'Empate'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {new Date(match.date).toLocaleDateString()}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
+  const renderScores = () => (
+    <div className="space-y-4">
+      <h3 className="text-lg font-semibold mb-4">Scores</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h4 className="text-lg font-semibold text-red-600 mb-4">Equipo Rojo</h4>
+          <div className="space-y-2">
+            {matches.filter(m => m.redTeam?.score > 0).length === 0 ? (
+              <p className="text-gray-500">No hay scores registrados</p>
+            ) : (
+              matches
+                .filter(m => m.redTeam?.score > 0)
+                .map(match => (
+                  <div key={match.id} className="flex justify-between items-center p-2 bg-red-50 rounded">
+                    <span>{match.redTeam?.name || 'N/A'}</span>
+                    <span className="font-bold">{match.redTeam?.score || 0}</span>
+                  </div>
+                ))
+            )}
           </div>
         </div>
-
-        {/* Navegación + Logout */}
-        <nav className={`flex-1 p-2 ${sidebarCollapsed ? 'px-1' : ''}`}>
-          <div className="space-y-1">
-            {tabConfig.map(({ key, label, icon: Icon }) => (
-              <button
-                key={key}
-                onClick={() => {
-                  setActiveTab(key as Tab);
-                  setSidebarOpen(false);
-                }}
-                className={`w-full flex items-center px-3 py-2 rounded-md text-sm font-medium
-                  ${activeTab === key
-                    ? 'bg-gray-900 text-white'
-                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}
-                  ${sidebarCollapsed ? 'justify-center px-2' : 'space-x-3'}
-                `}
-                title={sidebarCollapsed ? label : ''}
-              >
-                <Icon size={18} />
-                {!sidebarCollapsed && <span>{label}</span>}
-              </button>
-            ))}
-
-            {/* Botón Cerrar Sesión */}
-            <button
-              onClick={handleLogout}
-              className={`w-full flex items-center px-3 py-2 mt-4 rounded-md text-sm font-medium text-red-600 hover:bg-red-100 hover:text-red-700
-                ${sidebarCollapsed ? 'justify-center px-2' : 'space-x-3'}`}
-              title="Cerrar sesión"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1" />
-              </svg>
-              {!sidebarCollapsed && <span>Cerrar sesión</span>}
-            </button>
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h4 className="text-lg font-semibold text-blue-600 mb-4">Equipo Azul</h4>
+          <div className="space-y-2">
+            {matches.filter(m => m.blueTeam?.score > 0).length === 0 ? (
+              <p className="text-gray-500">No hay scores registrados</p>
+            ) : (
+              matches
+                .filter(m => m.blueTeam?.score > 0)
+                .map(match => (
+                  <div key={match.id} className="flex justify-between items-center p-2 bg-blue-50 rounded">
+                    <span>{match.blueTeam?.name || 'N/A'}</span>
+                    <span className="font-bold">{match.blueTeam?.score || 0}</span>
+                  </div>
+                ))
+            )}
           </div>
-        </nav>
-      </aside>
+        </div>
+      </div>
+    </div>
+  );
 
-      {/* Main */}
-      <main className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'md:ml-16' : 'md:ml-64'}`}>
-      <div className="p-8">
-          {loading && (
-            <div className="flex items-center justify-center h-32">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-            </div>
-          )}
-
-          {/* Usuarios */}
-          {!loading && activeTab === 'usuarios' && (
-            <div className="space-y-6">
-              <h2 className="text-2xl font-semibold text-gray-900">Usuarios</h2>
-              {roles.map(role => {
-                const usersByRole = usuarios.filter(u => u.role === role);
-                if (usersByRole.length === 0) return null;
-                return (
-                  <div key={role} className="space-y-2">
-                    <h3 className="text-xl font-semibold">{roleTitles[role]}</h3>
-                    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-                      <table className="min-w-full">
-                        <thead className="bg-gray-50">
-                          <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Usuario</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contraseña</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-200">
-                          {usersByRole.map(user => (
-                            <tr key={user.id}>
-                              <td className="px-6 py-4">{user.id}</td>
-                              <td className="px-6 py-4">{user.username}</td>
-                              <td className="px-6 py-4 font-mono text-gray-600">{user.password}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Matches */}
-          {!loading && activeTab === 'matches' && (
-            <div className="space-y-6">
-              <h2 className="text-2xl font-semibold text-gray-900">Partidos</h2>
-              <div className="bg-white border border-gray-200 rounded-lg overflow-x-auto">
-                <table className="min-w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-red-600">Equipo Rojo</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-red-600">Puntaje Rojo</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-blue-600">Equipo Azul</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-blue-600">Puntaje Azul</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tiempo</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ganador</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {matches.map(match => (
-                      <tr key={match.id}>
-                        <td className="px-6 py-4">{match.id}</td>
-                        <td className="px-6 py-4">{formatDate(match.date)}</td>
-                        <td className="px-6 py-4">{match.redTeam.name}</td>
-                        <td className="px-6 py-4 font-bold text-red-600">{match.redTeam.score}</td>
-                        <td className="px-6 py-4">{match.blueTeam.name}</td>
-                        <td className="px-6 py-4 font-bold text-blue-600">{match.blueTeam.score}</td>
-                        <td className="px-6 py-4">{match.timeRemaining}s</td>
-                        <td className="px-6 py-4">
-                          {match.redTeam.score > match.blueTeam.score ? 
-                            <span className="text-red-600 font-bold">Red Wins</span> : 
-                            match.blueTeam.score > match.redTeam.score ? 
-                            <span className="text-blue-600 font-bold">Blue Wins</span> : 
-                            <span className="text-gray-600">Tie</span>
-                          }
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => handleEditMatch(match)}
-                              className="p-2 text-blue-600 hover:bg-blue-50 rounded transition"
-                              title="Editar scores"
-                            >
-                              <Edit size={18} />
-                            </button>
-                            <button
-                              onClick={() => handleLoadMatch(match)}
-                              className="p-2 text-green-600 hover:bg-green-50 rounded transition"
-                              title="Cargar match"
-                            >
-                              <Eye size={18} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+  const renderBrackets = () => (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-semibold">Brackets/Torneo</h3>
+        <button
+          onClick={handleCreateBracket}
+          className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+        >
+          Nuevo Bracket
+        </button>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {brackets.length === 0 ? (
+          <div className="col-span-full text-center text-gray-500 py-8">
+            No hay brackets registrados
+          </div>
+        ) : (
+          brackets.map(bracket => (
+            <div key={bracket.id} className="bg-white p-6 rounded-lg shadow">
+              <div className="flex justify-between items-center mb-4">
+                <h4 className="text-lg font-semibold">{bracket.name}</h4>
+                <span className={`px-2 py-1 rounded text-xs font-medium ${
+                  bracket.status === 'completed' ? 'bg-green-100 text-green-800' :
+                  bracket.status === 'active' ? 'bg-yellow-100 text-yellow-800' :
+                  'bg-gray-100 text-gray-800'
+                }`}>
+                  {bracket.status === 'completed' ? 'Completado' :
+                   bracket.status === 'active' ? 'Activo' : 'Pendiente'}
+                </span>
               </div>
-
-              {/* Modal de edición */}
-              {editingMatch && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                  <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-                    <h3 className="text-xl font-bold mb-4">Editar Scores del Match</h3>
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Score Equipo Rojo ({editingMatch.redTeam.name})
-                        </label>
-                        <input
-                          type="number"
-                          value={editFormData.redScore}
-                          onChange={(e) => setEditFormData({ ...editFormData, redScore: parseInt(e.target.value) || 0 })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Score Equipo Azul ({editingMatch.blueTeam.name})
-                        </label>
-                        <input
-                          type="number"
-                          value={editFormData.blueScore}
-                          onChange={(e) => setEditFormData({ ...editFormData, blueScore: parseInt(e.target.value) || 0 })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
-                      <div className="flex gap-2 justify-end">
-                        <button
-                          onClick={() => setEditingMatch(null)}
-                          className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition"
-                        >
-                          Cancelar
-                        </button>
-                        <button
-                          onClick={handleSaveEdit}
-                          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
-                        >
-                          Guardar
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Match Maker / Equipos */}
-          {!loading && activeTab === 'teams' && (
-            <TeamsDisplay />
-          )}
-          
-          {/* scoreControl */}
-          {!loading && activeTab === 'displays' && (
-            <div className="space-y-6">
-              <h2 className="text-2xl font-semibold text-gray-900">ScoreControl</h2>
-              <div className="bg-white border border-gray-200 rounded-lg p-8 text-gray-500 text-center">
-                <div className="flex flex-col items-center space-y-4">
-                  <button
-                    onClick={() => window.location.href = '/game'}
-                    className="px-6 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition"
-                  >
-                    Game Screen
-                  </button>
-
-                  <button
-                    onClick={() => window.location.href = '/timer'}
-                    className="px-6 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 transition"
-                  >
-                    Timer Screen
-                  </button>
-
-                  <button
-                    onClick={() => window.location.href = '/control'}
-                    className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
-                  >
-                    ScoreController
-                  </button>
-
-                  <button
-                    onClick={() => window.location.href = '/alliance'}
-                    className="px-6 py-2 bg-pink-600 text-white rounded-md hover:bg-pink-700 transition"
-                  >
-                    Alliance Display
-                  </button>
-
-                  <button
-                    onClick={() => window.location.href = '/inspection'}
-                    className="px-6 py-2 bg-indigo-800 text-white rounded-md hover:bg-indigo-700 transition"
-                  >
-                    Robot Inspection
-                  </button>
-
-                  <button
-                    onClick={() => window.location.href = '/inspection_display'}
-                    className="px-6 py-2 bg-indigo-800 text-white rounded-md hover:bg-indigo-700 transition"
-                  >
-                    Inspection Display
-                  </button>
-
-                  <button
-                    onClick={() => window.location.href = '/head_ref'}
-                    className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition"
-                  >
-                    Head Refeeree
-                  </button>
-
-                  <button
-                    onClick={() => window.location.href = '/blue_ref'}
-                    className="px-6 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 transition"
-                  >
-                    Blue Referee
-                  </button>
-
-                  <button
-                    onClick={() => window.location.href = '/red_ref'}
-                    className="px-6 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition"
-                  >
-                    Red Referee
-                  </button>
-                </div>
+              <div className="text-sm text-gray-600 mb-2">
+                <p><strong>Equipos:</strong> {bracket.teams.length > 0 ? bracket.teams.join(', ') : 'Ninguno'}</p>
+                <p><strong>Matches:</strong> {bracket.matches?.length || 0}</p>
+              </div>
+              <div className="flex justify-end">
+                <button className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600">
+                  Ver Detalles
+                </button>
               </div>
             </div>
-          )}
+          ))
+        )}
+      </div>
+    </div>
+  );
 
-          <footer className="text-center text-sm py-4 text-gray-500 border-t">
-            Developed by{' '}
-            <a
-              href="https://github.com/isanchezv07"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:underline"
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-xl">Cargando...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-xl text-red-600 mb-4">Error</div>
+          <p className="text-gray-600">{error}</p>
+          <button 
+            onClick={fetchData}
+            className="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          >
+            Reintentar
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-100">
+      {/* Header */}
+      <header className="bg-white shadow">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-4">
+            <h1 className="text-2xl font-bold text-gray-900">LEGO Timer - Admin Dashboard</h1>
+            <div className="flex items-center space-x-4">
+              <span className="text-sm text-gray-600">
+                Admin: {(() => {
+                  const isClient = typeof window !== 'undefined';
+                  if (!isClient) return 'Unknown';
+                  const user = JSON.parse(localStorage.getItem('user') || '{}');
+                  return user?.username || 'Unknown';
+                })()}
+              </span>
+              <button
+                onClick={handleLogout}
+                className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+              >
+                Cerrar Sesión
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Tab Navigation */}
+        <div className="mb-8">
+          <nav className="flex space-x-8">
+            <button
+              onClick={() => setActiveTab('users')}
+              className={`px-4 py-2 rounded-lg font-medium ${
+                activeTab === 'users' 
+                  ? 'bg-blue-500 text-white' 
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
             >
-            @isanchezv07
-            </a>
-          </footer>
+              Usuarios
+            </button>
+            <button
+              onClick={() => setActiveTab('matches')}
+              className={`px-4 py-2 rounded-lg font-medium ${
+                activeTab === 'matches' 
+                  ? 'bg-blue-500 text-white' 
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              Matches
+            </button>
+            <button
+              onClick={() => setActiveTab('scores')}
+              className={`px-4 py-2 rounded-lg font-medium ${
+                activeTab === 'scores' 
+                  ? 'bg-blue-500 text-white' 
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              Scores
+            </button>
+            <button
+              onClick={() => setActiveTab('brackets')}
+              className={`px-4 py-2 rounded-lg font-medium ${
+                activeTab === 'brackets' 
+                  ? 'bg-blue-500 text-white' 
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              Brackets
+            </button>
+          </nav>
+        </div>
+
+        {/* Tab Content */}
+        <div className="bg-white rounded-lg shadow p-6">
+          {activeTab === 'users' && renderUsers()}
+          {activeTab === 'matches' && renderMatches()}
+          {activeTab === 'scores' && renderScores()}
+          {activeTab === 'brackets' && renderBrackets()}
         </div>
       </main>
     </div>
   );
-};
-
-export default AdminDashboard;
+}
