@@ -1,13 +1,49 @@
 ---
-import Layout from '@/layouts/Layout.astro';
-import Referee from '@/components/roles/referee/Referee';
+// 1. Aquí importamos tu componente React (asegúrate de que la ruta sea correcta)
+import HeadLegoTimer from '@/components/roles/referee/Referee';
+import { ViewTransitions } from 'astro:transitions';
 ---
 
-<Layout title="FTC Local Scoring System - Blue Referee">
-  <div id="auth-container" class="h-full" data-auth-required="true">
-    <!-- Client-side rendering will determine whether to show login or controller -->
-    <div id="controller-container">
-      <Referee client:only="react"/>
-    </div>
-  </div>
-</Layout>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Head Referee - LEGO Timer</title>
+    <ViewTransitions />
+
+    <script is:inline>
+      const isAuthenticated = localStorage.getItem("isAuthenticated");
+      const role = localStorage.getItem("role");
+
+      // Si no es referee, lo pateamos al login inmediatamente
+      if (isAuthenticated !== "true" || role !== "referee") {
+        window.location.replace("/auth/login");
+      }
+    </script>
+  </head>
+  
+  <body style="margin: 0; padding: 0; background-color: #0A0F1C;">
+    
+    <button id="btn-logout-ref" class="fixed top-4 right-4 z-[9999] bg-red-600/80 hover:bg-red-500 text-white px-4 py-2 rounded-lg font-bold text-sm backdrop-blur-sm transition-colors border border-red-400/30 cursor-pointer">
+      Cerrar Sesión
+    </button>
+
+    <HeadLegoTimer client:only="react" />
+
+    <script>
+      document.addEventListener('astro:page-load', () => {
+        const btnLogout = document.getElementById('btn-logout-ref');
+        
+        if (btnLogout) {
+          btnLogout.addEventListener('click', () => {
+            // Borramos los datos de acceso
+            localStorage.removeItem('isAuthenticated');
+            localStorage.removeItem('role');
+            // Lo mandamos al login
+            window.location.replace('/auth/login');
+          });
+        }
+      });
+    </script>
+  </body>
+</html>

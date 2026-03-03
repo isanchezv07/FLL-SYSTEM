@@ -70,7 +70,7 @@ export const createUser = async (userData) => {
     const newUser = {
       id: Date.now().toString(),
       username: userData.username,
-      password: userData.password || "password123",
+      password: userData.password || "fll2026",
       role: userData.role,
       createdAt: new Date().toISOString()
     };

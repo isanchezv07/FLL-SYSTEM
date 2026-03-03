@@ -17,7 +17,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
 
 // JWT Secret
-const JWT_SECRET = 'legotimer-secret-key';
+const JWT_SECRET = 'FLL2026';
 
 // Express app setup
 const httpServer = createServer(app);
@@ -41,24 +41,6 @@ const initializeDatabases = async () => {
   } catch (error) {
     console.error('Error initializing databases:', error);
   }
-};
-
-// Authentication middleware
-const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-
-  if (!token) {
-    return res.status(401).json({ error: 'Token requerido' });
-  }
-
-  jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) {
-      return res.status(403).json({ error: 'Token inválido' });
-    }
-    req.user = user;
-    next();
-  });
 };
 
 // Authentication endpoints
@@ -97,7 +79,7 @@ app.get('/api/users', async (req, res) => {
   }
 });
 
-app.get('/api/users/auth', authenticateToken, async (req, res) => {
+app.get('/api/users/auth', async (req, res) => {
   try {
     const users = getUsers();
     res.json(users);
@@ -107,15 +89,16 @@ app.get('/api/users/auth', authenticateToken, async (req, res) => {
   }
 });
 
-app.post('/api/users', authenticateToken, async (req, res) => {
+app.post('/api/users', async (req, res) => {
   try {
-    const { username, role } = req.body;
+    const { username, password, role } = req.body;
+    console.log('Datos recibidos:', req.body);
     
-    if (!username || !role) {
-      return res.status(400).json({ error: 'Username y role son requeridos' });
+    if (!username || !password || !role) {
+      return res.status(400).json({ error: 'Username, password y role son requeridos' });
     }
     
-    const newUser = await createUser({ username, role, password: 'password123' });
+    const newUser = await createUser({ username, password, role });
     io.emit('usersUpdate'); // Notificar a todos los clientes
     res.json(newUser);
   } catch (error) {
@@ -124,7 +107,7 @@ app.post('/api/users', authenticateToken, async (req, res) => {
   }
 });
 
-app.delete('/api/users/:id', authenticateToken, async (req, res) => {
+app.delete('/api/users/:id', async (req, res) => {
   try {
     const userId = req.params.id;
     const result = await deleteUser(userId);
@@ -137,7 +120,7 @@ app.delete('/api/users/:id', authenticateToken, async (req, res) => {
 });
 
 // Match management endpoints
-app.get('/api/matches', authenticateToken, async (req, res) => {
+app.get('/api/matches', async (req, res) => {
   try {
     const matches = await getMatches();
     res.json(matches);
@@ -147,7 +130,7 @@ app.get('/api/matches', authenticateToken, async (req, res) => {
   }
 });
 
-app.post('/api/matches', authenticateToken, async (req, res) => {
+app.post('/api/matches', async (req, res) => {
   try {
     const matchData = req.body;
     const newMatch = await createMatch(matchData);
@@ -160,7 +143,7 @@ app.post('/api/matches', authenticateToken, async (req, res) => {
 });
 
 // Bracket management endpoints
-app.get('/api/brackets', authenticateToken, async (req, res) => {
+app.get('/api/brackets', async (req, res) => {
   try {
     const brackets = await getBrackets();
     res.json(brackets);
@@ -170,7 +153,7 @@ app.get('/api/brackets', authenticateToken, async (req, res) => {
   }
 });
 
-app.post('/api/brackets', authenticateToken, async (req, res) => {
+app.post('/api/brackets', async (req, res) => {
   try {
     const bracketData = req.body;
     const newBracket = await createBracket(bracketData);

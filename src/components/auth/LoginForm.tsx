@@ -36,25 +36,13 @@ const LoginForm = () => {
 
         switch (userFound.role) {
           case 'admin':
-            window.location.href = '/admin_dashboard';
+            window.location.href = '/roles/admin/admin_dashboard';
             break;
-          case 'head_ref':
-            window.location.href = '/head_ref';
-            break;
-          case 'blue_ref':
-            window.location.href = '/blue_ref';
-            break;
-          case 'red_ref':
-            window.location.href = '/red_ref';
-            break;
-          case 'scorekeeper':
-            window.location.href = '/scorekeeper';
-            break;
-          case 'inspector':
-            window.location.href = '/inspection';
+          case 'referee':
+            window.location.href = '/roles/referee/ref';
             break;
           default:
-            window.location.href = '/login';
+            window.location.href = '/auth/login';
         }
       } else {
         toast.error('Usuario o contraseña incorrectos');

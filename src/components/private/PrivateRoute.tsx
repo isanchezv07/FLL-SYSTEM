@@ -18,12 +18,12 @@ export default function PrivateRoute({ children }: PrivateRouteProps) {
 
   // Si no está autenticado → redirige
   if (!isAuthenticated || isAuthenticated !== "true") {
-    return <Redirect to="/login" />;
+    return <Redirect to="/auth/login" />;
   }
 
   // Opcional: validar que sea admin
   if (role !== "admin") {
-    return <Redirect to="/login" />;
+    return <Redirect to="/auth/login" />;
   }
 
   return <>{children}</>;
