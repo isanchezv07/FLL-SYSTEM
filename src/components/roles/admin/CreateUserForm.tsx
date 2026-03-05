@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-export default function CreateUserForm({ onUserCreated }) {
+export default function CreateUserForm({ onUserCreated }: { onUserCreated: () => void }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('user');
@@ -50,7 +50,7 @@ export default function CreateUserForm({ onUserCreated }) {
 
     } catch (error) {
       console.error('Error:', error);
-      alert('❌ ' + error.message);
+      alert('❌ ' + (error as Error).message);
     } finally {
       setLoading(false);
     }

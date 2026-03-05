@@ -2,20 +2,20 @@ import React from 'react';
 
 const mapMarkers = [
   { id: '1', top: '40%', left: '5%', title: 'Misión 01: Surface Brushing' },
-  { id: '2', top: '10%', left: '10%', title: 'Misión 02: Map Reveal' },
-  { id: '3', top: '8%', left: '33%', title: 'Misión 03: Mineshaft Explorer' },
+  { id: '2', top: '11%', left: '9.6%', title: 'Misión 02: Map Reveal' },
+  { id: '3', top: '7%', left: '33%', title: 'Misión 03: Mineshaft Explorer' },
   { id: '4', top: '18%', left: '29%', title: 'Misión 04: Careful Recovery' },
-  { id: '5', top: '8%', left: '80%', title: 'Misión 05: Who Lived Here?' },
-  { id: '6', top: '19%', left: '88%', title: 'Misión 06: Forge' },
-  { id: '7', top: '8%', left: '95%', title: 'Misión 07: Heavy Lifting' },
+  { id: '5', top: '7.5%', left: '80.5%', title: 'Misión 05: Who Lived Here?' },
+  { id: '6', top: '20%', left: '87.8%', title: 'Misión 06: Forge' },
+  { id: '7', top: '8%', left: '94.5%', title: 'Misión 07: Heavy Lifting' },
   { id: '8', top: '40%', left: '94%', title: 'Misión 08: Silo' },
-  { id: '9', top: '44%', left: '70%', title: 'Misión 09: What\'s on Sale?' },
-  { id: '10', top: '48%', left: '60%', title: 'Misión 10: Tip the Scales' },
-  { id: '11', top: '93%', left: '60%', title: 'Misión 11: Angler Artifacts' },
-  { id: '12', top: '93%', left: '45%', title: 'Misión 12: Salvage Operation' },
-  { id: '13', top: '42%', left: '42%', title: 'Misión 13: Statue Rebuild' },
-  { id: '14', top: '46%', left: '33%', title: 'Misión 14: Forum' },
-  { id: '15', top: '68%', left: '15%', title: 'Misión 15: Site Marking' }
+  { id: '9', top: '43%', left: '70.3%', title: 'Misión 09: What\'s on Sale?' },
+  { id: '10', top: '48.3%', left: '60.8%', title: 'Misión 10: Tip the Scales' },
+  { id: '11', top: '93.5%', left: '60.3%', title: 'Misión 11: Angler Artifacts' },
+  { id: '12', top: '93.5%', left: '45.3%', title: 'Misión 12: Salvage Operation' },
+  { id: '13', top: '41.8%', left: '42.6%', title: 'Misión 13: Statue Rebuild' },
+  { id: '14', top: '46.4%', left: '33.8%', title: 'Misión 14: Forum' },
+  { id: '15', top: '67%', left: '14.7%', title: 'Misión 15: Site Marking' }
 ];
 
 export default function InteractiveMap() {
@@ -37,7 +37,7 @@ export default function InteractiveMap() {
         }
 
         /* DISEÑO PARA CELULAR: Rota el mapa 90 grados */
-        @media (max-width: 768px) and (orientation: portrait) {
+        /* @media (max-width: 768px) and (orientation: portrait) {
           .map-wrapper {
             min-height: 80vh;
             align-items: center;
@@ -46,7 +46,7 @@ export default function InteractiveMap() {
             width: 150vw; /* Lo hace más grande para aprovechar la pantalla */
             transform: rotate(90deg);
           }
-        }
+        } */
       `}</style>
 
       <div className="map-container">
@@ -66,8 +66,8 @@ export default function InteractiveMap() {
               position: 'absolute',
               top: marker.top,
               left: marker.left,
-              width: '6%',   
-              height: '8%',
+              width: '7%',   
+              height: '9%',
               transform: 'translate(-50%, -50%)',
               display: 'block',
               cursor: 'pointer',

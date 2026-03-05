@@ -16,7 +16,7 @@ export default function AdminDashboard() {
   const [brackets, setBrackets] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  useEffect(() => { 
     checkAuth();
     fetchData();
 
@@ -68,15 +68,15 @@ export default function AdminDashboard() {
       )}
 
       {activeTab === 'matches' && (
-        <MatchesSection matches={matches} />
+        <MatchesSection />
       )}
 
       {activeTab === 'scores' && (
-        <ScoresSection matches={matches} />
+        <ScoresSection />
       )}
 
       {activeTab === 'brackets' && (
-        <BracketsSection brackets={brackets} refresh={fetchData} />
+        <BracketsSection />
       )}
     </DashboardLayout>
   );

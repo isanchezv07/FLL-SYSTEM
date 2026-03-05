@@ -6,6 +6,13 @@
       "password": "admin123",
       "role": "admin",
       "createdAt": "2026-03-02T17:24:15.259Z"
+    },
+    {
+      "id": "2",
+      "username": "user",
+      "password": "fll2026",
+      "role": "referee",
+      "createdAt": "2026-03-02T17:24:15.259Z"
     }
   ]
 }
