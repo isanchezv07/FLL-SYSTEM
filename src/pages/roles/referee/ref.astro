@@ -1,5 +1,4 @@
 ---
-// 1. Aquí importamos tu componente React (asegúrate de que la ruta sea correcta)
 import HeadLegoTimer from '@/components/roles/referee/Referee';
 import { ViewTransitions } from 'astro:transitions';
 ---
@@ -15,35 +14,52 @@ import { ViewTransitions } from 'astro:transitions';
       const isAuthenticated = localStorage.getItem("isAuthenticated");
       const role = localStorage.getItem("role");
 
-      // Si no es referee, lo pateamos al login inmediatamente
       if (isAuthenticated !== "true" || role !== "referee") {
         window.location.replace("/auth/login");
       }
     </script>
   </head>
-  
-  <body style="margin: 0; padding: 0; background-color: #0A0F1C;">
-    
-    <button id="btn-logout-ref" class="fixed top-4 right-4 z-[9999] bg-red-600/80 hover:bg-red-500 text-white px-4 py-2 rounded-lg font-bold text-sm backdrop-blur-sm transition-colors border border-red-400/30 cursor-pointer">
-      Cerrar Sesión
-    </button>
 
-    <HeadLegoTimer client:only="react" />
+  <body class="min-h-screen bg-gradient-to-br from-[#0A0F1C] via-[#111827] to-[#020617] text-white flex flex-col">
+
+    <!-- HEADER -->
+    <header class="w-full flex justify-between items-center px-6 py-4 border-b border-white/10 backdrop-blur-md bg-black/20">
+
+      <h1 class="text-lg md:text-xl font-bold tracking-wide text-white/90">
+        LEGO Timer • Head Referee
+      </h1>
+
+      <button 
+        id="btn-logout-ref"
+        class="bg-red-600 hover:bg-red-500 active:scale-95 transition-all px-4 py-2 rounded-lg font-semibold text-sm shadow-lg shadow-red-900/40 border border-red-400/30"
+      >
+        Cerrar Sesión
+      </button>
+
+    </header>
+
+    <!-- CONTENIDO -->
+    <main class="flex-1 flex items-center justify-center p-6">
+
+      <div class="w-full max-w-6xl bg-white/5 border border-white/10 rounded-2xl backdrop-blur-xl shadow-2xl p-6">
+        <HeadLegoTimer client:only="react" />
+      </div>
+
+    </main>
 
     <script>
       document.addEventListener('astro:page-load', () => {
         const btnLogout = document.getElementById('btn-logout-ref');
-        
+
         if (btnLogout) {
           btnLogout.addEventListener('click', () => {
-            // Borramos los datos de acceso
             localStorage.removeItem('isAuthenticated');
             localStorage.removeItem('role');
-            // Lo mandamos al login
             window.location.replace('/auth/login');
           });
         }
       });
     </script>
+
   </body>
 </html>
