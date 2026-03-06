@@ -19,14 +19,14 @@ export default function InteractiveMap() {
         <div className="bg-white rounded-xl overflow-hidden border border-slate-200 shadow-sm">
           <img
             src="/missions/mission1_1.webp"
-            alt="Surface Brushing Area"
+            alt="Misión 1"
             className="w-full h-auto"
           />
         </div>
         <div className="bg-white rounded-xl overflow-hidden border border-slate-200 shadow-sm">
           <img
             src="/missions/mission1_2.webp"
-            alt="Surface Brushing Detail"
+            alt="Misión 1"
             className="w-full h-auto"
           />
         </div>

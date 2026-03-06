@@ -1,0 +1,87 @@
+---
+// src/pages/404.astro
+---
+
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>404 - Construyendo Soluciones</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+      /* Textura de base LEGO para el suelo */
+      .lego-grid {
+        background-image: radial-gradient(#00000011 2px, transparent 2px);
+        background-size: 20px 20px;
+      }
+      @keyframes float {
+        0%, 100% { transform: translateY(0px) rotate(0deg); }
+        50% { transform: translateY(-20px) rotate(5deg); }
+      }
+      .floating-piece {
+        animation: float 3s ease-in-out infinite;
+      }
+    </style>
+  </head>
+  <body class="bg-sky-400 min-h-screen flex flex-col items-center justify-center font-['Fredoka',_sans-serif] text-slate-800 overflow-hidden relative">
+    
+    <div class="absolute top-10 left-10 w-24 h-8 bg-white rounded-full opacity-80 shadow-lg"></div>
+    <div class="absolute top-20 right-20 w-32 h-10 bg-white rounded-full opacity-80 shadow-lg"></div>
+
+    <main class="text-center relative z-10 px-4 -mt-20">
+      <div class="flex justify-center gap-2 mb-4 group cursor-default">
+        <h1 class="text-8xl md:text-[12rem] font-bold text-red-600 drop-shadow-[0_10px_0_rgba(153,27,27,1)] hover:-translate-y-2 transition-transform">4</h1>
+        <h1 class="text-8xl md:text-[12rem] font-bold text-yellow-400 drop-shadow-[0_10px_0_rgba(161,98,7,1)] floating-piece">0</h1>
+        <h1 class="text-8xl md:text-[12rem] font-bold text-blue-600 drop-shadow-[0_10px_0_rgba(30,58,138,1)] hover:-translate-y-2 transition-transform">4</h1>
+      </div>
+
+      <h2 class="text-3xl md:text-5xl font-bold mb-4 text-black drop-shadow-md">
+        ¡Vaya! Se nos soltó una pieza.
+      </h2>
+      <p class="text-lg md:text-xl text-blue-900 mb-10 max-w-md mx-auto font-medium">
+        Estamos buscando en la caja de bloques, pero esta página no aparece por ningún lado.
+      </p>
+
+      <a href="/" class="group inline-flex items-center gap-3 bg-green-500 hover:bg-green-400 text-white font-bold py-4 px-10 rounded-lg border-b-8 border-green-700 active:border-b-0 active:translate-y-2 transition-all shadow-2xl relative overflow-hidden">
+        <span class="w-4 h-4 bg-white/20 rounded-full"></span>
+        Volver al Manual
+        <span class="w-4 h-4 bg-white/20 rounded-full"></span>
+      </a>
+    </main>
+
+    <div class="absolute bottom-0 w-full h-48 bg-green-600 border-t-8 border-green-700 lego-grid">
+      
+      <div class="max-w-4xl mx-auto h-full relative">
+        
+        <div class="absolute -top-12 left-10 md:left-20 w-16 h-12 bg-orange-500 rounded-sm border-b-4 border-orange-700 animate-bounce">
+           <div class="absolute -top-2 left-2 w-4 h-2 bg-orange-500 rounded-t-sm"></div>
+           <div class="absolute -top-2 right-2 w-4 h-2 bg-orange-500 rounded-t-sm"></div>
+        </div>
+
+        <div class="absolute bottom-10 right-10 flex items-end gap-1 scale-125">
+          <div class="w-12 h-20 bg-red-500 rounded-sm relative border-b-4 border-red-700">
+             <div class="absolute -top-2 left-1 w-3 h-2 bg-red-500 rounded-t-sm"></div>
+             <div class="absolute -top-2 right-1 w-3 h-2 bg-red-500 rounded-t-sm"></div>
+          </div>
+          <div class="w-16 h-14 bg-yellow-400 rounded-sm relative border-b-4 border-yellow-600">
+             <div class="absolute -top-2 left-2 w-4 h-2 bg-yellow-400 rounded-t-sm"></div>
+             <div class="absolute -top-2 right-2 w-4 h-2 bg-yellow-400 rounded-t-sm"></div>
+          </div>
+        </div>
+
+        <div class="absolute bottom-10 left-1/4 flex flex-col items-center">
+            <div class="w-8 h-4 bg-yellow-500 rounded-t-full border-b-2 border-yellow-700"></div>
+            <div class="w-6 h-6 bg-yellow-400 rounded-md -mt-1 flex justify-center items-center gap-1">
+                <div class="w-1 h-1 bg-black rounded-full"></div>
+                <div class="w-1 h-1 bg-black rounded-full"></div>
+            </div>
+            <div class="w-10 h-10 bg-orange-500 rounded-t-lg relative">
+                <div class="absolute inset-x-2 top-2 h-1 bg-gray-200 opacity-50"></div> </div>
+        </div>
+
+      </div>
+    </div>
+  </body>
+</html>

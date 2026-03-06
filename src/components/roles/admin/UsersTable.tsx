@@ -1,12 +1,7 @@
 export default function UsersTable({ users, refresh }) {
     const handleDelete = async (id: string) => {
-      const token = localStorage.getItem('token');
-  
       await fetch(`/api/users/${id}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
+        method: 'DELETE'
       });
   
       refresh();

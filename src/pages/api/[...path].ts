@@ -5,13 +5,15 @@ export const ALL: APIRoute = async ({ request }) => {
   const backendURL = `http://127.0.0.1:3000${url.pathname}${url.search}`;
   
   try {
+    const body = request.method !== 'GET' && request.method !== 'HEAD' ? await request.text() : undefined;
+    
     const response = await fetch(backendURL, {
       method: request.method,
       headers: {
         'Content-Type': 'application/json',
         ...Object.fromEntries(request.headers)
       },
-      body: request.method !== 'GET' && request.method !== 'HEAD' ? await request.text() : undefined,
+      body: body,
     });
     
     const data = await response.text();

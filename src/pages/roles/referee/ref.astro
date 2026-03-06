@@ -1,14 +1,15 @@
 ---
 import HeadLegoTimer from '@/components/roles/referee/Referee';
-import { ViewTransitions } from 'astro:transitions';
 ---
 
 <html lang="es">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+    <!-- VIEWPORT FIX -->
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
     <title>Head Referee - LEGO Timer</title>
-    <ViewTransitions />
 
     <script is:inline>
       const isAuthenticated = localStorage.getItem("isAuthenticated");
@@ -23,9 +24,9 @@ import { ViewTransitions } from 'astro:transitions';
   <body class="min-h-screen bg-gradient-to-br from-[#0A0F1C] via-[#111827] to-[#020617] text-white flex flex-col">
 
     <!-- HEADER -->
-    <header class="w-full flex justify-between items-center px-6 py-4 border-b border-white/10 backdrop-blur-md bg-black/20">
+    <header class="w-full flex justify-between items-center px-4 md:px-6 py-4 border-b border-white/10 backdrop-blur-md bg-black/20">
 
-      <h1 class="text-lg md:text-xl font-bold tracking-wide text-white/90">
+      <h1 class="text-base md:text-xl font-bold tracking-wide text-white/90">
         LEGO Timer • Head Referee
       </h1>
 
@@ -39,14 +40,12 @@ import { ViewTransitions } from 'astro:transitions';
     </header>
 
     <!-- CONTENIDO -->
-    <main class="flex-1 flex items-center justify-center p-6">
+    <main class="flex-1 flex items-start md:items-center justify-center p-4 md:p-6">
 
-      <div class="w-full max-w-6xl bg-white/5 border border-white/10 rounded-2xl backdrop-blur-xl shadow-2xl p-6">
+      <div class="w-full max-w-6xl bg-white/5 border border-white/10 rounded-2xl backdrop-blur-xl shadow-2xl p-4 md:p-6">
         <HeadLegoTimer client:only="react" />
       </div>
-
     </main>
-
     <script>
       document.addEventListener('astro:page-load', () => {
         const btnLogout = document.getElementById('btn-logout-ref');
