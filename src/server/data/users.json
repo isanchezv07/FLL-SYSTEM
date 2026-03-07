@@ -6,6 +6,13 @@
       "password": "admin123",
       "role": "admin",
       "createdAt": "2026-03-02T17:24:15.259Z"
+    },
+    {
+      "id": "1772867671279",
+      "username": "AdaLovelace",
+      "password": "pipis",
+      "role": "user",
+      "createdAt": "2026-03-07T07:14:31.279Z"
     }
   ]
 }

@@ -107,6 +107,26 @@ app.post('/api/users', async (req, res) => {
   }
 });
 
+/*
+app.put('/api/users/:id', async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const { username, password, role } = req.body;
+    console.log('Update user data:', req.body);
+
+    if (!username || !role) {
+      return res.status(400).json({ error: 'Username y role son requeridos' });
+    }
+
+    const { updateUser } = await import('./databases/users.js');
+    const updated = await updateUser(userId, { username, password, role });
+    io.emit('usersUpdate');
+    res.json(updated);
+  } catch (error) {
+    console.error('Update user error:', error);
+    res.status(400).json({ error: error.message || 'Error al actualizar usuario' });
+  }
+});*/
 app.delete('/api/users/:id', async (req, res) => {
   try {
     const userId = req.params.id;
@@ -277,20 +297,12 @@ const checkPort = (port) => {
   });
 };
 
-// Start server with port fallback
+// Start server on fixed port 3000 (proxy expects this port)
 const startServer = async () => {
-  let PORT = 3000;
+  const PORT = 3000;
   
-  // Try ports 3000-3010 if default is in use
-  while (PORT <= 3010) {
-    if (await checkPort(PORT)) {
-      break;
-    }
-    PORT++;
-  }
-  
-  if (PORT > 3010) {
-    console.error('No available ports found between 3000-3010');
+  if (!(await checkPort(PORT))) {
+    console.error('Port 3000 is already in use. Please free it and try again.');
     process.exit(1);
   }
   

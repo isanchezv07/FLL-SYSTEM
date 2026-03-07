@@ -7,12 +7,15 @@ export const ALL: APIRoute = async ({ request }) => {
   try {
     const body = request.method !== 'GET' && request.method !== 'HEAD' ? await request.text() : undefined;
     
+    const forwardHeaders: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    const authHeader = request.headers.get('authorization');
+    if (authHeader) forwardHeaders['Authorization'] = authHeader;
+
     const response = await fetch(backendURL, {
       method: request.method,
-      headers: {
-        'Content-Type': 'application/json',
-        ...Object.fromEntries(request.headers)
-      },
+      headers: forwardHeaders,
       body: body,
     });
     
