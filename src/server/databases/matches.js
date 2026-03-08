@@ -97,16 +97,20 @@ export const createMatch = async (matchData) => {
 export const updateMatch = async (matchId, matchData) => {
   await db.read();
 
+  // Buscamos el índice comparando el ID tal cual viene
   const index = db.data.matches.findIndex(m => m.id === matchId);
 
   if (index === -1) {
-    throw new Error('Match no encontrado');
+    // Si no lo encuentra, lanzamos un error descriptivo para el log
+    console.error(`ID buscado: "${matchId}" | IDs existentes:`, db.data.matches.map(m => m.id));
+    throw new Error(`Match ${matchId} no encontrado en la base de datos`);
   }
 
+  // Actualizamos manteniendo la integridad del ID
   db.data.matches[index] = {
     ...db.data.matches[index],
     ...matchData,
-    updatedAt: new Date().toISOString()
+    id: matchId // Forzamos que el ID no cambie
   };
 
   await db.write();
@@ -128,15 +132,10 @@ export const deleteMatch = async (matchId) => {
   return { success: true };
 };
 
-export const getMatchById = async (matchId) => {
+export const getMatchById = async (id) => {
   await db.read();
-
-  const match = db.data.matches.find(m => m.id === matchId);
-
-  if (!match) {
-    throw new Error('Match no encontrado');
-  }
-
+  const match = db.data.matches.find(m => m.id === id);
+  if (!match) throw new Error('Match no encontrado');
   return match;
 };
 

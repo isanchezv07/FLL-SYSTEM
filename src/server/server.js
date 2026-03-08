@@ -9,9 +9,10 @@ import jwt from 'jsonwebtoken';
 
 // Import database modules
 import { getUsers, createUser, deleteUser, authenticateUser } from './databases/users.js';
-import { initMatchesDB, getMatches, createMatch } from './databases/matches.js';
+import { initMatchesDB, getMatches, createMatch, updateMatch, getMatchById  } from './databases/matches.js';
 import { initBracketsDB, getBrackets, createBracket } from './databases/brackets.js';
 import { initTimerDB, getTimer, updateTimer } from './databases/timer.js';
+import { getTeams } from './databases/teams.js'; 
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -41,6 +42,15 @@ const initializeDatabases = async () => {
   } catch (error) {
     console.error('Error initializing databases:', error);
   }
+};
+
+const shuffle = (array) => {
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
 };
 
 // Authentication endpoints
@@ -212,6 +222,146 @@ app.get('/api/', async (req, res) => {
   } catch (error) {
     console.error('Get all data error:', error);
     res.status(500).json({ error: 'Error al obtener datos' });
+  }
+});
+
+app.post('/api/brackets/generate', async (req, res) => {
+  try {
+
+    const { size, name } = req.body;
+
+    const teams = shuffle(getTeams()).slice(0, size);
+
+    if (teams.length < size) {
+      return res.status(400).json({ error: "No hay suficientes equipos" });
+    }
+
+    const bracket = await createBracket({
+      name: name || `Bracket ${size}`,
+      size,
+      status: "active"
+    });
+
+    const bracketId = bracket.id;
+
+    const rounds = Math.log2(size);
+    const matches = [];
+
+    let matchId = 1;
+
+    for (let round = 1; round <= rounds; round++) {
+
+      const matchesInRound = size / Math.pow(2, round);
+
+      for (let position = 1; position <= matchesInRound; position++) {
+
+        let teamA = "";
+        let teamB = "";
+
+        if (round === 1) {
+          teamA = teams.shift().number;
+          teamB = teams.shift().number;
+        }
+
+        const nextMatchPosition = Math.ceil(position / 2);
+
+        const nextMatchId =
+          round === rounds
+            ? null
+            : `match-${round + 1}-${nextMatchPosition}`;
+
+        const match = await createMatch({
+          id: `match-${round}-${position}`,
+          bracketId,
+          round,
+          position,
+          nextMatchId,
+          teamA,
+          teamB,
+          scoreA: 0,
+          scoreB: 0,
+          status: "pending"
+        });
+
+        matches.push(match);
+
+      }
+
+    }
+
+    io.emit('bracketsUpdate');
+    io.emit('matchesUpdate');
+
+    res.json({
+      bracket,
+      matches
+    });
+
+  } catch (error) {
+
+    console.error(error);
+
+    res.status(500).json({
+      error: "Error generando bracket"
+    });
+
+  }
+});
+
+app.put('/api/matches/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const matchData = req.body;
+
+    // 1. Actualizar el match actual
+    const updatedMatch = await updateMatch(id, matchData);
+
+    // 2. Lógica de avance automático si el match ha finalizado
+    if (updatedMatch.status === 'finished' && updatedMatch.nextMatchId) {
+      // Determinar ganador
+      let winner = null;
+      if (updatedMatch.scoreA > updatedMatch.scoreB) {
+        winner = updatedMatch.teamA;
+      } else if (updatedMatch.scoreB > updatedMatch.scoreA) {
+        winner = updatedMatch.teamB;
+      }
+      // Nota: Si es empate, podrías manejar una lógica de desempate aquí
+
+      if (winner) {
+        // Obtener el siguiente match
+        const nextMatch = await getMatchById(updatedMatch.nextMatchId);
+        
+        // Determinar si el ganador va al espacio de Team A o Team B en el siguiente match
+        // Regla: Si la posición actual es impar (1, 3, 5...), va al Team A. Si es par (2, 4, 6...), va al Team B.
+        const isTeamA = updatedMatch.position % 2 !== 0;
+        
+        const updateData = isTeamA 
+          ? { teamA: winner } 
+          : { teamB: winner };
+
+        // Actualizar el siguiente match en la base de datos
+        await updateMatch(updatedMatch.nextMatchId, updateData);
+      }
+    }
+
+    // 3. Emitir eventos para que todos los clientes vean los cambios
+    io.emit('matchesUpdate');
+    io.emit('bracketsUpdate');
+
+    res.json(updatedMatch);
+  } catch (error) {
+    console.error('Error actualizando match:', error);
+    res.status(500).json({ error: 'Error actualizando match', details: error.message });
+  }
+});
+
+app.get('/api/matches/:id', async (req, res) => {
+  try {
+    const match = await getMatchById(req.params.id);
+    res.json(match);
+  } catch (error) {
+    console.error('Error obteniendo match:', error);
+    res.status(404).json({ error: 'Match no encontrado' });
   }
 });
 

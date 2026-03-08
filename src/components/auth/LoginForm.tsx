@@ -38,7 +38,7 @@ const LoginForm = () => {
           case 'admin':
             window.location.href = '/roles/admin/admin_dashboard';
             break;
-          case 'referee':
+          case 'ref':
             window.location.href = '/roles/referee/ref';
             break;
           default:

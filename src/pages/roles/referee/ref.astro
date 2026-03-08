@@ -1,5 +1,5 @@
 ---
-import HeadLegoTimer from '@/components/roles/referee/Referee';
+import HeadLegoTimer from '@/components/roles/referee/Main';
 ---
 
 <html lang="es">
@@ -15,7 +15,7 @@ import HeadLegoTimer from '@/components/roles/referee/Referee';
       const isAuthenticated = localStorage.getItem("isAuthenticated");
       const role = localStorage.getItem("role");
 
-      if (isAuthenticated !== "true" || role !== "referee") {
+      if (isAuthenticated !== "true" || role !== "ref") {
         window.location.replace("/auth/login");
       }
     </script>
