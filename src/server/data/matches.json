@@ -5,6 +5,7 @@
       "team": "",
       "round": 1,
       "missions": {
+        "inspection": "",
         "m01": {
           "soil": 0,
           "brushFree": 0
@@ -65,21 +66,22 @@
       "precision": 0,
       "total": 0,
       "notes": "",
-      "date": "2026-03-08T00:58:44.436Z",
-      "bracketId": "1772931524434",
+      "date": "2026-03-17T13:17:47.235Z",
+      "bracketId": "1773753467234",
       "position": 1,
       "nextMatchId": "match-2-1",
-      "teamA": "170",
-      "teamB": "108",
-      "scoreA": 30,
+      "teamA": "152",
+      "teamB": "174",
+      "scoreA": 0,
       "scoreB": 0,
-      "status": "finished"
+      "status": "pending"
     },
     {
       "id": "match-1-2",
       "team": "",
       "round": 1,
       "missions": {
+        "inspection": "",
         "m01": {
           "soil": 0,
           "brushFree": 0
@@ -140,21 +142,22 @@
       "precision": 0,
       "total": 0,
       "notes": "",
-      "date": "2026-03-08T00:58:44.437Z",
-      "bracketId": "1772931524434",
+      "date": "2026-03-17T13:17:47.236Z",
+      "bracketId": "1773753467234",
       "position": 2,
       "nextMatchId": "match-2-1",
-      "teamA": "164",
-      "teamB": "121",
-      "scoreA": 4,
+      "teamA": "160",
+      "teamB": "127",
+      "scoreA": 0,
       "scoreB": 0,
-      "status": "finished"
+      "status": "pending"
     },
     {
       "id": "match-2-1",
       "team": "",
       "round": 2,
       "missions": {
+        "inspection": "",
         "m01": {
           "soil": 0,
           "brushFree": 0
@@ -215,11 +218,11 @@
       "precision": 0,
       "total": 0,
       "notes": "",
-      "date": "2026-03-08T00:58:44.437Z",
-      "bracketId": "1772931524434",
+      "date": "2026-03-17T13:17:47.237Z",
+      "bracketId": "1773753467234",
       "position": 1,
       "nextMatchId": null,
-      "teamA": "170",
+      "teamA": "",
       "teamB": "",
       "scoreA": 0,
       "scoreB": 0,

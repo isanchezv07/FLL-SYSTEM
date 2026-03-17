@@ -30,6 +30,80 @@ const io = new Server(httpServer, {
   }
 });
 
+function calculateFLLScore(m) {
+  let score = 0;
+  if (!m) return 0;
+
+  // --- INSPECCIÓN TÉCNICA ---
+  // Límite: Sí (20 pts) o No (0 pts)
+  if (m.inspection === 'yes' || m.inspection === true) {
+    score += 20;
+  }
+
+  // M01: Surface Brushing
+  // Límite: Máximo 5 depósitos de suelo
+  const m01_soil = Math.min(parseInt(m.m01_soil) || 0, 5);
+  score += m01_soil * 10;
+  if (m.m01_brush === 'yes' || m.m01_brush === true) score += 10;
+
+  // M02: Map Reveal
+  // Límite: Máximo 3 secciones
+  const m02_sections = Math.min(parseInt(m.m02_sections) || 0, 3);
+  score += m02_sections * 10;
+
+  // M03: Mineshaft Explorer
+  if (m.m03_minecart === 'yes' || m.m03_minecart === true) score += 30;
+  if (m.m03_bonus === 'yes' || m.m03_bonus === true) score += 10;
+
+  // M04: Careful Recovery
+  if (m.m04_artifact === 'yes' || m.m04_artifact === true) score += 30;
+  if (m.m04_support === 'yes' || m.m04_support === true) score += 10;
+
+  // M05, M07, M13 (Misiones de estado único)
+  if (m.m05_floor === 'yes' || m.m05_floor === true) score += 30;
+  if (m.m07_millstone === 'yes' || m.m07_millstone === true) score += 30;
+  if (m.m13_statue === 'yes' || m.m13_statue === true) score += 30;
+
+  // M06: Forge
+  // Límite: Máximo 2 piezas de mineral
+  const m06_ore = Math.min(parseInt(m.m06_ore) || 0, 2);
+  score += m06_ore * 10;
+
+  // M08: Silo
+  // Límite: Máximo 4 piezas preservadas
+  const m08_preserved = Math.min(parseInt(m.m08_preserved) || 0, 4);
+  score += m08_preserved * 10;
+
+  // M09: What's on Sale?
+  if (m.m09_roof === 'yes' || m.m09_roof === true) score += 20;
+  if (m.m09_wares === 'yes' || m.m09_wares === true) score += 10;
+
+  // M10: Tip the Scales
+  if (m.m10_tipped === 'yes' || m.m10_tipped === true) score += 20;
+  if (m.m10_pan === 'yes' || m.m10_pan === true) score += 10;
+
+  // M11: Angler Artifacts
+  if (m.m11_raised === 'yes' || m.m11_raised === true) score += 20;
+  if (m.m11_flag === 'yes' || m.m11_flag === true) score += 10;
+
+  // M12: Salvage Operation
+  if (m.m12_sand === 'yes' || m.m12_sand === true) score += 20;
+  if (m.m12_ship === 'yes' || m.m12_ship === true) score += 10;
+
+  // M14: Forum
+  // Límite: Máximo 8 artefactos
+  const m14_artifacts = Math.min(parseInt(m.m14_artifacts) || 0, 8);
+  score += m14_artifacts * 5;
+
+  // M16: Precision Tokens
+  // Límite: 0 a 6 tokens
+  const tokens = Math.max(0, Math.min(parseInt(m.precision_tokens) || 0, 6));
+  const precisionTable = { 6: 50, 5: 50, 4: 35, 3: 25, 2: 15, 1: 10, 0: 0 };
+  score += precisionTable[tokens] || 0;
+
+  return score;
+}
+
 app.use(express.json());
 
 // Initialize all databases
@@ -313,26 +387,32 @@ app.put('/api/matches/:id', async (req, res) => {
     const { id } = req.params;
     const matchData = req.body;
 
-    // 1. Actualizar el match actual
+    // --- NUEVA LÓGICA DE CÁLCULO DE MISIONES ---
+    // Si el objeto enviado contiene misiones para el Equipo A, calculamos su score
+    if (matchData.missionsA) {
+      matchData.scoreA = calculateFLLScore(matchData.missionsA);
+    }
+    
+    // Si contiene misiones para el Equipo B, calculamos su score
+    if (matchData.missionsB) {
+      matchData.scoreB = calculateFLLScore(matchData.missionsB);
+    }
+    // -------------------------------------------
+
+    // 1. Actualizar el match actual (ahora con los scores calculados por el servidor)
     const updatedMatch = await updateMatch(id, matchData);
 
     // 2. Lógica de avance automático si el match ha finalizado
     if (updatedMatch.status === 'finished' && updatedMatch.nextMatchId) {
-      // Determinar ganador
       let winner = null;
       if (updatedMatch.scoreA > updatedMatch.scoreB) {
         winner = updatedMatch.teamA;
       } else if (updatedMatch.scoreB > updatedMatch.scoreA) {
         winner = updatedMatch.teamB;
       }
-      // Nota: Si es empate, podrías manejar una lógica de desempate aquí
 
       if (winner) {
-        // Obtener el siguiente match
-        const nextMatch = await getMatchById(updatedMatch.nextMatchId);
-        
-        // Determinar si el ganador va al espacio de Team A o Team B en el siguiente match
-        // Regla: Si la posición actual es impar (1, 3, 5...), va al Team A. Si es par (2, 4, 6...), va al Team B.
+        // Regla: Impar (1, 3, 5...) va al Team A. Par (2, 4, 6...) va al Team B.
         const isTeamA = updatedMatch.position % 2 !== 0;
         
         const updateData = isTeamA 
@@ -365,7 +445,6 @@ app.get('/api/matches/:id', async (req, res) => {
   }
 });
 
-// WebSocket handlers for timer
 let timerInterval = null;
 
 io.on('connection', (socket) => {
@@ -432,7 +511,6 @@ io.on('connection', (socket) => {
   });
 });
 
-// Check if port 3000 is in use
 const checkPort = (port) => {
   return new Promise((resolve) => {
     const server = createServer();
@@ -447,7 +525,6 @@ const checkPort = (port) => {
   });
 };
 
-// Start server on fixed port 3000 (proxy expects this port)
 const startServer = async () => {
   const PORT = 3000;
   

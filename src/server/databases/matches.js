@@ -58,6 +58,7 @@ export const createMatch = async (matchData) => {
     team: "",
     round: "",
     missions: {
+      inspection: "",
       m01: { soil: 0, brushFree: 0 },
       m02: { topsoil: 0 },
       m03_04: { cart: 0, oppCart: 0, artifact: 0, supports: 0 },
