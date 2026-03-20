@@ -18,9 +18,31 @@ export default function LegoTimerDisplay() {
     isRunning: false
   });
   const [isConnected, setIsConnected] = useState(true);
+  const [activeMatch, setActiveMatch] = useState<any | null>(null);
 
   // --- TU LÓGICA ORIGINAL INTACTA ---
   useEffect(() => {
+    const updateActiveMatch = async () => {
+      try {
+        const res = await fetch('/api/matches');
+        const data = await res.json();
+        const list = Array.isArray(data) ? data : [];
+        const sorted = list
+          .slice()
+          .sort((a: any, b: any) => (a.round ?? 0) - (b.round ?? 0) || (a.position ?? 0) - (b.position ?? 0));
+
+        const picked =
+          sorted.find((m: any) => m?.status === 'in_progress') ||
+          sorted.find((m: any) => m?.status === 'pending') ||
+          sorted[0] ||
+          null;
+
+        setActiveMatch(picked);
+      } catch {
+        // keep last activeMatch
+      }
+    };
+
     const handleTimerUpdate = (timerData: TimerState) => {
       setTimer(timerData);
     };
@@ -39,6 +61,9 @@ export default function LegoTimerDisplay() {
 
     socket.on("connect", handleConnect);
     socket.on("disconnect", handleDisconnect);
+
+    socket.on('matchesUpdate', updateActiveMatch);
+    updateActiveMatch();
     
     const heartbeatInterval = setInterval(() => {
       if (socket.connected) {
@@ -50,6 +75,7 @@ export default function LegoTimerDisplay() {
       socket.off('timerUpdate', handleTimerUpdate);
       socket.off("connect", handleConnect);
       socket.off("disconnect", handleDisconnect);
+      socket.off('matchesUpdate', updateActiveMatch);
       clearInterval(heartbeatInterval);
     };
   }, []);
@@ -139,13 +165,47 @@ export default function LegoTimerDisplay() {
               </div>
               
               {/* Indicador de Estado */}
-              <div className="flex items-center justify-center gap-4 mb-4 bg-slate-900 inline-flex px-8 py-4 rounded-2xl border border-slate-700">
+              <div className="flex items-center justify-center gap-4 mb-4 bg-slate-900 px-8 py-4 rounded-2xl border border-slate-700">
                 <div className={`w-8 h-8 rounded-full shadow-[0_0_15px_currentColor] ${
                   timer.isRunning ? 'bg-green-500 text-green-500 animate-pulse' : 'bg-red-600 text-red-600'
                 }`} />
                 <span className={`text-4xl font-bold tracking-widest ${timer.isRunning ? 'text-green-400' : 'text-slate-400'}`}>
                   {timer.isRunning ? 'RUNNING' : 'STOPPED'}
                 </span>
+              </div>
+
+              {/* Match live scores */}
+              <div className="mt-6 grid grid-cols-2 gap-4 text-left">
+                <div className="rounded-2xl bg-slate-900/40 border border-slate-800 p-4">
+                  <div className="text-[12px] uppercase tracking-widest text-slate-300 font-bold">
+                    Team A
+                  </div>
+                  <div className="mt-2 flex items-baseline justify-between gap-3">
+                    <div className="text-white font-black tabular-nums truncate">
+                      {activeMatch?.teamA ?? 'TBD'}
+                    </div>
+                    <div className="text-green-300 font-black text-4xl tabular-nums">
+                      {activeMatch?.scoreA ?? 0}
+                    </div>
+                  </div>
+                </div>
+                <div className="rounded-2xl bg-slate-900/40 border border-slate-800 p-4">
+                  <div className="text-[12px] uppercase tracking-widest text-slate-300 font-bold">
+                    Team B
+                  </div>
+                  <div className="mt-2 flex items-baseline justify-between gap-3">
+                    <div className="text-white font-black tabular-nums truncate">
+                      {activeMatch?.teamB ?? 'TBD'}
+                    </div>
+                    <div className="text-blue-200 font-black text-4xl tabular-nums">
+                      {activeMatch?.scoreB ?? 0}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 text-[12px] text-slate-300">
+                Match: {activeMatch?.id ? activeMatch.id : '—'} • Status: {activeMatch?.status ?? '—'}
               </div>
             </div>
 

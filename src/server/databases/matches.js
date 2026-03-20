@@ -57,6 +57,9 @@ export const createMatch = async (matchData) => {
     id: Date.now().toString(),
     team: "",
     round: "",
+    // Misiones por equipo (se llena progresivamente desde el frontend)
+    missionsA: {},
+    missionsB: {},
     missions: {
       inspection: "",
       m01: { soil: 0, brushFree: 0 },

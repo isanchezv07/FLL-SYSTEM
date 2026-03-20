@@ -3,6 +3,11 @@ import { Play, Pause, RotateCcw } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { socket } from '@/lib/socket';
 
+type TimerUpdate = {
+  timeRemaining: number;
+  isRunning: boolean;
+};
+
 // 1. Extraemos el conector (Stud) para optimizar el rendimiento (evita re-renders)
 const ControllerStud = () => (
   <div className="w-6 h-6 sm:w-8 sm:h-8 bg-[#0055BF] rounded-full 
@@ -16,6 +21,8 @@ export default function HeadLegoTimer() {
   const [timeRemaining, setTimeRemaining] = useState(150);
   const [isRunning, setIsRunning] = useState(false);
   const [timerInterval, setTimerInterval] = useState<number | null>(null);
+
+  const [activeMatch, setActiveMatch] = useState<any | null>(null);
   
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -66,7 +73,7 @@ export default function HeadLegoTimer() {
   };
 
   useEffect(() => {
-    socket.on('timerUpdate', (timerData) => {
+    socket.on('timerUpdate', (timerData: TimerUpdate) => {
       setTimeRemaining(timerData.timeRemaining);
       setIsRunning(timerData.isRunning);
     });
@@ -75,6 +82,40 @@ export default function HeadLegoTimer() {
     
     return () => {
       socket.off('timerUpdate');
+    };
+  }, []);
+
+  useEffect(() => {
+    const fetchMatches = async () => {
+      try {
+        const res = await fetch('/api/matches');
+        const data = await res.json();
+
+        const sorted = (data || [])
+          .slice()
+          .sort((a: any, b: any) => (a.round ?? 0) - (b.round ?? 0) || (a.position ?? 0) - (b.position ?? 0));
+
+        const current =
+          sorted.find((m: any) => m.status === 'in_progress') ||
+          sorted.find((m: any) => m.status === 'pending') ||
+          sorted[0] ||
+          null;
+
+        setActiveMatch(current);
+
+        if (current?.id) {
+          localStorage.setItem('activeMatchId', current.id);
+        }
+      } catch (e) {
+        console.error('Error fetching matches:', e);
+      }
+    };
+
+    fetchMatches();
+    socket.on('matchesUpdate', fetchMatches);
+
+    return () => {
+      socket.off('matchesUpdate', fetchMatches);
     };
   }, []);
 
@@ -108,6 +149,51 @@ export default function HeadLegoTimer() {
           </h1>
           <div className="bg-[#0055BF] text-white px-6 py-2 rounded-xl inline-block shadow-[0_8px_15px_rgba(0,0,0,0.5)] border-b-4 border-blue-800">
             <span className="text-sm sm:text-xl font-bold tracking-widest uppercase">Timer Control Panel</span>
+          </div>
+        </motion.div>
+
+        {/* Match live (scoreA/scoreB) */}
+        <motion.div
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ type: 'spring', bounce: 0.2, delay: 0.05 }}
+          className="w-full max-w-[95%] sm:max-w-2xl lg:max-w-4xl mb-6"
+        >
+          <div className="bg-white/5 border border-white/10 rounded-3xl p-4 sm:p-6 shadow-[inset_0_0_20px_rgba(0,0,0,0.35)]">
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <div className="text-xs sm:text-sm text-white/70 uppercase tracking-widest">
+                  Match
+                  {activeMatch?.round ? ` • Ronda ${activeMatch.round}` : ''}
+                </div>
+                <div className="text-lg sm:text-2xl font-black text-white drop-shadow-lg tabular-nums">
+                  {activeMatch?.position ? `#${activeMatch.position}` : 'Sin match'}
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-xs text-white/60 uppercase tracking-widest">Status</div>
+                <div className="text-sm sm:text-base font-bold text-white/90 capitalize">
+                  {activeMatch?.status ?? '—'}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <div className="rounded-2xl bg-[#0055BF]/20 border border-[#0055BF]/30 p-3">
+                <div className="text-[11px] uppercase tracking-widest text-white/70">Team A</div>
+                <div className="flex items-baseline justify-between gap-3">
+                  <div className="font-black text-white tabular-nums">{activeMatch?.teamA || 'TBD'}</div>
+                  <div className="font-black text-green-300 tabular-nums">{activeMatch?.scoreA ?? 0}</div>
+                </div>
+              </div>
+              <div className="rounded-2xl bg-[#0055BF]/20 border border-[#0055BF]/30 p-3">
+                <div className="text-[11px] uppercase tracking-widest text-white/70">Team B</div>
+                <div className="flex items-baseline justify-between gap-3">
+                  <div className="font-black text-white tabular-nums">{activeMatch?.teamB || 'TBD'}</div>
+                  <div className="font-black text-blue-200 tabular-nums">{activeMatch?.scoreB ?? 0}</div>
+                </div>
+              </div>
+            </div>
           </div>
         </motion.div>
 

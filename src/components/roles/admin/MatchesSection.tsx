@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
+import { socket } from '@/lib/socket';
 
 interface Match {
   id: string;
@@ -11,6 +12,9 @@ interface Match {
   round: number;
   position: number;
   status: 'pending' | 'in_progress' | 'finished';
+  nextMatchId?: string | null;
+  missionsA?: any;
+  missionsB?: any;
   missions?: any;
   precision?: number;
 }
@@ -21,9 +25,38 @@ export default function MatchesSection() {
   const [bracketSize, setBracketSize] = useState(8);
   const [notification, setNotification] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
 
+  const activeMatch = useMemo(() => {
+    const inProgress = matches.find((m) => m.status === 'in_progress');
+    const pending = matches.find((m) => m.status === 'pending');
+    return inProgress || pending || matches[0] || null;
+  }, [matches]);
+
+  const nextMatch = useMemo(() => {
+    if (!activeMatch?.nextMatchId) return null;
+    return matches.find((m) => m.id === activeMatch.nextMatchId) || null;
+  }, [activeMatch?.nextMatchId, matches]);
+
   useEffect(() => {
     fetchMatches();
   }, []);
+
+  useEffect(() => {
+    const handler = () => fetchMatches();
+    socket.on('matchesUpdate', handler);
+    return () => {
+      socket.off('matchesUpdate', handler);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const [activeScoreA, setActiveScoreA] = useState(0);
+  const [activeScoreB, setActiveScoreB] = useState(0);
+
+  useEffect(() => {
+    if (!activeMatch) return;
+    setActiveScoreA(Number(activeMatch.scoreA ?? 0));
+    setActiveScoreB(Number(activeMatch.scoreB ?? 0));
+  }, [activeMatch?.id]);
 
   const showNotify = (msg: string, type: 'success' | 'error' = 'success') => {
     setNotification({ msg, type });
@@ -59,6 +92,37 @@ export default function MatchesSection() {
 
   const handleUpdateLocal = (id: string, updates: Partial<Match>) => {
     setMatches(prev => prev.map(m => m.id === id ? { ...m, ...updates } : m));
+  };
+
+  const saveMatchWithOverrides = async (id: string, overrides: Partial<Match>) => {
+    const match = matches.find((m) => m.id === id);
+    if (!match) {
+      showNotify('No se encontró el match', 'error');
+      return;
+    }
+
+    try {
+      const payload: Match = { ...match, ...overrides };
+      const res = await fetch(`/api/matches/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData?.error || 'Error desconocido al guardar el match');
+      }
+
+      const updatedMatch = await res.json();
+      setMatches((prev) => prev.map((m) => m.id === id ? updatedMatch : m));
+      showNotify('Partido actualizado correctamente');
+      return updatedMatch;
+    } catch (err: any) {
+      console.error('Error al guardar match:', err);
+      showNotify(`Error al guardar cambios: ${err.message}`, 'error');
+      return null;
+    }
   };
 
   const saveMatch = async (id: string) => {
@@ -122,6 +186,71 @@ export default function MatchesSection() {
           {notification.msg}
         </div>
       )}
+
+      {/* Panel rápido: match activo / avanzar */}
+      <div className="mb-8 bg-white rounded-2xl shadow-sm border border-gray-100 p-4 md:p-6">
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+          <div>
+            <div className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-1">
+              Match activo
+            </div>
+            <div className="text-2xl font-extrabold text-gray-900">
+              {activeMatch ? `#${activeMatch.position} • Ronda ${activeMatch.round}` : '—'}
+            </div>
+            <div className="text-gray-600 text-sm mt-1">
+              {activeMatch ? `A: ${activeMatch.teamA || 'TBD'} • B: ${activeMatch.teamB || 'TBD'}` : ''}
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex flex-col">
+              <label className="text-[10px] text-gray-400 block uppercase">Score A</label>
+              <input
+                type="number"
+                className="mt-1 text-xs w-28 bg-gray-50 border rounded p-1"
+                value={activeScoreA}
+                onChange={(e) => setActiveScoreA(Number(e.target.value))}
+                disabled={!activeMatch}
+              />
+            </div>
+            <div className="flex flex-col">
+              <label className="text-[10px] text-gray-400 block uppercase">Score B</label>
+              <input
+                type="number"
+                className="mt-1 text-xs w-28 bg-gray-50 border rounded p-1"
+                value={activeScoreB}
+                onChange={(e) => setActiveScoreB(Number(e.target.value))}
+                disabled={!activeMatch}
+              />
+            </div>
+
+            <button
+              onClick={() => activeMatch && saveMatchWithOverrides(activeMatch.id, { scoreA: activeScoreA, scoreB: activeScoreB })}
+              disabled={!activeMatch}
+              className="self-end bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg font-semibold transition-colors text-sm"
+            >
+              Guardar scores
+            </button>
+
+            <button
+              onClick={() => activeMatch && saveMatchWithOverrides(activeMatch.id, { status: 'finished', scoreA: activeScoreA, scoreB: activeScoreB })}
+              disabled={!activeMatch}
+              className="self-end bg-slate-800 hover:bg-black disabled:opacity-50 text-white px-4 py-2 rounded-lg font-semibold transition-colors text-sm"
+            >
+              Finalizar y Avanzar
+            </button>
+
+            <button
+              onClick={() => nextMatch && saveMatchWithOverrides(nextMatch.id, { status: 'in_progress' })}
+              disabled={!nextMatch || nextMatch.status !== 'pending'}
+              className="self-end bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg font-semibold transition-colors text-sm"
+              title="Activa el siguiente match (solo si está pendiente)"
+            >
+              Activar siguiente
+            </button>
+          </div>
+        </div>
+      </div>
 
       <header className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -188,15 +317,15 @@ function MatchCard({ match, onUpdate, onSave }: {
             label="Team A" 
             value={match.teamA} 
             score={match.scoreA}
-            onChangeName={(v) => onUpdate(match.id, { teamA: v })}
-            onChangeScore={(v) => onUpdate(match.id, { scoreA: v })}
+            onChangeName={(v: string) => onUpdate(match.id, { teamA: v })}
+            onChangeScore={(v: number) => onUpdate(match.id, { scoreA: v })}
           />
           <TeamInput 
             label="Team B" 
             value={match.teamB} 
             score={match.scoreB}
-            onChangeName={(v) => onUpdate(match.id, { teamB: v })}
-            onChangeScore={(v) => onUpdate(match.id, { scoreB: v })}
+            onChangeName={(v: string) => onUpdate(match.id, { teamB: v })}
+            onChangeScore={(v: number) => onUpdate(match.id, { scoreB: v })}
           />
         </div>
 

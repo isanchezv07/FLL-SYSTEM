@@ -72,9 +72,21 @@
       "nextMatchId": "match-2-1",
       "teamA": "152",
       "teamB": "174",
-      "scoreA": 0,
-      "scoreB": 0,
-      "status": "pending"
+      "scoreA": 20,
+      "scoreB": 50,
+      "status": "finished",
+      "missionsA": {
+        "m02_sections": 0,
+        "m01_soil": 0,
+        "m01_brush": false,
+        "inspection": "yes"
+      },
+      "missionsB": {
+        "m02_sections": 0,
+        "m01_soil": 3,
+        "m01_brush": false,
+        "inspection": "yes"
+      }
     },
     {
       "id": "match-1-2",
@@ -222,7 +234,7 @@
       "bracketId": "1773753467234",
       "position": 1,
       "nextMatchId": null,
-      "teamA": "",
+      "teamA": "174",
       "teamB": "",
       "scoreA": 0,
       "scoreB": 0,

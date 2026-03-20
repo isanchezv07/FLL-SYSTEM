@@ -387,17 +387,29 @@ app.put('/api/matches/:id', async (req, res) => {
     const { id } = req.params;
     const matchData = req.body;
 
-    // --- NUEVA LÓGICA DE CÁLCULO DE MISIONES ---
-    // Si el objeto enviado contiene misiones para el Equipo A, calculamos su score
+    // --- CÁLCULO DE SCORE BASADO EN MISIONES (CON MERGE) ---
+    // Importante: el frontend puede enviar SOLO un subconjunto de las misiones;
+    // por eso hacemos merge contra el estado actual del match antes de recalcular.
+    const existingMatch = await getMatchById(id);
+
     if (matchData.missionsA) {
-      matchData.scoreA = calculateFLLScore(matchData.missionsA);
+      const mergedMissionsA = {
+        ...(existingMatch.missionsA || {}),
+        ...(matchData.missionsA || {})
+      };
+      matchData.missionsA = mergedMissionsA;
+      matchData.scoreA = calculateFLLScore(mergedMissionsA);
     }
-    
-    // Si contiene misiones para el Equipo B, calculamos su score
+
     if (matchData.missionsB) {
-      matchData.scoreB = calculateFLLScore(matchData.missionsB);
+      const mergedMissionsB = {
+        ...(existingMatch.missionsB || {}),
+        ...(matchData.missionsB || {})
+      };
+      matchData.missionsB = mergedMissionsB;
+      matchData.scoreB = calculateFLLScore(mergedMissionsB);
     }
-    // -------------------------------------------
+    // --------------------------------------------------------
 
     // 1. Actualizar el match actual (ahora con los scores calculados por el servidor)
     const updatedMatch = await updateMatch(id, matchData);
@@ -415,9 +427,15 @@ app.put('/api/matches/:id', async (req, res) => {
         // Regla: Impar (1, 3, 5...) va al Team A. Par (2, 4, 6...) va al Team B.
         const isTeamA = updatedMatch.position % 2 !== 0;
         
-        const updateData = isTeamA 
-          ? { teamA: winner } 
+        const nextMatch = await getMatchById(updatedMatch.nextMatchId);
+        const updateData = isTeamA
+          ? { teamA: winner }
           : { teamB: winner };
+
+        // Si el siguiente match estaba pendiente, lo activamos automáticamente.
+        if (nextMatch?.status === 'pending') {
+          updateData.status = 'in_progress';
+        }
 
         // Actualizar el siguiente match en la base de datos
         await updateMatch(updatedMatch.nextMatchId, updateData);

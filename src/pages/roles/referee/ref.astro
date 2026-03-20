@@ -1,5 +1,5 @@
 ---
-import HeadLegoTimer from '@/components/roles/referee/Main';
+import RefereeMap from '@/components/roles/referee/Referee';
 ---
 
 <html lang="es">
@@ -9,7 +9,7 @@ import HeadLegoTimer from '@/components/roles/referee/Main';
     <!-- VIEWPORT FIX -->
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Head Referee - LEGO Timer</title>
+    <title>Referee - Mission Map</title>
 
     <script is:inline>
       const isAuthenticated = localStorage.getItem("isAuthenticated");
@@ -27,7 +27,7 @@ import HeadLegoTimer from '@/components/roles/referee/Main';
     <header class="w-full flex justify-between items-center px-4 md:px-6 py-4 border-b border-white/10 backdrop-blur-md bg-black/20">
 
       <h1 class="text-base md:text-xl font-bold tracking-wide text-white/90">
-        LEGO Timer • Head Referee
+        Referee • Mission Map
       </h1>
 
       <button 
@@ -43,21 +43,18 @@ import HeadLegoTimer from '@/components/roles/referee/Main';
     <main class="flex-1 flex items-start md:items-center justify-center p-4 md:p-6">
 
       <div class="w-full max-w-6xl bg-white/5 border border-white/10 rounded-2xl backdrop-blur-xl shadow-2xl p-4 md:p-6">
-        <HeadLegoTimer client:only="react" />
+        <RefereeMap client:only="react" />
       </div>
     </main>
     <script>
-      document.addEventListener('astro:page-load', () => {
-        const btnLogout = document.getElementById('btn-logout-ref');
-
-        if (btnLogout) {
-          btnLogout.addEventListener('click', () => {
-            localStorage.removeItem('isAuthenticated');
-            localStorage.removeItem('role');
-            window.location.replace('/auth/login');
-          });
-        }
-      });
+      const btnLogout = document.getElementById('btn-logout-ref');
+      if (btnLogout) {
+        btnLogout.addEventListener('click', () => {
+          localStorage.removeItem('isAuthenticated');
+          localStorage.removeItem('role');
+          window.location.replace('/auth/login');
+        });
+      }
     </script>
 
   </body>
