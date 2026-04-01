@@ -2,8 +2,9 @@
   "matches": [
     {
       "id": "match-1-1",
-      "team": "",
       "round": 1,
+      "missionsA": {},
+      "missionsB": {},
       "missions": {
         "inspection": "",
         "m01": {
@@ -66,32 +67,27 @@
       "precision": 0,
       "total": 0,
       "notes": "",
-      "date": "2026-03-17T13:17:47.235Z",
-      "bracketId": "1773753467234",
+      "date": "2026-04-01T00:18:50.861Z",
+      "bracketId": "1775002730860",
       "position": 1,
       "nextMatchId": "match-2-1",
-      "teamA": "152",
-      "teamB": "174",
-      "scoreA": 20,
-      "scoreB": 50,
-      "status": "finished",
-      "missionsA": {
-        "m02_sections": 0,
-        "m01_soil": 0,
-        "m01_brush": false,
-        "inspection": "yes"
-      },
-      "missionsB": {
-        "m02_sections": 0,
-        "m01_soil": 3,
-        "m01_brush": false,
-        "inspection": "yes"
-      }
+      "teamA1": "188",
+      "teamA2": "",
+      "teamB1": "118",
+      "teamB2": "",
+      "scoreA": 0,
+      "scoreB": 0,
+      "status": "pending",
+      "missionsA1": {},
+      "missionsA2": {},
+      "missionsB1": {},
+      "missionsB2": {}
     },
     {
       "id": "match-1-2",
-      "team": "",
       "round": 1,
+      "missionsA": {},
+      "missionsB": {},
       "missions": {
         "inspection": "",
         "m01": {
@@ -154,20 +150,193 @@
       "precision": 0,
       "total": 0,
       "notes": "",
-      "date": "2026-03-17T13:17:47.236Z",
-      "bracketId": "1773753467234",
+      "date": "2026-04-01T00:18:50.862Z",
+      "bracketId": "1775002730860",
       "position": 2,
       "nextMatchId": "match-2-1",
-      "teamA": "160",
-      "teamB": "127",
+      "teamA1": "151",
+      "teamA2": "",
+      "teamB1": "112",
+      "teamB2": "",
       "scoreA": 0,
       "scoreB": 0,
-      "status": "pending"
+      "status": "pending",
+      "missionsA1": {},
+      "missionsA2": {},
+      "missionsB1": {},
+      "missionsB2": {}
+    },
+    {
+      "id": "match-1-3",
+      "round": 1,
+      "missionsA": {},
+      "missionsB": {},
+      "missions": {
+        "inspection": "",
+        "m01": {
+          "soil": 0,
+          "brushFree": 0
+        },
+        "m02": {
+          "topsoil": 0
+        },
+        "m03_04": {
+          "cart": 0,
+          "oppCart": 0,
+          "artifact": 0,
+          "supports": 0
+        },
+        "m05": {
+          "floor": 0
+        },
+        "m06": {
+          "ore": 0
+        },
+        "m07": {
+          "mill": 0
+        },
+        "m08": {
+          "pieces": 0
+        },
+        "m09": {
+          "roof": 0,
+          "wares": 0
+        },
+        "m10": {
+          "scale": 0,
+          "pan": 0
+        },
+        "m11": {
+          "artifacts": 0,
+          "flag": 0
+        },
+        "m12": {
+          "sand": 0,
+          "ship": 0
+        },
+        "m13": {
+          "statue": 0
+        },
+        "m14": {
+          "brush": 0,
+          "topsoil": 0,
+          "artifact": 0,
+          "oppCart": 0,
+          "oreArtifact": 0,
+          "mill": 0,
+          "pan": 0
+        },
+        "m15": {
+          "flags": 0
+        }
+      },
+      "precision": 0,
+      "total": 0,
+      "notes": "",
+      "date": "2026-04-01T00:18:50.863Z",
+      "bracketId": "1775002730860",
+      "position": 3,
+      "nextMatchId": "match-2-2",
+      "teamA1": "186",
+      "teamA2": "",
+      "teamB1": "102",
+      "teamB2": "",
+      "scoreA": 0,
+      "scoreB": 0,
+      "status": "pending",
+      "missionsA1": {},
+      "missionsA2": {},
+      "missionsB1": {},
+      "missionsB2": {}
+    },
+    {
+      "id": "match-1-4",
+      "round": 1,
+      "missionsA": {},
+      "missionsB": {},
+      "missions": {
+        "inspection": "",
+        "m01": {
+          "soil": 0,
+          "brushFree": 0
+        },
+        "m02": {
+          "topsoil": 0
+        },
+        "m03_04": {
+          "cart": 0,
+          "oppCart": 0,
+          "artifact": 0,
+          "supports": 0
+        },
+        "m05": {
+          "floor": 0
+        },
+        "m06": {
+          "ore": 0
+        },
+        "m07": {
+          "mill": 0
+        },
+        "m08": {
+          "pieces": 0
+        },
+        "m09": {
+          "roof": 0,
+          "wares": 0
+        },
+        "m10": {
+          "scale": 0,
+          "pan": 0
+        },
+        "m11": {
+          "artifacts": 0,
+          "flag": 0
+        },
+        "m12": {
+          "sand": 0,
+          "ship": 0
+        },
+        "m13": {
+          "statue": 0
+        },
+        "m14": {
+          "brush": 0,
+          "topsoil": 0,
+          "artifact": 0,
+          "oppCart": 0,
+          "oreArtifact": 0,
+          "mill": 0,
+          "pan": 0
+        },
+        "m15": {
+          "flags": 0
+        }
+      },
+      "precision": 0,
+      "total": 0,
+      "notes": "",
+      "date": "2026-04-01T00:18:50.864Z",
+      "bracketId": "1775002730860",
+      "position": 4,
+      "nextMatchId": "match-2-2",
+      "teamA1": "139",
+      "teamA2": "",
+      "teamB1": "182",
+      "teamB2": "",
+      "scoreA": 0,
+      "scoreB": 0,
+      "status": "pending",
+      "missionsA1": {},
+      "missionsA2": {},
+      "missionsB1": {},
+      "missionsB2": {}
     },
     {
       "id": "match-2-1",
-      "team": "",
       "round": 2,
+      "missionsA": {},
+      "missionsB": {},
       "missions": {
         "inspection": "",
         "m01": {
@@ -230,15 +399,187 @@
       "precision": 0,
       "total": 0,
       "notes": "",
-      "date": "2026-03-17T13:17:47.237Z",
-      "bracketId": "1773753467234",
+      "date": "2026-04-01T00:18:50.865Z",
+      "bracketId": "1775002730860",
       "position": 1,
-      "nextMatchId": null,
-      "teamA": "174",
-      "teamB": "",
+      "nextMatchId": "match-3-1",
+      "teamA1": "",
+      "teamA2": "",
+      "teamB1": "",
+      "teamB2": "",
       "scoreA": 0,
       "scoreB": 0,
-      "status": "pending"
+      "status": "pending",
+      "missionsA1": {},
+      "missionsA2": {},
+      "missionsB1": {},
+      "missionsB2": {}
+    },
+    {
+      "id": "match-2-2",
+      "round": 2,
+      "missionsA": {},
+      "missionsB": {},
+      "missions": {
+        "inspection": "",
+        "m01": {
+          "soil": 0,
+          "brushFree": 0
+        },
+        "m02": {
+          "topsoil": 0
+        },
+        "m03_04": {
+          "cart": 0,
+          "oppCart": 0,
+          "artifact": 0,
+          "supports": 0
+        },
+        "m05": {
+          "floor": 0
+        },
+        "m06": {
+          "ore": 0
+        },
+        "m07": {
+          "mill": 0
+        },
+        "m08": {
+          "pieces": 0
+        },
+        "m09": {
+          "roof": 0,
+          "wares": 0
+        },
+        "m10": {
+          "scale": 0,
+          "pan": 0
+        },
+        "m11": {
+          "artifacts": 0,
+          "flag": 0
+        },
+        "m12": {
+          "sand": 0,
+          "ship": 0
+        },
+        "m13": {
+          "statue": 0
+        },
+        "m14": {
+          "brush": 0,
+          "topsoil": 0,
+          "artifact": 0,
+          "oppCart": 0,
+          "oreArtifact": 0,
+          "mill": 0,
+          "pan": 0
+        },
+        "m15": {
+          "flags": 0
+        }
+      },
+      "precision": 0,
+      "total": 0,
+      "notes": "",
+      "date": "2026-04-01T00:18:50.866Z",
+      "bracketId": "1775002730860",
+      "position": 2,
+      "nextMatchId": "match-3-1",
+      "teamA1": "",
+      "teamA2": "",
+      "teamB1": "",
+      "teamB2": "",
+      "scoreA": 0,
+      "scoreB": 0,
+      "status": "pending",
+      "missionsA1": {},
+      "missionsA2": {},
+      "missionsB1": {},
+      "missionsB2": {}
+    },
+    {
+      "id": "match-3-1",
+      "round": 3,
+      "missionsA": {},
+      "missionsB": {},
+      "missions": {
+        "inspection": "",
+        "m01": {
+          "soil": 0,
+          "brushFree": 0
+        },
+        "m02": {
+          "topsoil": 0
+        },
+        "m03_04": {
+          "cart": 0,
+          "oppCart": 0,
+          "artifact": 0,
+          "supports": 0
+        },
+        "m05": {
+          "floor": 0
+        },
+        "m06": {
+          "ore": 0
+        },
+        "m07": {
+          "mill": 0
+        },
+        "m08": {
+          "pieces": 0
+        },
+        "m09": {
+          "roof": 0,
+          "wares": 0
+        },
+        "m10": {
+          "scale": 0,
+          "pan": 0
+        },
+        "m11": {
+          "artifacts": 0,
+          "flag": 0
+        },
+        "m12": {
+          "sand": 0,
+          "ship": 0
+        },
+        "m13": {
+          "statue": 0
+        },
+        "m14": {
+          "brush": 0,
+          "topsoil": 0,
+          "artifact": 0,
+          "oppCart": 0,
+          "oreArtifact": 0,
+          "mill": 0,
+          "pan": 0
+        },
+        "m15": {
+          "flags": 0
+        }
+      },
+      "precision": 0,
+      "total": 0,
+      "notes": "",
+      "date": "2026-04-01T00:18:50.867Z",
+      "bracketId": "1775002730860",
+      "position": 1,
+      "nextMatchId": null,
+      "teamA1": "",
+      "teamA2": "",
+      "teamB1": "",
+      "teamB2": "",
+      "scoreA": 0,
+      "scoreB": 0,
+      "status": "pending",
+      "missionsA1": {},
+      "missionsA2": {},
+      "missionsB1": {},
+      "missionsB2": {}
     }
   ]
 }

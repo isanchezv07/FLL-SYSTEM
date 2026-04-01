@@ -1,4 +1,7 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { socket } from "@/lib/socket";
+import MatchTimer from "@/components/game/MatchTimer";
+import { Monitor, ChevronRight, Hash, Users, Map as MapIcon, RotateCcw } from "lucide-react";
 
 const mapMarkers = [
   { id: "1", top: "40%", left: "5%", title: "Misión 01: Surface Brushing" },
@@ -19,58 +22,171 @@ const mapMarkers = [
 ];
 
 export default function InteractiveMap() {
-  return (
-    <div className="w-full bg-slate-50 p-4 md:p-8 rounded-3xl shadow-inner">
-      <div className="max-w-6xl mx-auto space-y-8">
-        
-        {/* Encabezado */}
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-slate-800">Mapa de Misiones FLL</h2>
-          <p className="text-slate-500">Selecciona una misión para ver los detalles</p>
-        </div>
+  const [matches, setMatches] = useState<any[]>([]);
+  const [selectedMatchId, setSelectedMatchId] = useState("");
+  const [selectedTeam, setSelectedTeam] = useState("");
+  const [isConfigured, setIsConfigured] = useState(false);
 
-        {/* Contenedor del Mapa */}
-        <div className="relative overflow-hidden rounded-2xl shadow-2xl bg-white group">
-          <img 
-            src="/field.png" 
-            alt="Mapa FLL Field" 
-            className="w-full h-auto block transition-transform duration-700"
-          />
+  useEffect(() => {
+    fetchMatches();
+    const storedMatchId = localStorage.getItem("activeMatchId");
+    const storedTeam = localStorage.getItem("activeTeam");
+    if (storedMatchId && storedTeam) {
+      setSelectedMatchId(storedMatchId);
+      setSelectedTeam(storedTeam);
+      setIsConfigured(true);
+    }
+    socket.on("matchesUpdate", fetchMatches);
+    return () => { socket.off("matchesUpdate", fetchMatches); };
+  }, []);
 
-          {mapMarkers.map((marker) => (
-            <a
-              key={marker.id}
-              href={`/misiones/${marker.id}`}
-              className="absolute hover:bg-green-500/20 hover:border-green-500 border-2 border-transparent transition-all"
-              style={{
-                top: marker.top,
-                left: marker.left,
-                width: '7%',   
-                height: '9%',
-                transform: 'translate(-50%, -50%)', // Centrado exacto sobre el punto
-                borderRadius: '50%',
-                cursor: 'pointer',
-              }}
-              title={marker.title}
-            />
-          ))}
-        </div>
+  const fetchMatches = async () => {
+    try {
+      const res = await fetch("/api/matches");
+      const data = await res.json();
+      setMatches(data || []);
+    } catch (e) { console.error(e); }
+  };
 
-        {/* Grid de Botones con números centrados */}
-        <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-8 gap-3 justify-center">
-          {mapMarkers.map((marker) => (
-            <a
-              key={marker.id}
-              href={`/misiones/${marker.id}`}
-              className="flex items-center justify-center p-3 bg-white border border-slate-200 rounded-xl hover:border-green-500 hover:shadow-md transition-all group"
+  const handleConfirm = () => {
+    if (selectedMatchId && selectedTeam) {
+      localStorage.setItem("activeMatchId", selectedMatchId);
+      localStorage.setItem("activeTeam", selectedTeam);
+      setIsConfigured(true);
+    }
+  };
+
+  const currentMatch = matches.find(m => m.id === selectedMatchId);
+
+  if (!isConfigured) {
+    return (
+      <div className="w-full max-w-2xl mx-auto animate-in fade-in zoom-in duration-500">
+        <div className="bg-slate-900/80 backdrop-blur-2xl rounded-[48px] border border-slate-800 p-8 md:p-12 shadow-[0_32px_64px_rgba(0,0,0,0.6)]">
+          <div className="flex flex-col items-center mb-12 text-center">
+            <div className="w-20 h-20 bg-blue-600/20 rounded-3xl flex items-center justify-center mb-6 border border-blue-500/30">
+              <Monitor className="text-blue-400 w-10 h-10" />
+            </div>
+            <h2 className="text-4xl font-black uppercase tracking-tighter text-white mb-2">Setup Referee</h2>
+            <p className="text-slate-400 font-bold text-xs uppercase tracking-[0.3em]">Configure match & alliance</p>
+          </div>
+
+          <div className="space-y-8">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 ml-4">
+                <Hash className="w-3 h-3 text-blue-500" />
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Select match</label>
+              </div>
+              <select 
+                value={selectedMatchId} 
+                onChange={(e) => setSelectedMatchId(e.target.value)}
+                className="w-full bg-slate-950/50 p-5 rounded-[24px] border-2 border-slate-800 focus:border-blue-500 outline-none font-black text-white shadow-inner transition-all appearance-none cursor-pointer"
+              >
+                <option value="">-- Listado de Partidos --</option>
+                {matches.sort((a,b) => a.position - b.position).map(m => (
+                  <option key={m.id} value={m.id}>Match #{m.position} • Ronda {m.round}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 ml-4">
+                <Users className="w-3 h-3 text-blue-500" />
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Select Alliance Table</label>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                {['A1', 'A2', 'B1', 'B2'].map(t => {
+                  const teamName = matches.find(m => m.id === selectedMatchId)?.[`team${t}`];
+                  return (
+                    <button
+                      key={t}
+                      onClick={() => setSelectedTeam(t)}
+                      className={`group p-6 rounded-[24px] font-black transition-all border-2 text-left shadow-lg active:scale-95 ${
+                        selectedTeam === t 
+                          ? 'bg-blue-600 border-blue-400 text-white shadow-blue-600/20' 
+                          : 'bg-slate-950/50 border-slate-800 text-slate-500 hover:border-slate-700'
+                      }`}
+                    >
+                      <div className={`text-[10px] uppercase tracking-widest mb-1 ${selectedTeam === t ? 'text-blue-200' : 'text-slate-600'}`}>Table {t}</div>
+                      <div className="text-sm uppercase tracking-tight truncate">{teamName || 'Empty'}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <button
+              onClick={handleConfirm}
+              disabled={!selectedMatchId || !selectedTeam}
+              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-20 disabled:grayscale py-6 rounded-[24px] font-black uppercase tracking-[0.2em] text-sm text-white shadow-[0_20px_40px_rgba(37,99,235,0.3)] transition-all active:translate-y-1"
             >
-              <span className="flex items-center justify-center w-8 h-8 bg-slate-100 text-slate-600 font-bold text-sm rounded-lg group-hover:bg-green-100 group-hover:text-green-700 transition-colors">
-                {marker.id}
-              </span>
+              Start Session
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full space-y-8 animate-in fade-in duration-700">
+      <div className="flex flex-col lg:flex-row gap-6 items-stretch">
+        <div className="flex-1 flex flex-wrap items-center gap-4 bg-slate-900/50 backdrop-blur-xl p-6 rounded-[32px] border border-slate-800 shadow-xl">
+          <MatchTimer />
+          <div className="h-10 w-px bg-slate-800 mx-2 hidden sm:block" />
+          <div className="flex gap-4">
+            <div className="bg-slate-950 px-5 py-2.5 rounded-[20px] border border-slate-800 shadow-inner">
+              <div className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-0.5">Match</div>
+              <div className="text-xl font-black text-blue-400 tabular-nums leading-none">#{currentMatch?.position || '—'}</div>
+            </div>
+            <div className="bg-slate-950 px-5 py-2.5 rounded-[20px] border border-slate-800 shadow-inner">
+              <div className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-0.5">Table</div>
+              <div className="text-xl font-black text-blue-400 leading-none">{selectedTeam}</div>
+            </div>
+          </div>
+          <div className="flex-1 min-w-[150px] hidden md:block pl-4">
+            <div className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-0.5">Active Team</div>
+            <div className="text-sm font-black text-white uppercase tracking-tight truncate">{currentMatch?.[`team${selectedTeam}`] || '—'}</div>
+          </div>
+          <button 
+            onClick={() => setIsConfigured(false)}
+            className="flex items-center gap-2 text-[9px] font-black bg-slate-800 hover:bg-slate-700 hover:text-white text-slate-400 px-5 py-3 rounded-[18px] uppercase tracking-[0.15em] transition-all border border-slate-700 active:scale-95"
+          >
+            <RotateCcw className="w-3 h-3" /> Change
+          </button>
+        </div>
+      </div>
+
+      <div className="relative group">
+        <div className="absolute inset-0 bg-blue-500/5 blur-[100px] rounded-full pointer-events-none" />
+        <div className="relative overflow-hidden rounded-[48px] shadow-[0_32px_64px_rgba(0,0,0,0.5)] bg-slate-950 border-4 border-slate-900">
+          <img src="/field.png" alt="FLL Field" className="w-full h-auto block opacity-60 grayscale hover:grayscale-0 transition-all duration-1000" />
+          {mapMarkers.map((marker) => (
+            <a
+              key={marker.id}
+              href={`/misiones/${marker.id}`}
+              className="absolute group/marker hover:scale-125 transition-all duration-300"
+              style={{ top: marker.top, left: marker.left, width: '7%', height: '9%', transform: 'translate(-50%, -50%)' }}
+            >
+              <div className="w-full h-full rounded-full border-2 border-blue-500/0 group-hover/marker:border-blue-400 group-hover/marker:bg-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0)] group-hover/marker:shadow-[0_0_20px_rgba(59,130,246,0.5)]" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-2 h-2 bg-blue-500 rounded-full group-hover/marker:scale-150 transition-transform" />
+              </div>
             </a>
           ))}
         </div>
-        
+      </div>
+
+      <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-8 gap-4 pb-12">
+        {mapMarkers.map((marker) => (
+          <a
+            key={marker.id}
+            href={`/misiones/${marker.id}`}
+            className="flex flex-col items-center justify-center aspect-square bg-slate-900 border border-slate-800 rounded-[24px] hover:border-blue-500 hover:bg-slate-800 transition-all shadow-lg active:scale-90 group"
+          >
+            <span className="text-xl font-black text-slate-600 group-hover:text-blue-400 transition-colors">{marker.id}</span>
+            <span className="text-[8px] font-black text-slate-700 group-hover:text-blue-500 uppercase tracking-widest mt-1">Goal</span>
+          </a>
+        ))}
       </div>
     </div>
   );

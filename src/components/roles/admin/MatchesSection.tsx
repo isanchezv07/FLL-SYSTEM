@@ -2,20 +2,42 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { socket } from '@/lib/socket';
+import { Trophy, Zap, Hash, Layers, RefreshCw, X, ChevronRight, Settings2, Target, Info, Play, Pause, RotateCcw, ChevronLeft } from 'lucide-react';
+import { missionBounds, missionValueFromMissionsFlat, missionValueToPatch } from '@/lib/fllMissionMapping';
+
+const MISSION_NAMES: Record<string, string> = {
+  '1': "Surface Brushing",
+  '2': "Map Reveal",
+  '3-4': "Mineshaft / Recovery",
+  '5': "Who Lived Here?",
+  '6': "Forge",
+  '7': "Heavy Lifting",
+  '8': "Silo",
+  '9': "What's on Sale?",
+  '10': "Tip the Scales",
+  '11': "Angler Artifacts",
+  '12': "Salvage Operation",
+  '13': "Statue Rebuild",
+  '14': "Forum",
+  '15': "Precision Tokens"
+};
 
 interface Match {
   id: string;
-  teamA: string;
-  teamB: string;
+  teamA1: string;
+  teamA2: string;
+  teamB1: string;
+  teamB2: string;
   scoreA: number;
   scoreB: number;
   round: number;
   position: number;
   status: 'pending' | 'in_progress' | 'finished';
   nextMatchId?: string | null;
-  missionsA?: any;
-  missionsB?: any;
-  missions?: any;
+  missionsA1: any;
+  missionsA2: any;
+  missionsB1: any;
+  missionsB2: any;
   precision?: number;
 }
 
@@ -23,142 +45,73 @@ export default function MatchesSection() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [bracketSize, setBracketSize] = useState(8);
-  const [notification, setNotification] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
-
-  const activeMatch = useMemo(() => {
-    const inProgress = matches.find((m) => m.status === 'in_progress');
-    const pending = matches.find((m) => m.status === 'pending');
-    return inProgress || pending || matches[0] || null;
-  }, [matches]);
-
-  const nextMatch = useMemo(() => {
-    if (!activeMatch?.nextMatchId) return null;
-    return matches.find((m) => m.id === activeMatch.nextMatchId) || null;
-  }, [activeMatch?.nextMatchId, matches]);
+  const [bracketMode, setBracketMode] = useState<'1vs1' | '2vs2'>('2vs2');
+  const [editingMatchId, setEditingMatchId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchMatches();
-  }, []);
-
-  useEffect(() => {
     const handler = () => fetchMatches();
     socket.on('matchesUpdate', handler);
-    return () => {
-      socket.off('matchesUpdate', handler);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => { socket.off('matchesUpdate', handler); };
   }, []);
-
-  const [activeScoreA, setActiveScoreA] = useState(0);
-  const [activeScoreB, setActiveScoreB] = useState(0);
-
-  useEffect(() => {
-    if (!activeMatch) return;
-    setActiveScoreA(Number(activeMatch.scoreA ?? 0));
-    setActiveScoreB(Number(activeMatch.scoreB ?? 0));
-  }, [activeMatch?.id]);
-
-  const showNotify = (msg: string, type: 'success' | 'error' = 'success') => {
-    setNotification({ msg, type });
-    setTimeout(() => setNotification(null), 3000);
-  };
 
   const fetchMatches = async () => {
     try {
       const res = await fetch('/api/matches');
       const data = await res.json();
       setMatches(data);
-    } catch (e) {
-      showNotify("Error al cargar partidos", "error");
-    } finally {
-      setLoading(false);
-    }
+    } catch (e) { } finally { setLoading(false); }
   };
+
+  const activeMatchId = editingMatchId;
+  const editingMatch = useMemo(() => matches.find(m => m.id === activeMatchId) || null, [matches, activeMatchId]);
 
   const createBracket = async () => {
+    if (!confirm('¿Generar nuevo bracket? Se borrarán todos los datos actuales.')) return;
     try {
-      const res = await fetch('/api/brackets/generate', {
+      await fetch('/api/brackets/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ size: bracketSize })
+        body: JSON.stringify({ size: bracketSize, mode: bracketMode })
       });
-      if (!res.ok) throw new Error();
-      showNotify(`Bracket de ${bracketSize} equipos creado`);
-      await fetchMatches();
-    } catch {
-      showNotify("Error creando bracket", "error");
-    }
+      fetchMatches();
+    } catch { }
   };
 
-  const handleUpdateLocal = (id: string, updates: Partial<Match>) => {
-    setMatches(prev => prev.map(m => m.id === id ? { ...m, ...updates } : m));
-  };
-
-  const saveMatchWithOverrides = async (id: string, overrides: Partial<Match>) => {
-    const match = matches.find((m) => m.id === id);
-    if (!match) {
-      showNotify('No se encontró el match', 'error');
-      return;
-    }
+  const updateMatchMissions = async (matchId: string, teamKey: string, missionId: string, delta: number) => {
+    const match = matches.find(m => m.id === matchId);
+    if (!match) return;
+    const missions = match[teamKey as keyof Match] || {};
+    const currentValue = missionValueFromMissionsFlat(missionId as any, missions);
+    const bounds = missionBounds[missionId as any];
+    const newValue = Math.max(bounds.min, Math.min(bounds.max, currentValue + delta));
+    const patch = missionValueToPatch(missionId as any, newValue);
+    
+    setMatches(prev => prev.map(m => {
+      if (m.id === matchId) return { ...m, [teamKey]: { ...m[teamKey as keyof Match], ...patch } };
+      return m;
+    }));
 
     try {
-      const payload: Match = { ...match, ...overrides };
-      const res = await fetch(`/api/matches/${id}`, {
+      await fetch(`/api/matches/${matchId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ [teamKey]: patch })
       });
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData?.error || 'Error desconocido al guardar el match');
-      }
-
-      const updatedMatch = await res.json();
-      setMatches((prev) => prev.map((m) => m.id === id ? updatedMatch : m));
-      showNotify('Partido actualizado correctamente');
-      return updatedMatch;
-    } catch (err: any) {
-      console.error('Error al guardar match:', err);
-      showNotify(`Error al guardar cambios: ${err.message}`, 'error');
-      return null;
-    }
+    } catch (e) { fetchMatches(); }
   };
 
-  const saveMatch = async (id: string) => {
-    // Buscar el match en tu estado
-    const match = matches.find(m => m.id === id);
-    if (!match) {
-      showNotify("No se encontró el match", "error");
-      return;
-    }
-  
+  const changeStatus = async (id: string, status: string) => {
+    setMatches(prev => prev.map(m => m.id === id ? { ...m, status: status as any } : m));
     try {
-      const res = await fetch(`/api/matches/${id}`, {
-        method: 'PUT', // Se mantiene PUT
+      await fetch(`/api/matches/${id}`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(match) // Envía todo el objeto
+        body: JSON.stringify({ status })
       });
-  
-      // Revisar respuesta del servidor
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData?.error || "Error desconocido al guardar el match");
-      }
-  
-      const updatedMatch = await res.json();
-  
-      // Actualizar el estado local con el match actualizado desde el servidor
-      setMatches(prev => prev.map(m => m.id === id ? updatedMatch : m));
-  
-      showNotify("Partido actualizado correctamente");
-    } catch (err: any) {
-      console.error("Error al guardar match:", err);
-      showNotify(`Error al guardar cambios: ${err.message}`, "error");
-    }
+    } catch (e) { fetchMatches(); }
   };
 
-  // Agrupar matches por ronda de forma eficiente
   const rounds = useMemo(() => {
     const grouped: Record<number, Match[]> = {};
     matches.forEach(m => {
@@ -171,215 +124,236 @@ export default function MatchesSection() {
     }));
   }, [matches]);
 
-  if (loading) return (
-    <div className="flex justify-center items-center h-64">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500" />
-    </div>
-  );
+  if (loading) return <div className="flex justify-center p-20 animate-pulse text-blue-500 font-black tracking-widest uppercase">Initializing Command Center...</div>;
 
   return (
-    <div className="p-8 bg-gray-50 min-h-screen">
-      {notification && (
-        <div className={`fixed top-5 right-5 z-50 px-6 py-3 rounded-lg shadow-xl text-white transition-all transform animate-bounce ${
-          notification.type === 'error' ? 'bg-red-500' : 'bg-green-600'
-        }`}>
-          {notification.msg}
+    <div className="space-y-10 pb-20 animate-in fade-in duration-700">
+      
+      {/* 🚀 PANEL DE CONTROL MAESTRO (Sticky) */}
+      <div className="sticky top-4 z-40 bg-slate-900/80 backdrop-blur-2xl border-2 border-slate-800 rounded-[40px] p-6 shadow-[0_32px_64px_rgba(0,0,0,0.5)]">
+        <div className="flex flex-col xl:flex-row gap-8 items-center justify-between">
+          
+          {/* Navegación de Partidos */}
+          <div className="flex items-center gap-4 bg-slate-950/50 p-2 rounded-[24px] border border-slate-800/50">
+            <button 
+              onClick={() => socket.emit('prevMatch')}
+              className="p-4 bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white rounded-2xl transition-all active:scale-90 border border-slate-800"
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </button>
+            <div className="px-6 text-center">
+              <div className="text-[9px] font-black text-blue-500 uppercase tracking-[0.3em] mb-1">Navigation</div>
+              <div className="text-xl font-black text-white tabular-nums tracking-tighter uppercase">Switch Match</div>
+            </div>
+            <button 
+              onClick={() => socket.emit('nextMatch')}
+              className="p-4 bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white rounded-2xl transition-all active:scale-90 border border-slate-800"
+            >
+              <ChevronRight className="w-6 h-6" />
+            </button>
+          </div>
+
+          {/* ENGINE CONTROLS (TIMER) */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => socket.emit('startTimer')}
+              className="flex items-center gap-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-10 py-5 rounded-[24px] font-black uppercase tracking-[0.2em] text-sm shadow-[0_0_30px_rgba(16,185,129,0.3)] transition-all active:scale-95 group"
+            >
+              <div className="w-3 h-3 bg-white rounded-full animate-pulse shadow-[0_0_10px_white]" />
+              Launch Engine
+            </button>
+            
+            <button
+              onClick={() => socket.emit('pauseTimer')}
+              className="p-5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 rounded-[24px] border-2 border-amber-500/20 transition-all active:scale-90"
+              title="Pause Timer"
+            >
+              <Pause className="w-6 h-6 fill-current" />
+            </button>
+
+            <button
+              onClick={() => socket.emit('resetTimer')}
+              className="p-5 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-[24px] border-2 border-red-500/20 transition-all active:scale-90"
+              title="Reset Timer"
+            >
+              <RotateCcw className="w-6 h-6" />
+            </button>
+          </div>
+
+          {/* Configuración de Bracket */}
+          <div className="flex items-center gap-4 bg-slate-950/50 p-3 rounded-[24px] border border-slate-800/50">
+            <div className="flex flex-col px-2">
+              <span className="text-[8px] font-black text-slate-600 uppercase tracking-widest mb-1 text-center">Mode</span>
+              <select value={bracketMode} onChange={(e) => setBracketMode(e.target.value as any)} className="bg-transparent text-blue-400 font-black text-xs outline-none uppercase tracking-widest cursor-pointer">
+                <option value="1vs1">1 vs 1</option>
+                <option value="2vs2">2 vs 2</option>
+              </select>
+            </div>
+            <div className="w-px h-8 bg-slate-800" />
+            <button 
+              onClick={createBracket}
+              className="flex items-center gap-2 bg-slate-800 hover:bg-blue-600 text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-[9px] transition-all"
+            >
+              <Layers className="w-3 h-3" />
+              New Bracket
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* 📊 VISUALIZACIÓN DE BRACKET */}
+      <div className="px-4">
+        <div className="flex flex-col mb-8">
+          <h2 className="text-4xl font-black text-white uppercase tracking-tighter">Tournament Bracket</h2>
+          <p className="text-slate-500 text-xs font-bold uppercase tracking-[0.3em] mt-2 flex items-center gap-2">
+            <Target className="w-3 h-3 text-blue-500" />
+            Haz clic en un partido para editar puntajes por misión
+          </p>
+        </div>
+
+        <div className="flex gap-12 overflow-x-auto pb-12 scrollbar-hide snap-x">
+          {rounds.map(round => (
+            <div key={round.number} className="flex-shrink-0 w-80 space-y-8 snap-start">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-slate-900 rounded-2xl flex items-center justify-center border border-slate-800 font-black text-sm text-blue-500 shadow-xl">{round.number}</div>
+                <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em]">ROUND PHASE</span>
+              </div>
+              <div className="space-y-6">
+                {round.matches.map(match => (
+                  <div 
+                    key={match.id}
+                    onClick={() => setEditingMatchId(match.id)}
+                    className={`group relative bg-slate-900/40 border-2 rounded-[32px] p-6 cursor-pointer transition-all duration-500 hover:scale-[1.05] hover:bg-slate-900 shadow-2xl ${
+                      match.status === 'in_progress' ? 'border-blue-500 shadow-blue-500/20 bg-slate-900 animate-pulse-slow' : 'border-slate-800 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="absolute -top-3 left-8 bg-slate-950 px-4 py-1 rounded-full border border-slate-800 text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] z-10 group-hover:text-blue-400 transition-colors">MATCH #{match.position}</div>
+                    
+                    <div className="space-y-4 pt-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs font-black text-slate-300 uppercase truncate max-w-[150px]">{match.teamA1 || 'TBD'} {match.teamA2 && `+ ${match.teamA2}`}</span>
+                        <span className={`font-mono font-black text-2xl ${match.status === 'finished' && match.scoreA > match.scoreB ? 'text-emerald-400 drop-shadow-[0_0_10px_rgba(52,211,153,0.3)]' : 'text-slate-600'}`}>{match.scoreA}</span>
+                      </div>
+                      <div className="h-px bg-gradient-to-r from-transparent via-slate-800 to-transparent" />
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs font-black text-slate-300 uppercase truncate max-w-[150px]">{match.teamB1 || 'TBD'} {match.teamB2 && `+ ${match.teamB2}`}</span>
+                        <span className={`font-mono font-black text-2xl ${match.status === 'finished' && match.scoreB > match.scoreA ? 'text-emerald-400 drop-shadow-[0_0_10px_rgba(52,211,153,0.3)]' : 'text-slate-600'}`}>{match.scoreB}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* INSPECTOR DE PARTIDO (MODAL) */}
+      {editingMatch && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 lg:p-12 animate-in fade-in duration-300">
+          <div className="absolute inset-0 bg-slate-950/95 backdrop-blur-xl" onClick={() => setEditingMatchId(null)} />
+          <div className="relative w-full max-w-7xl h-full max-h-[95vh] bg-slate-900 border border-slate-800 rounded-[60px] shadow-[0_0_100px_rgba(0,0,0,1)] overflow-hidden flex flex-col">
+            
+            {/* Header Inspector */}
+            <div className="p-8 lg:p-12 border-b border-slate-800 flex flex-col lg:flex-row justify-between items-center gap-8 bg-slate-950/20">
+              <div className="flex items-center gap-8 text-white">
+                <div className="w-20 h-20 bg-blue-600 rounded-[32px] flex items-center justify-center shadow-2xl shadow-blue-900/40 border-b-8 border-blue-800">
+                  <Target className="text-white w-10 h-10" />
+                </div>
+                <div>
+                  <h2 className="text-5xl font-black uppercase tracking-tighter leading-none">Match Inspector</h2>
+                  <div className="flex items-center gap-4 mt-3">
+                    <span className="px-4 py-1.5 bg-slate-950 rounded-xl border border-slate-800 text-[10px] font-black text-blue-400 uppercase tracking-widest">Match #{editingMatch.position}</span>
+                    <span className="px-4 py-1.5 bg-slate-950 rounded-xl border border-slate-800 text-[10px] font-black text-slate-500 uppercase tracking-widest">Round {editingMatch.round}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Score en vivo */}
+              <div className="flex items-center gap-12 bg-slate-950/80 px-12 py-6 rounded-[40px] border-2 border-slate-800 shadow-inner">
+                <div className="text-center">
+                  <div className="text-[10px] font-black text-blue-500 uppercase tracking-[0.3em] mb-1">ALLIANCE A</div>
+                  <div className="text-6xl font-mono font-black text-white">{editingMatch.scoreA}</div>
+                </div>
+                <div className="text-4xl font-black text-slate-800 italic">VS</div>
+                <div className="text-center">
+                  <div className="text-[10px] font-black text-red-500 uppercase tracking-[0.3em] mb-1">ALLIANCE B</div>
+                  <div className="text-6xl font-mono font-black text-white">{editingMatch.scoreB}</div>
+                </div>
+              </div>
+
+              <button onClick={() => setEditingMatchId(null)} className="w-16 h-16 bg-slate-800 hover:bg-red-500/20 hover:text-red-500 text-slate-400 rounded-3xl transition-all flex items-center justify-center border border-slate-700">
+                <X className="w-8 h-8" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-10 lg:p-12 space-y-12 scrollbar-thin scrollbar-thumb-slate-800 text-white">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                <div className="space-y-8">
+                  <div className="flex items-center gap-4 border-l-4 border-blue-600 pl-6">
+                    <h3 className="text-2xl font-black uppercase tracking-tight">Alliance A Control</h3>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <DetailedTeamBox team="A1" name={editingMatch.teamA1} matchId={editingMatch.id} matches={matches} onUpdate={updateMatchMissions} color="blue" />
+                    <DetailedTeamBox team="A2" name={editingMatch.teamA2} matchId={editingMatch.id} matches={matches} onUpdate={updateMatchMissions} color="blue" />
+                  </div>
+                </div>
+                <div className="space-y-8">
+                  <div className="flex items-center gap-4 border-l-4 border-red-600 pl-6">
+                    <h3 className="text-2xl font-black uppercase tracking-tight">Alliance B Control</h3>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <DetailedTeamBox team="B1" name={editingMatch.teamB1} matchId={editingMatch.id} matches={matches} onUpdate={updateMatchMissions} color="red" />
+                    <DetailedTeamBox team="B2" name={editingMatch.teamB2} matchId={editingMatch.id} matches={matches} onUpdate={updateMatchMissions} color="red" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
+    </div>
+  );
+}
 
-      {/* Panel rápido: match activo / avanzar */}
-      <div className="mb-8 bg-white rounded-2xl shadow-sm border border-gray-100 p-4 md:p-6">
-        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-          <div>
-            <div className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-1">
-              Match activo
-            </div>
-            <div className="text-2xl font-extrabold text-gray-900">
-              {activeMatch ? `#${activeMatch.position} • Ronda ${activeMatch.round}` : '—'}
-            </div>
-            <div className="text-gray-600 text-sm mt-1">
-              {activeMatch ? `A: ${activeMatch.teamA || 'TBD'} • B: ${activeMatch.teamB || 'TBD'}` : ''}
-            </div>
-          </div>
+function DetailedTeamBox({ team, name, matchId, matches, onUpdate, color }: any) {
+  if (!name) return <div className="bg-slate-950/30 border-2 border-slate-800 border-dashed rounded-[40px] p-12 flex flex-col items-center justify-center text-center opacity-40"><Users className="w-10 h-10 text-slate-700 mb-4" /><span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">No Assignment</span></div>;
+  const match = matches.find((m: any) => m.id === matchId);
+  const missions = match?.[`missions${team}`] || {};
+  const missionList = Object.keys(missionBounds);
+  const accentColor = color === 'blue' ? 'blue' : 'red';
 
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="flex flex-col">
-              <label className="text-[10px] text-gray-400 block uppercase">Score A</label>
-              <input
-                type="number"
-                className="mt-1 text-xs w-28 bg-gray-50 border rounded p-1"
-                value={activeScoreA}
-                onChange={(e) => setActiveScoreA(Number(e.target.value))}
-                disabled={!activeMatch}
-              />
-            </div>
-            <div className="flex flex-col">
-              <label className="text-[10px] text-gray-400 block uppercase">Score B</label>
-              <input
-                type="number"
-                className="mt-1 text-xs w-28 bg-gray-50 border rounded p-1"
-                value={activeScoreB}
-                onChange={(e) => setActiveScoreB(Number(e.target.value))}
-                disabled={!activeMatch}
-              />
-            </div>
-
-            <button
-              onClick={() => activeMatch && saveMatchWithOverrides(activeMatch.id, { scoreA: activeScoreA, scoreB: activeScoreB })}
-              disabled={!activeMatch}
-              className="self-end bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg font-semibold transition-colors text-sm"
-            >
-              Guardar scores
-            </button>
-
-            <button
-              onClick={() => activeMatch && saveMatchWithOverrides(activeMatch.id, { status: 'finished', scoreA: activeScoreA, scoreB: activeScoreB })}
-              disabled={!activeMatch}
-              className="self-end bg-slate-800 hover:bg-black disabled:opacity-50 text-white px-4 py-2 rounded-lg font-semibold transition-colors text-sm"
-            >
-              Finalizar y Avanzar
-            </button>
-
-            <button
-              onClick={() => nextMatch && saveMatchWithOverrides(nextMatch.id, { status: 'in_progress' })}
-              disabled={!nextMatch || nextMatch.status !== 'pending'}
-              className="self-end bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg font-semibold transition-colors text-sm"
-              title="Activa el siguiente match (solo si está pendiente)"
-            >
-              Activar siguiente
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <header className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+  return (
+    <div className="bg-slate-950/50 border border-slate-800 rounded-[48px] p-8 space-y-8 relative overflow-hidden group">
+      <div className={`absolute top-0 left-0 w-full h-1 bg-${accentColor}-600/30`} />
+      <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-3xl font-extrabold text-gray-900">Gestión de Brackets</h1>
-          <p className="text-gray-500 text-sm">Organiza y actualiza los resultados del torneo</p>
+          <span className={`text-[9px] font-black uppercase tracking-[0.3em] text-${accentColor}-500 mb-1 block`}>Mesa {team}</span>
+          <h4 className="text-xl font-black uppercase tracking-tight leading-tight">{name}</h4>
         </div>
-
-        <div className="flex items-center gap-3 bg-white p-2 rounded-xl shadow-sm border">
-          <select
-            value={bracketSize}
-            onChange={(e) => setBracketSize(Number(e.target.value))}
-            className="bg-transparent font-medium focus:outline-none px-2"
-          >
-            {[4, 8, 16, 32].map(n => <option key={n} value={n}>Top {n}</option>)}
-          </select>
-          <button
-            onClick={createBracket}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors"
-          >
-            Generar Nuevo
-          </button>
-        </div>
-      </header>
-
-      <div className="flex gap-12 overflow-x-auto pb-8 snap-x">
-        {rounds.map(round => (
-          <div key={round.number} className="flex-shrink-0 w-72 snap-center">
-            <h3 className="text-center font-bold text-gray-400 uppercase tracking-widest mb-6">
-              Ronda {round.number}
-            </h3>
-            
-            <div className="flex flex-col gap-8 justify-around h-full">
-              {round.matches.map(match => (
-                <MatchCard 
-                  key={match.id} 
-                  match={match} 
-                  onUpdate={handleUpdateLocal} 
-                  onSave={saveMatch} 
-                />
-              ))}
-            </div>
-          </div>
-        ))}
       </div>
-    </div>
-  );
-}
-
-// Sub-componente para limpiar el render principal
-function MatchCard({ match, onUpdate, onSave }: { 
-  match: Match; 
-  onUpdate: (id: string, u: Partial<Match>) => void;
-  onSave: (id: string) => void;
-}) {
-  return (
-    <div className="bg-white border-l-4 border-l-blue-500 rounded-r-xl shadow-sm hover:shadow-md transition-shadow p-4 relative group">
-      <span className="absolute -top-3 left-2 bg-gray-100 text-gray-500 text-[10px] px-2 py-0.5 rounded-full border">
-        Match #{match.position}
-      </span>
-
-      <div className="space-y-3 mt-2">
-        <div className="space-y-1">
-          <TeamInput 
-            label="Team A" 
-            value={match.teamA} 
-            score={match.scoreA}
-            onChangeName={(v: string) => onUpdate(match.id, { teamA: v })}
-            onChangeScore={(v: number) => onUpdate(match.id, { scoreA: v })}
-          />
-          <TeamInput 
-            label="Team B" 
-            value={match.teamB} 
-            score={match.scoreB}
-            onChangeName={(v: string) => onUpdate(match.id, { teamB: v })}
-            onChangeScore={(v: number) => onUpdate(match.id, { scoreB: v })}
-          />
+      <div className="space-y-2">
+        <div className="grid grid-cols-1 gap-2.5">
+          {missionList.map(mId => {
+            const val = missionValueFromMissionsFlat(mId as any, missions);
+            const bounds = missionBounds[mId as any];
+            const isMax = val === bounds.max && bounds.max > 0;
+            return (
+              <div key={mId} className={`flex items-center justify-between p-3.5 rounded-2xl border-2 transition-all ${isMax ? `bg-${accentColor}-600/10 border-${accentColor}-500/30` : 'bg-slate-900/40 border-slate-800/50'}`}>
+                <div className="flex flex-col">
+                  <span className="text-[8px] font-black text-slate-600 uppercase tracking-widest">M{mId.padStart(2,'0')}</span>
+                  <span className={`text-[10px] font-bold uppercase tracking-tight ${isMax ? 'text-white' : 'text-slate-400'}`}>{MISSION_NAMES[mId] || 'Unknown'}</span>
+                </div>
+                <div className="flex items-center gap-4 bg-slate-950 p-1.5 rounded-xl border border-slate-800 shadow-inner text-white">
+                  <button onClick={() => onUpdate(matchId, `missions${team}`, mId, -1)} disabled={val <= bounds.min} className="w-8 h-8 bg-slate-800 hover:bg-slate-700 disabled:opacity-10 rounded-lg font-black text-lg transition-all active:scale-90">-</button>
+                  <span className={`font-mono font-black text-sm w-6 text-center tabular-nums ${isMax ? `text-${accentColor}-400` : 'text-slate-300'}`}>{val}</span>
+                  <button onClick={() => onUpdate(matchId, `missions${team}`, mId, 1)} disabled={val >= bounds.max} className={`w-8 h-8 bg-${accentColor}-600 hover:bg-${accentColor}-500 disabled:opacity-10 rounded-lg font-black text-lg transition-all active:scale-90`}>+</button>
+                </div>
+              </div>
+            );
+          })}
         </div>
-
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <label className="text-[10px] text-gray-400 block uppercase">Estado</label>
-            <select
-              value={match.status}
-              onChange={(e) => onUpdate(match.id, { status: e.target.value as any })}
-              className="text-xs w-full bg-gray-50 border rounded p-1"
-            >
-              <option value="pending">Pendiente</option>
-              <option value="in_progress">En curso</option>
-              <option value="finished">Finalizado</option>
-            </select>
-          </div>
-          <div>
-            <label className="text-[10px] text-gray-400 block uppercase">Precisión</label>
-            <input
-              type="number"
-              value={match.precision ?? 0}
-              onChange={(e) => onUpdate(match.id, { precision: Number(e.target.value) })}
-              className="text-xs w-full bg-gray-50 border rounded p-1"
-            />
-          </div>
-        </div>
-
-        <button
-          onClick={() => onSave(match.id)}
-          className="w-full bg-slate-800 hover:bg-black text-white text-xs font-bold py-2 rounded transition-colors"
-        >
-          Guardar Cambios
-        </button>
       </div>
-    </div>
-  );
-}
-
-function TeamInput({ label, value, score, onChangeName, onChangeScore }: any) {
-  return (
-    <div className="flex items-center gap-2">
-      <input
-        type="text"
-        placeholder={label}
-        value={value || ''}
-        onChange={(e) => onChangeName(e.target.value)}
-        className="flex-1 text-sm font-semibold border-b border-transparent focus:border-blue-300 focus:outline-none py-1"
-      />
-      <input
-        type="number"
-        value={score}
-        onChange={(e) => onChangeScore(Number(e.target.value))}
-        className="w-10 text-center bg-gray-100 rounded font-bold text-sm py-1 focus:ring-2 focus:ring-blue-400 focus:outline-none"
-      />
     </div>
   );
 }
