@@ -12,27 +12,7 @@ const { title, points, desc } = Astro.props;
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
   </head>
-  <body style="font-family: sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #f4f4f4;">
-    
-    <a 
-      href="/roles/referee/ref"
-      style="
-        position:relative;
-        z-index:10;
-        display:inline-block;
-        padding:10px 20px;
-        background:#00853E;
-        color:white;
-        text-decoration:none;
-        border-radius:6px;
-        margin-bottom:20px;
-      ">
-      ← Regresar al Mapa
-    </a>
-
-    <div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-      <MisionSelector id={id} client:load />
-    </div>
-
+  <body>
+    <MisionSelector id={id} client:load />
   </body>
 </html>

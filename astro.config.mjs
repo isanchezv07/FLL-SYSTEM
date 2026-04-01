@@ -9,17 +9,28 @@ export default defineConfig({
   server: {
     host: true, // Enable access from local network
     port: 4321,
+    allowedHosts: true, // Allow all hosts (for Localtunnel, etc.)
     watch: {
       ignored: ['**/server/**'],
     },
   },
   vite: {
+    server: {
+      proxy: {
+        '/socket.io': {
+          target: 'http://127.0.0.1:3000',
+          ws: true,
+          changeOrigin: true,
+        },
+      },
+    },
     resolve: {
       alias: {
         '@': path.resolve('./src')
       },
     },
   },
+
   output: 'server', // Enable SSR for authentication
   devToolbar: {
     enabled: false,

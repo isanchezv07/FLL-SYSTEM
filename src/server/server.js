@@ -6,6 +6,10 @@ import { dirname, join } from 'path';
 import { readFileSync, writeFileSync } from 'fs';
 import ip from 'ip';
 import jwt from 'jsonwebtoken';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+const mic = require('node-mic');
 
 // Import database modules
 import { getUsers, createUser, deleteUser, authenticateUser } from './databases/users.js';
@@ -20,7 +24,10 @@ const JWT_SECRET = 'FLL2026';
 
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
-  cors: { origin: '*', methods: ['GET', 'POST', 'PUT', 'DELETE'], credentials: true }
+  cors: { origin: '*', methods: ['GET', 'POST', 'PUT', 'DELETE'], credentials: true },
+  pingTimeout: 30000, // 30 segundos antes de considerar a un cliente "muerto"
+  pingInterval: 10000, // Mandar ping cada 10 segundos
+  transports: ['websocket', 'polling']
 });
 
 function calculateFLLScore(m) {
@@ -195,8 +202,20 @@ const startServerTimer = () => {
   }, 1000);
 };
 
+// Estado de volumen global
+let globalVolume = 0;
+let isCaptureActive = false;
+
 io.on('connection', (socket) => {
+  console.log(`[SOCKET] Nueva conexión: ${socket.id}`);
+  
   startServerTimer();
+
+  // Enviar estado inicial al cliente que se acaba de conectar
+  socket.emit('volume_update', globalVolume);
+  socket.emit('display_status_update', isCaptureActive ? 'LIVE' : 'READY');
+  
+  // ... resto de manejadores
   socket.on('getTimer', async () => socket.emit('timerUpdate', await getTimer()));
   socket.on('updateTimer', async (d) => io.emit('timerUpdate', await updateTimer(d)));
   socket.on('startTimer', async () => io.emit('timerUpdate', await updateTimer({ isRunning: true })));
@@ -233,8 +252,21 @@ io.on('connection', (socket) => {
     io.emit('matchesUpdate');
     io.emit('timerUpdate', await updateTimer({ timeRemaining: 150, isRunning: false }));
   });
+
+  // Recibir volumen desde un cliente (SoundSource) y retransmitirlo a todos
+  socket.on('sound_volume', (volume) => {
+    globalVolume = volume;
+    io.emit('volume_update', globalVolume);
+  });
+
+  // Notificar a todos cuando alguien empieza o detiene la captura
+  socket.on('capture_state', (isActive) => {
+    isCaptureActive = isActive;
+    io.emit('display_status_update', isActive ? 'LIVE' : 'READY');
+  });
 });
 
+// Desactivamos el micrófono local por hardware para evitar conflictos y priorizar alianzas
 const startServer = async () => {
   await initMatchesDB(); await initBracketsDB(); await initTimerDB();
   httpServer.listen(3000, '0.0.0.0', () => console.log(`LEGO Engine Online on port 3000`));

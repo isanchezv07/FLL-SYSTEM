@@ -1,0 +1,10 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import SoundSource from '../../components/SoundSource';
+---
+
+<Layout title="Micrófono Emisor">
+  <main class="min-h-screen flex flex-col items-center justify-center bg-gray-900 p-4">    
+    <SoundSource client:load />
+  </main>
+</Layout>

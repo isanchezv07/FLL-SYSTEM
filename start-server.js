@@ -25,7 +25,7 @@ console.log(`- Main Scoreboard: http://${localIP}:4321/`);
 console.log(`- Score Controller: http://${localIP}:4321/control`);
 console.log(`\nDefault admin credentials:`);
 console.log('- Username: admin');
-console.log('- Password: admin');
+console.log('- Password: admin123');
 console.log('=============================================\n');
 
 // Handle shutdown gracefully

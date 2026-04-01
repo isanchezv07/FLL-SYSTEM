@@ -75,7 +75,7 @@ export default function LegoTimerDisplay() {
           }
           return prev - 1;
         });
-      }, 1000);
+      }, 500);
     });
     
     fetchActiveMatch();

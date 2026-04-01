@@ -2,22 +2,25 @@ import { io } from 'socket.io-client';
 
 const isBrowser = typeof window !== 'undefined';
 
-// Get the current hostname for dynamic connection (only in browser).
-const hostname = isBrowser ? window.location.hostname : 'localhost';
-
-type DummySocket = {
+export type DummySocket = {
   on: (...args: any[]) => void;
   off: (...args: any[]) => void;
   emit: (...args: any[]) => void;
   connected: boolean;
 };
 
-// Connect to the backend server (only in browser to avoid SSR crash).
 export const socket: DummySocket | ReturnType<typeof io> = isBrowser
-  ? io(`http://${hostname}:3000`, {
-      transports: ['websocket', 'polling'],
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
+  ? io({
+      // FORZAMOS solo websocket. Esto evita el "xhr poll error" 
+      // porque deja de hacer peticiones HTTP constantes.
+      transports: ['websocket'], 
+      upgrade: false,
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 500, // Reintentar más rápido
+      reconnectionDelayMax: 2000,
+      timeout: 10000,
+      path: '/socket.io/',
     })
   : {
       on: () => {},
@@ -26,13 +29,18 @@ export const socket: DummySocket | ReturnType<typeof io> = isBrowser
       connected: false,
     };
 
-// Add error handling (browser only).
 if (isBrowser) {
-  (socket as ReturnType<typeof io>).on('connect_error', (error) => {
-    console.error('Socket connection error:', error);
+  (socket as ReturnType<typeof io>).on('connect', () => {
+    console.log('✅ SOCKET CONECTADO: ' + (socket as any).id);
   });
 
-  (socket as ReturnType<typeof io>).on('connect', () => {
-    console.log('Socket connected successfully');
+  (socket as ReturnType<typeof io>).on('connect_error', (err) => {
+    console.error('❌ FALLO DE CONEXIÓN: ' + err.message);
+    // Si falla websocket, intentamos habilitar polling como último recurso después de 5 segundos
+    if (err.message === 'xhr poll error' || err.message === 'websocket error') {
+       setTimeout(() => {
+         (socket as any).io.opts.transports = ['polling', 'websocket'];
+       }, 5000);
+    }
   });
 }

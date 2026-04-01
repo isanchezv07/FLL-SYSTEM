@@ -159,17 +159,17 @@ export default function InteractiveMap() {
       <div className="relative group">
         <div className="absolute inset-0 bg-blue-500/5 blur-[100px] rounded-full pointer-events-none" />
         <div className="relative overflow-hidden rounded-[48px] shadow-[0_32px_64px_rgba(0,0,0,0.5)] bg-slate-950 border-4 border-slate-900">
-          <img src="/field.png" alt="FLL Field" className="w-full h-auto block opacity-60 grayscale hover:grayscale-0 transition-all duration-1000" />
+          <img src="/field.png" alt="FLL Field" className="w-full h-auto block" />
           {mapMarkers.map((marker) => (
             <a
               key={marker.id}
               href={`/misiones/${marker.id}`}
-              className="absolute group/marker hover:scale-125 transition-all duration-300"
+              className="absolute group/marker"
               style={{ top: marker.top, left: marker.left, width: '7%', height: '9%', transform: 'translate(-50%, -50%)' }}
             >
               <div className="w-full h-full rounded-full border-2 border-blue-500/0 group-hover/marker:border-blue-400 group-hover/marker:bg-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0)] group-hover/marker:shadow-[0_0_20px_rgba(59,130,246,0.5)]" />
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-2 h-2 bg-blue-500 rounded-full group-hover/marker:scale-150 transition-transform" />
+                <div className="w-2 h-2 " />
               </div>
             </a>
           ))}

@@ -1,0 +1,22 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import SoundDisplay from '../../components/SoundDisplay';
+---
+
+<Layout title="Display de Sonido">
+  <main class="min-h-screen flex items-center justify-center bg-black overflow-hidden relative">
+    {/* Decoración de fondo */}
+    <div class="absolute top-0 left-1/4 w-96 h-96 bg-cyan-600/10 rounded-full blur-[120px]"></div>
+    <div class="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-[120px]"></div>
+    
+    <div class="z-10 w-full flex justify-center p-6">
+      <SoundDisplay client:load />
+    </div>
+  </main>
+</Layout>
+
+<style>
+  main {
+    background: radial-gradient(circle at center, #0a0a0a 0%, #000 100%);
+  }
+</style>

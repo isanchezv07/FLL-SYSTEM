@@ -20,17 +20,18 @@ const LoginForm = () => {
     e.preventDefault();
 
     try {
-      const response = await fetch('/api/users');
-      const users: User[] = await response.json();
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
       
-      const userFound = users.find((user: User) =>
-        user.username === formData.username && user.password === formData.password
-      );
-
-      if (userFound) {
+      if (response.ok) {
+        const userFound = await response.json();
         localStorage.setItem('isAuthenticated', 'true');
         localStorage.setItem('username', userFound.username);
         localStorage.setItem('role', userFound.role);
+        localStorage.setItem('token', userFound.token);
 
         toast.success(`Bienvenido, ${userFound.username}`);
 
@@ -45,7 +46,8 @@ const LoginForm = () => {
             window.location.href = '/auth/login';
         }
       } else {
-        toast.error('Usuario o contraseña incorrectos');
+        const errorData = await response.json();
+        toast.error(errorData.error || 'Usuario o contraseña incorrectos');
         localStorage.clear();
       }
     } catch (error) {

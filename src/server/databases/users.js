@@ -111,6 +111,34 @@ export const deleteUser = async (userId) => {
   }
 };
 
+export const updateUser = async (userId, userData) => {
+  try {
+    const data = readFileSync(dbPath, 'utf8');
+    const db = JSON.parse(data);
+    const userIndex = db.users.findIndex(u => u.id === userId);
+
+    if (userIndex === -1) {
+      throw new Error('Usuario no encontrado');
+    }
+
+    const updatedUser = {
+      ...db.users[userIndex],
+      ...userData,
+      id: userId, // Ensure ID doesn't change
+      updatedAt: new Date().toISOString()
+    };
+
+    db.users[userIndex] = updatedUser;
+    writeFileSync(dbPath, JSON.stringify(db, null, 2));
+
+    const { password, ...userWithoutPassword } = updatedUser;
+    return userWithoutPassword;
+  } catch (error) {
+    console.error('Error updating user:', error);
+    throw error;
+  }
+};
+
 export const authenticateUser = async (username, password) => {
   try {
     console.log('Login attempt:', { username, password });
@@ -142,5 +170,6 @@ export default {
   getUsers,
   createUser,
   deleteUser,
+  updateUser,
   authenticateUser
 };

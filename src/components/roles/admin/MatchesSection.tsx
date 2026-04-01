@@ -190,6 +190,13 @@ export default function MatchesSection() {
               </select>
             </div>
             <div className="w-px h-8 bg-slate-800" />
+            <select
+              value={bracketSize}
+              onChange={(e) => setBracketSize(Number(e.target.value))}
+              className="bg-transparent font-medium focus:outline-none px-2"
+            >
+              {[0, 4, 8, 16, 32].map(n => <option key={n} value={n}>Top {n}</option>)}
+            </select>
             <button 
               onClick={createBracket}
               className="flex items-center gap-2 bg-slate-800 hover:bg-blue-600 text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-[9px] transition-all"
