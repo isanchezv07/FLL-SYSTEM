@@ -5,15 +5,14 @@ import DashboardLayout from '@/layouts/DashboardLayout';
 import UsersSection from '@/components/roles/admin/UsersSection';
 import MatchesSection from '@/components/roles/admin/MatchesSection';
 import ScoresSection from '@/components/roles/admin/ScoresSection';
-import BracketsSection from '@/components/roles/admin/BracketsSection';
+import AwardsSection from '@/components/roles/admin/AwardsSection';
 
 const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<'users' | 'matches' | 'scores' | 'brackets'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'matches' | 'scores' | 'awards'>('users');
   const [users, setUsers] = useState([]);
   const [matches, setMatches] = useState([]);
-  const [brackets, setBrackets] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => { 
@@ -24,7 +23,6 @@ export default function AdminDashboard() {
 
     socket.on('usersUpdate', fetchData);
     socket.on('matchesUpdate', fetchData);
-    socket.on('bracketsUpdate', fetchData);
 
     return () => socket.disconnect();
   }, []);
@@ -46,15 +44,13 @@ export default function AdminDashboard() {
       'Content-Type': 'application/json'
     };
 
-    const [u, m, b] = await Promise.all([
+    const [u, m] = await Promise.all([
       fetch('/api/users', { headers }),
-      fetch('/api/matches', { headers }),
-      fetch('/api/brackets', { headers })
+      fetch('/api/matches', { headers })
     ]);
 
     if (u.ok) setUsers(await u.json());
     if (m.ok) setMatches(await m.json());
-    if (b.ok) setBrackets(await b.json());
 
     setLoading(false);
   };
@@ -75,8 +71,8 @@ export default function AdminDashboard() {
         <ScoresSection />
       )}
 
-      {activeTab === 'brackets' && (
-        <BracketsSection />
+      {activeTab === 'awards' && (
+        <AwardsSection />
       )}
     </DashboardLayout>
   );

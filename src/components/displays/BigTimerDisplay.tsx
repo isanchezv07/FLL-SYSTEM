@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { socket } from '@/lib/socket';
 import confetti from 'canvas-confetti';
-import { Trophy } from 'lucide-react';
+import { Trophy, Megaphone } from 'lucide-react';
 
 interface TimerState {
   timeRemaining: number;
@@ -24,8 +24,10 @@ export default function LegoTimerDisplay() {
   const [activeMatch, setActiveMatch] = useState<any | null>(null);
   const [winner, setWinner] = useState<WinnerInfo | null>(null);
   const [nextMatchCountdown, setNextMatchCountdown] = useState(10);
+  const [awardsData, setAwardsData] = useState<any>({ awards: [], announcement: { text: '', active: false }, ceremonyMode: false });
   
   const victoryAudio = useRef<HTMLAudioElement | null>(null);
+  const awardRevealAudio = useRef<HTMLAudioElement | null>(null);
 
   const fetchActiveMatch = useCallback(async () => {
     try {
@@ -41,9 +43,11 @@ export default function LegoTimerDisplay() {
   useEffect(() => {
     // Inicializar audio
     victoryAudio.current = new Audio('/sounds/end_match(7).wav');
+    awardRevealAudio.current = new Audio('/sounds/start_bell(5).wav');
 
     socket.on('timerUpdate', (data) => setTimer(data));
     socket.on('matchesUpdate', fetchActiveMatch);
+    socket.on('awardsUpdate', (data) => setAwardsData(data));
     socket.on("connect", () => setIsConnected(true));
     socket.on("disconnect", () => setIsConnected(false));
     
@@ -51,10 +55,8 @@ export default function LegoTimerDisplay() {
       setWinner(data);
       setNextMatchCountdown(10);
       
-      // Reproducir sonido de victoria
       victoryAudio.current?.play().catch(e => console.log("Audio play blocked"));
 
-      // Confetti continuo
       const end = Date.now() + 7 * 1000;
       const colors = data.alliance === 'A' ? ['#2563eb', '#ffffff', '#60a5fa'] : ['#dc2626', '#ffffff', '#f87171'];
 
@@ -64,7 +66,6 @@ export default function LegoTimerDisplay() {
         if (Date.now() < end) requestAnimationFrame(frame);
       }());
 
-      // Timer para quitar la pantalla de victoria
       const interval = setInterval(() => {
         setNextMatchCountdown(prev => {
           if (prev <= 1) {
@@ -80,13 +81,72 @@ export default function LegoTimerDisplay() {
     
     fetchActiveMatch();
     socket.emit('getTimer');
+    socket.emit('getAwards');
 
     return () => {
       socket.off('timerUpdate');
       socket.off('matchesUpdate');
       socket.off('matchWinnerDeclared');
+      socket.off('awardsUpdate');
     };
   }, [fetchActiveMatch]);
+
+  // Efecto para detectar cuando se revela un ganador y lanzar confeti
+  useEffect(() => {
+    const revealedAward = awardsData?.awards?.find((a: any) => a.revealedWinner);
+  
+    if (revealedAward) {
+      awardRevealAudio.current?.play().catch(() => {});
+      
+      const duration = 5 * 1000;
+      const animationEnd = Date.now() + duration;
+  
+      // Configuración de lujo: Oros, Platas y Brillos
+      const prizeColors = ['#FFD700', '#D4AF37', '#FDF5E6', '#C0C0C0', '#FFFFFF'];
+  
+      const interval = setInterval(() => {
+        const timeLeft = animationEnd - Date.now();
+  
+        if (timeLeft <= 0) {
+          return clearInterval(interval);
+        }
+  
+        // Reducimos un poco la cantidad por ráfaga para ganar fluidez
+        // pero mantenemos la intensidad con la frecuencia del intervalo
+        const particleCount = 40; 
+  
+        const defaults = {
+          startVelocity: 45, // Un poco más lento para que sea elegante
+          spread: 70,        // Más abierto para llenar la pantalla
+          ticks: 200,        // Que las partículas duren más tiempo visibles
+          zIndex: 200,
+          colors: prizeColors,
+          gravity: 0.7,      // Menos gravedad = caída más mágica y lenta
+          scalar: 1.1,       // Partículas ligeramente más grandes
+        };
+  
+        // LANZAMIENTO IZQUIERDO (Oro y Plata)
+        confetti({
+          ...defaults,
+          particleCount,
+          angle: 65,
+          origin: { x: -0.1, y: 0.7 }, // Un poco fuera de pantalla para naturalidad
+        });
+  
+        // LANZAMIENTO DERECHO (Oro y Plata)
+        confetti({
+          ...defaults,
+          particleCount,
+          angle: 115,
+          origin: { x: 1.1, y: 0.7 },
+        });
+      }, 150); // Ajustado a 150ms para no saturar el CPU y mantener el ritmo
+    }
+  }, [awardsData?.awards]);
+
+  const revealedAward = awardsData?.awards?.find((a: any) => a.revealedTitle);
+  const activeAnnouncement = awardsData?.announcement?.active ? awardsData.announcement.text : null;
+  const isCeremonyMode = awardsData?.ceremonyMode;
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -105,16 +165,140 @@ export default function LegoTimerDisplay() {
         <div className={`absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full blur-[120px] transition-colors duration-1000 ${isCritical ? 'bg-red-900/15' : 'bg-indigo-600/10'}`} />
       </div>
 
-      <AnimatePresence>
-        {winner ? (
+      <AnimatePresence mode="wait">
+        {activeAnnouncement ? (
+          /* 📢 PANTALLA DE ANUNCIO 📢 */
+          <motion.div
+            key="announcement"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.1 }}
+            className="absolute inset-0 z-[110] flex flex-col items-center justify-center bg-blue-950/90 backdrop-blur-3xl p-20 text-center"
+          >
+             <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#ffffff 2px, transparent 2px)', backgroundSize: '60px 60px' }} />
+             <div className="bg-blue-600 p-8 rounded-[40px] mb-12 shadow-2xl shadow-blue-500/20">
+               <Megaphone className="w-24 h-24 text-white" />
+             </div>
+             <h2 className="text-4xl font-black uppercase tracking-[0.4em] text-blue-400 mb-8">Comunicado Oficial</h2>
+             <div className="max-w-6xl">
+               <p className="text-[6vw] font-black leading-tight text-white uppercase tracking-tighter">
+                 {activeAnnouncement}
+               </p>
+             </div>
+          </motion.div>
+        ) : revealedAward ? (
+          /* 🏆 PANTALLA DE PREMIO 🏆 */
+          <motion.div
+            key="award"
+            initial={{ opacity: 0, y: 100 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -100 }}
+            className="absolute inset-0 z-[110] flex flex-col items-center justify-center bg-slate-950 p-20 text-center"
+          >
+            <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#fbbf24 2px, transparent 2px)', backgroundSize: '50px 50px' }} />
+            
+            {/* Sparkles Effect (Siempre activo si hay un título revelado) */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden">
+               {[...Array(20)].map((_, i) => (
+                 <motion.div
+                   key={i}
+                   initial={{ opacity: 0, scale: 0 }}
+                   animate={{ 
+                     opacity: [0, 1, 0], 
+                     scale: [0, 1, 0],
+                     x: [`${Math.random() * 100}%`, `${Math.random() * 100}%`],
+                     y: [`${Math.random() * 100}%`, `${Math.random() * 100}%`]
+                   }}
+                   transition={{ duration: 2 + Math.random() * 3, repeat: Infinity, delay: Math.random() * 5 }}
+                   className="absolute w-2 h-2 bg-yellow-400 rounded-full blur-[2px]"
+                 />
+               ))}
+            </div>
+
+            <motion.div
+              animate={{ rotate: [0, -5, 5, 0] }}
+              transition={{ repeat: Infinity, duration: 4 }}
+              className="w-48 h-48 bg-gradient-to-br from-yellow-400 to-amber-600 rounded-[50px] flex items-center justify-center mb-12 shadow-[0_0_80px_rgba(251,191,36,0.3)] border-b-[16px] border-amber-800"
+            >
+              <Trophy className="w-24 h-24 text-white drop-shadow-lg" />
+            </motion.div>
+
+            <h2 className="text-4xl font-black uppercase tracking-[0.5em] text-amber-500 mb-4">{revealedAward.name}</h2>
+            <div className="text-[2vw] font-bold text-slate-500 uppercase tracking-widest mb-12">Award Category</div>
+
+            {/* Revelación Condicional del Ganador */}
+            <AnimatePresence mode="wait">
+              {revealedAward.revealedWinner ? (
+                <motion.div 
+                  key="winner-revealed"
+                  initial={{ scale: 0.8, opacity: 0, y: 50 }}
+                  animate={{ scale: 1, opacity: 1, y: 0 }}
+                  className="bg-slate-900/80 backdrop-blur-xl p-16 rounded-[80px] border-4 border-amber-500/30 shadow-2xl min-w-[60%] relative overflow-hidden"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-t from-amber-500/10 to-transparent pointer-events-none" />
+                  <div className="text-[8vw] font-black text-white uppercase tracking-tighter leading-none mb-4 relative z-10">
+                    {revealedAward.teamName || '---'}
+                  </div>
+                  <div className="text-[4vw] font-mono font-black text-amber-400 relative z-10">
+                    TEAM #{revealedAward.teamNumber || '0000'}
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div 
+                  key="winner-hidden"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="h-[20vh] flex items-center justify-center"
+                >
+                  <div className="text-slate-800 text-[10vw] font-black uppercase tracking-[0.2em] italic opacity-20">
+                    ???
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        ) : isCeremonyMode ? (
+          /* 🎭 PANTALLA DE MODO CEREMONIA 🎭 */
+          <motion.div
+            key="ceremony"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-[105] flex flex-col items-center justify-center bg-gradient-to-b from-slate-950 via-blue-950 to-slate-950 p-10 text-center"
+          >
+            <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '30px 30px' }} />
+            
+            <motion.div
+              animate={{ y: [0, -20, 0] }}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+              className="mb-12"
+            >
+              <Trophy className="w-32 h-32 text-blue-500/50" />
+            </motion.div>
+
+            <h1 className="text-[8vw] font-black uppercase tracking-[0.2em] text-white drop-shadow-[0_0_30px_rgba(255,255,255,0.2)]">
+              Closing <span className="text-blue-500">Ceremony</span>
+            </h1>
+            <p className="text-2xl font-black uppercase tracking-[0.5em] text-slate-500 mt-4">
+              Awards Presentation
+            </p>
+
+            <div className="mt-20 flex gap-4">
+               <div className="w-2 h-2 bg-blue-500 rounded-full animate-ping" />
+               <div className="w-2 h-2 bg-blue-500 rounded-full animate-ping delay-100" />
+               <div className="w-2 h-2 bg-blue-500 rounded-full animate-ping delay-200" />
+            </div>
+          </motion.div>
+        ) : winner ? (
           /* 🎊 PANTALLA DE VICTORIA LEGO STYLE 🎊 */
           <motion.div 
+            key="winner"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-slate-950 p-10 text-center"
           >
-            {/* Patrón de Bricks de Fondo */}
             <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#ffffff 2px, transparent 2px)', backgroundSize: '40px 40px' }} />
             
             <motion.div 
@@ -156,7 +340,6 @@ export default function LegoTimerDisplay() {
               </div>
             </div>
 
-            {/* Barra de progreso para el siguiente match */}
             <div className="mt-16 w-full max-w-2xl space-y-4">
               <div className="flex justify-between text-[10px] font-black uppercase tracking-[0.3em] text-slate-600">
                 <span>Next match setup</span>
@@ -173,8 +356,14 @@ export default function LegoTimerDisplay() {
             </div>
           </motion.div>
         ) : (
-          /* 🕹️ PANTALLA NORMAL DEL TIMER (IGUAL A LA ANTERIOR) */
-          <>
+          /* 🕹️ PANTALLA NORMAL DEL TIMER */
+          <motion.div 
+            key="timer"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="h-full flex flex-col"
+          >
             <motion.header 
               initial={{ y: -50, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
@@ -259,7 +448,7 @@ export default function LegoTimerDisplay() {
                 </div>
               </motion.div>
             </footer>
-          </>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>

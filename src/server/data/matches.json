@@ -75,12 +75,17 @@
       "teamA2": "163",
       "teamB1": "152",
       "teamB2": "122",
-      "scoreA": 0,
-      "scoreB": 0,
-      "status": "pending",
-      "missionsA1": {},
+      "scoreA": 30,
+      "scoreB": 40,
+      "status": "finished",
+      "missionsA1": {
+        "m01_soil": 3,
+        "m01_brush": false
+      },
       "missionsA2": {},
-      "missionsB1": {},
+      "missionsB1": {
+        "m14_artifacts": 8
+      },
       "missionsB2": {}
     },
     {
@@ -160,7 +165,7 @@
       "teamB2": "109",
       "scoreA": 0,
       "scoreB": 0,
-      "status": "pending",
+      "status": "in_progress",
       "missionsA1": {},
       "missionsA2": {},
       "missionsB1": {},
@@ -237,8 +242,8 @@
       "bracketId": "1775012454993",
       "position": 1,
       "nextMatchId": null,
-      "teamA1": "",
-      "teamA2": "",
+      "teamA1": "152",
+      "teamA2": "122",
       "teamB1": "",
       "teamB2": "",
       "scoreA": 0,

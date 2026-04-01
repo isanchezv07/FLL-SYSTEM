@@ -16,7 +16,8 @@ import { getUsers, createUser, deleteUser, authenticateUser } from './databases/
 import { initMatchesDB, getMatches, createMatch, updateMatch, getMatchById  } from './databases/matches.js';
 import { initBracketsDB, getBrackets, createBracket } from './databases/brackets.js';
 import { initTimerDB, getTimer, updateTimer } from './databases/timer.js';
-import { getTeams } from './databases/teams.js'; 
+import { getTeams, createTeam } from './databases/teams.js'; 
+import { getAwards, updateAward, updateAnnouncement, resetAwards, initAwardsDB, updateCeremonyMode } from './databases/awards.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -113,6 +114,17 @@ async function finalizeAndAdvanceMatch(matchId) {
 app.use(express.json());
 
 // API Endpoints
+app.post('/api/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    const user = await authenticateUser(username, password);
+    const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
+    res.json({ ...user, token });
+  } catch (error) {
+    res.status(401).json({ error: error.message });
+  }
+});
+
 app.post('/api/brackets/generate', async (req, res) => {
   try {
     const { size, mode = '2vs2' } = req.body;
@@ -186,6 +198,65 @@ app.get('/api/matches', async (req, res) => res.json(await getMatches()));
 app.get('/api/matches/:id', async (req, res) => res.json(await getMatchById(req.params.id)));
 app.get('/api/brackets', async (req, res) => res.json(await getBrackets()));
 
+// Users Endpoints
+app.get('/api/users', async (req, res) => res.json(getUsers()));
+app.post('/api/users', async (req, res) => {
+  try {
+    const user = await createUser(req.body);
+    io.emit('usersUpdate');
+    res.json(user);
+  } catch (error) { res.status(500).json({ error: error.message }); }
+});
+app.delete('/api/users/:id', async (req, res) => {
+  try {
+    await deleteUser(req.params.id);
+    io.emit('usersUpdate');
+    res.json({ success: true });
+  } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+// Teams Endpoints
+app.get('/api/teams', async (req, res) => res.json(getTeams()));
+app.post('/api/teams', async (req, res) => {
+  try {
+    const team = await createTeam(req.body);
+    res.json(team);
+  } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+// Awards Endpoints
+app.get('/api/awards', async (req, res) => res.json(getAwards()));
+app.put('/api/awards/:id', async (req, res) => {
+  try {
+    const updated = await updateAward(req.params.id, req.body);
+    io.emit('awardsUpdate', getAwards());
+    res.json(updated);
+  } catch (error) { res.status(500).json({ error: error.message }); }
+});
+app.post('/api/awards/announcement', async (req, res) => {
+  try {
+    const updated = await updateAnnouncement(req.body);
+    io.emit('awardsUpdate', getAwards());
+    res.json(updated);
+  } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+app.post('/api/awards/ceremony', async (req, res) => {
+  try {
+    const updated = await updateCeremonyMode(req.body.active);
+    io.emit('awardsUpdate', getAwards());
+    res.json({ active: updated });
+  } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+app.post('/api/awards/reset', async (req, res) => {
+  try {
+    const updated = await resetAwards();
+    io.emit('awardsUpdate', updated);
+    res.json(updated);
+  } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
 // SOCKET LOGIC
 let timerInterval = null;
 const startServerTimer = () => {
@@ -221,6 +292,8 @@ io.on('connection', (socket) => {
   socket.on('startTimer', async () => io.emit('timerUpdate', await updateTimer({ isRunning: true })));
   socket.on('pauseTimer', async () => io.emit('timerUpdate', await updateTimer({ isRunning: false })));
   socket.on('resetTimer', async () => io.emit('timerUpdate', await updateTimer({ timeRemaining: 150, isRunning: false })));
+
+  socket.on('getAwards', () => socket.emit('awardsUpdate', getAwards()));
 
   socket.on('nextMatch', async () => {
     const matches = await getMatches();
@@ -268,7 +341,7 @@ io.on('connection', (socket) => {
 
 // Desactivamos el micrófono local por hardware para evitar conflictos y priorizar alianzas
 const startServer = async () => {
-  await initMatchesDB(); await initBracketsDB(); await initTimerDB();
+  await initMatchesDB(); await initBracketsDB(); await initTimerDB(); await initAwardsDB();
   httpServer.listen(3000, '0.0.0.0', () => console.log(`LEGO Engine Online on port 3000`));
 };
 

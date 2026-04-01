@@ -1,0 +1,46 @@
+{
+  "awards": [
+    {
+      "id": "1",
+      "name": "Core Values",
+      "teamNumber": "104",
+      "teamName": "Mega Masters 104",
+      "revealed": false,
+      "revealedTitle": false,
+      "revealedWinner": false
+    },
+    {
+      "id": "2",
+      "name": "Innovation Project",
+      "teamNumber": "",
+      "teamName": "",
+      "revealed": false
+    },
+    {
+      "id": "3",
+      "name": "Robot Design",
+      "teamNumber": "",
+      "teamName": "",
+      "revealed": false
+    },
+    {
+      "id": "4",
+      "name": "Robot Performance",
+      "teamNumber": "",
+      "teamName": "",
+      "revealed": false
+    },
+    {
+      "id": "5",
+      "name": "Champion's Award",
+      "teamNumber": "",
+      "teamName": "",
+      "revealed": false
+    }
+  ],
+  "announcement": {
+    "text": "",
+    "active": false
+  },
+  "ceremonyMode": false
+}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { socket } from '../lib/socket';
+import { socket } from '@/lib/socket';
 
 const SoundSource: React.FC = () => {
   const [isListening, setIsListening] = useState(false);
