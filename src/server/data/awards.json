@@ -14,28 +14,32 @@
       "name": "Innovation Project",
       "teamNumber": "",
       "teamName": "",
-      "revealed": false
+      "revealedTitle": false,
+      "revealedWinner": false
     },
     {
       "id": "3",
       "name": "Robot Design",
       "teamNumber": "",
       "teamName": "",
-      "revealed": false
+      "revealedTitle": false,
+      "revealedWinner": false
     },
     {
       "id": "4",
       "name": "Robot Performance",
       "teamNumber": "",
       "teamName": "",
-      "revealed": false
+      "revealedTitle": false,
+      "revealedWinner": false
     },
     {
       "id": "5",
       "name": "Champion's Award",
       "teamNumber": "",
       "teamName": "",
-      "revealed": false
+      "revealedTitle": false,
+      "revealedWinner": false
     }
   ],
   "announcement": {

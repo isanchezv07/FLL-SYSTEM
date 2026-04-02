@@ -1,120 +1,298 @@
 openapi: 3.0.0
 info:
-  title: FTC Local Scoring API
-  description: API para gestionar el sistema de puntuación local de FTC.
+  title: FLL System (LEGO Engine) API
+  description: API para gestionar el sistema de puntuación local y torneos de FIRST LEGO League.
   version: 1.0.0
 
 servers:
   - url: http://localhost:3000
-    description: Servidor local
+    description: Servidor local de desarrollo
 
 paths:
-  /api/:
-    get:
-      summary: Obtener todos los datos del sistema
-      description: Devuelve la base de datos completa con usuarios, matches e información del match actual.
+  /api/login:
+    post:
+      tags:
+        - Auth
+      summary: Autenticar usuario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
       responses:
         '200':
-          description: Respuesta exitosa
-          content:
-            application/json:
-              schema:
-                type: object
+          description: Login exitoso
+        '401':
+          description: Credenciales inválidas
 
   /api/users:
     get:
-      summary: Obtener lista de usuarios
-      description: Retorna todos los usuarios registrados.
+      tags:
+        - Users
+      summary: Obtener todos los usuarios
       responses:
         '200':
           description: Lista de usuarios
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    id:
-                      type: integer
-                    username:
-                      type: string
-                    password:
-                      type: string
-                    role:
-                      type: string
-
-  /api/match:
-    get:
-      summary: Obtener estado actual del match
-      description: Devuelve el estado del match actual, incluyendo equipos, scores y tiempo.
+    post:
+      tags:
+        - Users
+      summary: Crear nuevo usuario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
       responses:
         '200':
-          description: Estado actual del match
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  inProgress:
-                    type: boolean
-                    example: false
-                  timeRemaining:
-                    type: integer
-                    enum: [150]
-                  redTeam:
-                    type: object
-                    properties:
-                      name:
-                        type: string
-                      score:
-                        type: integer
-                  blueTeam:
-                    type: object
-                    properties:
-                      name:
-                        type: string
-                      score:
-                        type: integer
-                  showScores:
-                    type: boolean
-                    example: true
-                  showWinner:
-                    type: boolean
-                    example: false
+          description: Usuario creado
+
+  /api/users/{id}:
+    delete:
+      tags:
+        - Users
+      summary: Eliminar usuario
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Usuario eliminado
+
+  /api/teams:
+    get:
+      tags:
+        - Teams
+      summary: Obtener todos los equipos
+      responses:
+        '200':
+          description: Lista de equipos
+    post:
+      tags:
+        - Teams
+      summary: Crear nuevo equipo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Team'
+      responses:
+        '200':
+          description: Equipo creado
 
   /api/matches:
     get:
-      summary: Obtener historial de matches
-      description: Devuelve la lista completa de matches jugados anteriormente.
+      tags:
+        - Matches
+      summary: Obtener todos los matches
       responses:
         '200':
           description: Lista de matches
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    id:
-                      type: integer
-                    date:
-                      type: string
-                      format: date-time
-                    redTeam:
-                      type: object
-                      properties:
-                        name:
-                          type: string
-                        score:
-                          type: integer
-                    blueTeam:
-                      type: object
-                      properties:
-                        name:
-                          type: string
-                        score:
-                          type: integer
-                    timeRemaining:
-                      type: integer
+
+  /api/matches/{id}:
+    get:
+      tags:
+        - Matches
+      summary: Obtener match por ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Detalle del match
+    put:
+      tags:
+        - Matches
+      summary: Actualizar match (puntuación, estado, etc.)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MatchUpdate'
+      responses:
+        '200':
+          description: Match actualizado
+
+  /api/brackets:
+    get:
+      tags:
+        - Brackets
+      summary: Obtener todos los brackets
+      responses:
+        '200':
+          description: Lista de brackets
+
+  /api/brackets/generate:
+    post:
+      tags:
+        - Brackets
+      summary: Generar un nuevo bracket de torneo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                size:
+                  type: integer
+                  description: Número de equipos (4, 8, 16, etc.)
+                mode:
+                  type: string
+                  enum: [1vs1, 2vs2]
+      responses:
+        '200':
+          description: Bracket generado exitosamente
+
+  /api/awards:
+    get:
+      tags:
+        - Awards
+      summary: Obtener premios y estado de la ceremonia
+      responses:
+        '200':
+          description: Datos de premios
+
+  /api/awards/{id}:
+    put:
+      tags:
+        - Awards
+      summary: Actualizar un premio
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Award'
+      responses:
+        '200':
+          description: Premio actualizado
+
+  /api/awards/announcement:
+    post:
+      tags:
+        - Awards
+      summary: Actualizar anuncio global
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                text:
+                  type: string
+                active:
+                  type: boolean
+      responses:
+        '200':
+          description: Anuncio actualizado
+
+  /api/awards/ceremony:
+    post:
+      tags:
+        - Awards
+      summary: Activar/Desactivar modo ceremonia
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                active:
+                  type: boolean
+      responses:
+        '200':
+          description: Estado de ceremonia actualizado
+
+  /api/awards/reset:
+    post:
+      tags:
+        - Awards
+      summary: Reiniciar todos los premios
+      responses:
+        '200':
+          description: Premios reiniciados
+
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+        role:
+          type: string
+          enum: [admin, referee, display]
+
+    Team:
+      type: object
+      properties:
+        number:
+          type: string
+        name:
+          type: string
+        id:
+          type: string
+
+    MatchUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [pending, in_progress, finished]
+        missionsA1:
+          type: object
+        missionsA2:
+          type: object
+        missionsB1:
+          type: object
+        missionsB2:
+          type: object
+        scoreA:
+          type: integer
+        scoreB:
+          type: integer
+
+    Award:
+      type: object
+      properties:
+        name:
+          type: string
+        teamNumber:
+          type: string
+        teamName:
+          type: string
+        revealedTitle:
+          type: boolean
+        revealedWinner:
+          type: boolean

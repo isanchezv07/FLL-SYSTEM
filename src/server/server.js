@@ -6,10 +6,16 @@ import { dirname, join } from 'path';
 import { readFileSync, writeFileSync } from 'fs';
 import ip from 'ip';
 import jwt from 'jsonwebtoken';
+import yaml from 'yamljs';
+import swaggerUi from 'swagger-ui-express';
 import { createRequire } from 'module';
 
 const require = createRequire(import.meta.url);
 const mic = require('node-mic');
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const app = express();
+const JWT_SECRET = 'FLL2026';
 
 // Import database modules
 import { getUsers, createUser, deleteUser, authenticateUser } from './databases/users.js';
@@ -19,9 +25,11 @@ import { initTimerDB, getTimer, updateTimer } from './databases/timer.js';
 import { getTeams, createTeam } from './databases/teams.js'; 
 import { getAwards, updateAward, updateAnnouncement, resetAwards, initAwardsDB, updateCeremonyMode } from './databases/awards.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const app = express();
-const JWT_SECRET = 'FLL2026';
+// Load Swagger document
+const swaggerDocument = yaml.load(join(__dirname, 'swagger.yaml'));
+
+// Swagger UI
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 const httpServer = createServer(app);
 const io = new Server(httpServer, {

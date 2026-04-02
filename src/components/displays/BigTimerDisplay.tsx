@@ -20,6 +20,7 @@ interface WinnerInfo {
 
 export default function LegoTimerDisplay() {
   const [timer, setTimer] = useState<TimerState>({ timeRemaining: 150, isRunning: false });
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [isConnected, setIsConnected] = useState(true);
   const [activeMatch, setActiveMatch] = useState<any | null>(null);
   const [winner, setWinner] = useState<WinnerInfo | null>(null);
@@ -28,7 +29,26 @@ export default function LegoTimerDisplay() {
   
   const victoryAudio = useRef<HTMLAudioElement | null>(null);
   const awardRevealAudio = useRef<HTMLAudioElement | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
+  // Monitor fullscreen changes
+  useEffect(() => {
+    const handler = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', handler);
+    return () => document.removeEventListener('fullscreenchange', handler);
+  }, []);
+
+  // Fullscreen on Enter
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.key === 'Enter' && !document.fullscreenElement && containerRef.current) {
+        containerRef.current.requestFullscreen().catch(console.error);
+      }
+    };
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, []);
+  
   const fetchActiveMatch = useCallback(async () => {
     try {
       const res = await fetch('/api/matches');
@@ -157,7 +177,7 @@ export default function LegoTimerDisplay() {
   const isCritical = timer.timeRemaining <= 30 && timer.isRunning;
 
   return (
-    <div className="h-screen w-screen bg-[#020617] text-white relative overflow-hidden font-sans flex flex-col p-6 lg:p-10 selection:bg-none">
+    <div ref={containerRef} className="h-screen w-screen bg-[#020617] text-white relative overflow-hidden font-sans flex flex-col p-6 lg:p-10 selection:bg-none">
       
       {/* 🌌 FONDO DINÁMICO */}
       <div className="absolute inset-0 z-0 pointer-events-none">
