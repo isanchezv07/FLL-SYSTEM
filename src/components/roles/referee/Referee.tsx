@@ -23,6 +23,7 @@ const mapMarkers = [
 
 export default function InteractiveMap() {
   const [matches, setMatches] = useState<any[]>([]);
+  const [timerState, setTimerState] = useState<any>({ fields: {} });
   const [selectedMatchId, setSelectedMatchId] = useState("");
   const [selectedTeam, setSelectedTeam] = useState("");
   const [isConfigured, setIsConfigured] = useState(false);
@@ -37,7 +38,12 @@ export default function InteractiveMap() {
       setIsConfigured(true);
     }
     socket.on("matchesUpdate", fetchMatches);
-    return () => { socket.off("matchesUpdate", fetchMatches); };
+    socket.on("timerUpdate", (data) => setTimerState(data));
+    socket.emit("getTimer");
+    return () => { 
+      socket.off("matchesUpdate", fetchMatches); 
+      socket.off("timerUpdate");
+    };
   }, []);
 
   const fetchMatches = async () => {
@@ -81,10 +87,37 @@ export default function InteractiveMap() {
                 onChange={(e) => setSelectedMatchId(e.target.value)}
                 className="w-full bg-slate-950/50 p-5 rounded-[24px] border-2 border-slate-800 focus:border-blue-500 outline-none font-black text-white shadow-inner transition-all appearance-none cursor-pointer"
               >
-                <option value="">-- Listado de Partidos --</option>
-                {matches.sort((a,b) => a.position - b.position).map(m => (
-                  <option key={m.id} value={m.id}>Match #{m.position} • Ronda {m.round}</option>
-                ))}
+                <option value="">-- Seleccionar Partido Activo --</option>
+                
+                {/* 1. Partidos asignados a canchas por el admin */}
+                <optgroup label="🔴 EN CANCHA (ASIGNADOS)">
+                  {Object.entries(timerState.fields || {}).map(([f, mId]) => {
+                    if (!mId) return null;
+                    const m = matches.find(match => match.id === mId);
+                    if (!m) return null;
+                    return (
+                      <option key={`field-${m.id}`} value={m.id}>
+                        {f.replace('cancha', 'CANCHA ')}: Match #{m.position} ({m.teamA1} vs {m.teamB1})
+                      </option>
+                    );
+                  })}
+                </optgroup>
+
+                {/* 2. Partidos marcados como 'in_progress' pero quizás no asignados a cancha física */}
+                <optgroup label="⏱️ OTROS PARTIDOS ACTIVOS">
+                  {matches
+                    .filter(m => m.status === 'in_progress' && !Object.values(timerState.fields).includes(m.id))
+                    .map(m => (
+                      <option key={`active-${m.id}`} value={m.id}>
+                        Match #{m.position} • Ronda {m.round}
+                      </option>
+                    ))
+                  }
+                </optgroup>
+
+                {matches.filter(m => m.status === 'in_progress' || Object.values(timerState.fields).includes(m.id)).length === 0 && (
+                  <option disabled>No hay partidos activos. Espera al Admin.</option>
+                )}
               </select>
             </div>
 

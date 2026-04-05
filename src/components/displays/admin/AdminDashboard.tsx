@@ -6,11 +6,12 @@ import UsersSection from '@/components/roles/admin/UsersSection';
 import MatchesSection from '@/components/roles/admin/MatchesSection';
 import ScoresSection from '@/components/roles/admin/ScoresSection';
 import AwardsSection from '@/components/roles/admin/AwardsSection';
+import ScreensSection from '@/components/roles/admin/Screens';
 
 const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<'users' | 'matches' | 'scores' | 'awards'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'matches' | 'scores' | 'awards' | 'screens'>('users');
   const [users, setUsers] = useState([]);
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -73,6 +74,10 @@ export default function AdminDashboard() {
 
       {activeTab === 'awards' && (
         <AwardsSection />
+      )}
+
+      {activeTab === 'screens' && (
+        <ScreensSection />
       )}
     </DashboardLayout>
   );

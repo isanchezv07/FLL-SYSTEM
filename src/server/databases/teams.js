@@ -2,8 +2,13 @@ import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const DB_PATH = join(__dirname, '..', 'data', 'teams.json');
+let currentDir;
+if (typeof __dirname !== 'undefined') {
+  currentDir = __dirname;
+} else {
+  currentDir = dirname(fileURLToPath(import.meta.url));
+}
+const DB_PATH = join(currentDir, '..', 'data', 'teams.json');
 
 // Asegurar que el archivo exista al iniciar
 const initTeamsDB = () => {

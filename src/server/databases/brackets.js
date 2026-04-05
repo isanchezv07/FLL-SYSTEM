@@ -3,8 +3,13 @@ import { JSONFile } from 'lowdb/node';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const dbPath = join(__dirname, '..', 'data', 'brackets.json');
+let currentDir;
+if (typeof __dirname !== 'undefined') {
+  currentDir = __dirname;
+} else {
+  currentDir = dirname(fileURLToPath(import.meta.url));
+}
+const dbPath = join(currentDir, '..', 'data', 'brackets.json');
 
 const adapter = new JSONFile(dbPath);
 const db = new Low(adapter, { brackets: [] });

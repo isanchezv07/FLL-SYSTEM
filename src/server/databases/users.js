@@ -3,8 +3,13 @@ import { join } from 'path';
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const dbPath = join(__dirname, '..', 'data', 'users.json');
+let currentDir;
+if (typeof __dirname !== 'undefined') {
+  currentDir = __dirname;
+} else {
+  currentDir = dirname(fileURLToPath(import.meta.url));
+}
+const dbPath = join(currentDir, '..', 'data', 'users.json');
 
 // Initialize database with default admin user if it doesn't exist
 const initUsersDB = () => {

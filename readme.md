@@ -1,85 +1,71 @@
-# FLL System (LEGO Engine) 🚀
+# FLL-SYSTEM: LEGO Engine 🤖🏆
 
-Sistema integral de gestión de torneos y puntuación local para **FIRST LEGO League (FLL)**. Este sistema permite gestionar equipos, generar brackets de torneo (1vs1 y 2vs2), realizar puntuaciones en tiempo real y manejar una ceremonia de premiación con efectos visuales.
+[![CI](https://github.com/your-repo/fll-system/actions/workflows/ci.yml/badge.svg)](https://github.com/your-repo/fll-system/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## 🌟 Características
+**FLL-SYSTEM** es un sistema profesional de gestión y puntuación local para torneos de **FIRST LEGO League (FLL)**. Diseñado para ser rápido, confiable y fácil de desplegar en redes locales.
 
-- 📊 **Scoring en Tiempo Real**: Puntuación automática basada en las misiones oficiales de FLL.
-- 🏆 **Generador de Brackets**: Soporta torneos de eliminación directa en formatos 1vs1 y 2vs2.
-- ⏱️ **Timer Integrado**: Cronómetro sincronizado vía Socket.io para todos los displays.
-- 👥 **Gestión de Usuarios**: Roles diferenciados para Admin, Jueces (Referees) y Pantallas (Displays).
-- 🔊 **Efectos de Sonido**: Integración de sonidos oficiales para inicio, fin de match y avisos.
-- 📺 **Modo Ceremonia**: Interfaz dedicada para la entrega de premios con animaciones y revelaciones progresivas.
-- 🔌 **API Documentada**: Documentación completa con Swagger.
+## ✨ Características Principales
+
+- 🚀 **Frontend con Astro & React:** Interfaz moderna, rápida y reactiva.
+- ⚙️ **Backend con Express:** Servidor robusto para gestionar la lógica del torneo.
+- ⏱️ **Sincronización en Tiempo Real:** Comunicación mediante WebSockets (Socket.io) para temporizadores y puntuaciones.
+- 📊 **Gestión de Torneos:** Generación automática de Brackets (1vs1, 2vs2).
+- 🏆 **Ceremonia de Premios:** Pantalla dedicada para la revelación de ganadores.
+- 🐳 **Docker Ready:** Despliegue simplificado con un solo comando.
+- 🧪 **Test Suite Completo:** Pruebas unitarias, de componentes y de API con Jest.
 
 ## 🛠️ Stack Tecnológico
 
-- **Frontend**: [Astro](https://astro.build/) + [React](https://reactjs.org/) + [TailwindCSS](https://tailwindcss.com/)
-- **Backend**: [Node.js](https://nodejs.org/) + [Express](https://expressjs.com/)
-- **Tiempo Real**: [Socket.io](https://socket.io/)
-- **Base de Datos**: [LowDB](https://github.com/typicode/lowdb) (JSON local)
-- **Animaciones**: [Framer Motion](https://www.framer.com/motion/) + [Canvas Confetti](https://www.npmjs.com/package/canvas-confetti)
+- **Frontend:** Astro, React, Tailwind CSS, Lucide React, Framer Motion.
+- **Backend:** Node.js, Express, Socket.io, LowDB (JSON-based persistence).
+- **Testing:** Jest, React Testing Library, Supertest.
+- **DevOps:** Docker, Docker Compose, GitHub Actions.
 
-## 🚀 Instalación y Uso
+## 🚀 Inicio Rápido
 
-### 1. Clonar e instalar dependencias
+### Requisitos Previos
+- Node.js 20+
+- Docker & Docker Compose (opcional para despliegue)
 
+### Instalación Local
+1. Clonar el repositorio.
+2. Instalar dependencias:
+   ```bash
+   npm install --legacy-peer-deps
+   ```
+3. Iniciar en modo desarrollo:
+   ```bash
+   npm run dev
+   ```
+
+### Uso con Docker 🐳
+Para un despliegue rápido y consistente:
 ```bash
-git clone <url-del-repositorio>
-cd FLL-SYSTEM
-npm install
+docker-compose up --build
+```
+El sistema estará disponible en:
+- **Frontend:** [http://localhost:4321](http://localhost:4321)
+- **API Docs (Swagger):** [http://localhost:3000/api-docs](http://localhost:3000/api-docs)
+
+## 🧪 Testing
+
+Ejecutar la suite de pruebas completa:
+```bash
+npm test
 ```
 
-### 2. Iniciar el servidor (Backend)
+## 📂 Estructura del Proyecto
 
-El backend maneja la lógica de negocio, la base de datos y los sockets.
+- `src/components`: Componentes de UI (React).
+- `src/pages`: Rutas del frontend (Astro).
+- `src/server`: Servidor Express, API y base de datos.
+- `src/server/databases`: Capa de persistencia (LowDB).
+- `src/lib`: Utilidades y lógica compartida.
 
-```bash
-node src/server/server.js
-```
-El servidor correrá en el puerto `3000`.
+## 📝 Documentación de la API
 
-### 3. Iniciar el entorno de desarrollo (Frontend)
+La API está documentada con Swagger. Al ejecutar el servidor, puedes acceder a la documentación interactiva en `/api-docs`.
 
-```bash
-npm run dev
-```
-La aplicación estará disponible en `http://localhost:4321`.
-
-### 4. Producción
-
-Para construir y servir la aplicación en producción:
-
-```bash
-npm run build
-node start-server.js
-```
-
-Para el microfono y conectarlo al display
-```bash
-npx localtunnel --port 4321
-```
-## 📖 Documentación de la API
-
-Una vez que el servidor backend esté corriendo, puedes acceder a la documentación interactiva de la API en:
-
-👉 [http://localhost:3000/api-docs](http://localhost:3000/api-docs)
-
-## 🗄️ Estructura de Datos
-
-Los datos se almacenan en archivos JSON dentro de `src/server/data/`:
-- `users.json`: Credenciales y roles.
-- `teams.json`: Lista de equipos participantes.
-- `matches.json`: Historial y estado de los encuentros.
-- `brackets.json`: Configuración de los torneos activos.
-- `awards.json`: Ganadores de premios y estado de la ceremonia.
-
-## 👤 Roles del Sistema
-
-- **Admin**: Acceso total, gestión de usuarios, equipos y generación de brackets.
-- **Referee**: Encargado de capturar las puntuaciones de los matches.
-- **Display**: Vistas optimizadas para proyectores (Leaderboard, Timer, Brackets).
-
-## 📄 Licencia
-
-Este proyecto fue desarrollado para la gestión local de torneos FLL. Todos los derechos de las misiones y marcas pertenecen a FIRST y LEGO Group.
+---
+Desarrollado para la comunidad de robótica. ¡Que gane el mejor robot! 🤖✨

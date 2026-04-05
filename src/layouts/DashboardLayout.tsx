@@ -60,6 +60,7 @@ export default function DashboardLayout({ activeTab, setActiveTab, children }: P
             <NavButton id="matches" label="Partidos" icon={Settings} active={activeTab === 'matches'} onClick={setActiveTab} />
             <NavButton id="scores" label="Ranking" icon={Trophy} active={activeTab === 'scores'} onClick={setActiveTab} />
             <NavButton id="awards" label="Premios" icon={Trophy} active={activeTab === 'awards'} onClick={setActiveTab} />
+            <NavButton id="screens" label="Pantallas" icon={Trophy} active={activeTab === 'screens'} onClick={setActiveTab} />
           </nav>
     
           {/* Main Content Area */}

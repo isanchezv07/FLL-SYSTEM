@@ -11,9 +11,14 @@ const serverPath = join(__dirname, 'src', 'server', 'server.js');
 console.log('Starting backend server...');
 const backend = spawn('node', [serverPath], { stdio: 'inherit' });
 
-// Start the Astro dev server
+// Start the Astro frontend (dev or production)
 console.log('Starting Astro frontend...');
-const frontend = spawn('npm', ['run', 'dev'], { stdio: 'inherit' , shell: true});
+const isProd = process.env.NODE_ENV === 'production';
+const frontendCmd = isProd ? 'node' : 'npm';
+const frontendArgs = isProd ? ['./dist/server/entry.mjs'] : ['run', 'dev'];
+
+const frontend = spawn(frontendCmd, frontendArgs, { stdio: 'inherit' , shell: !isProd});
+
 
 // Log local network access info
 const localIP = ip.address();

@@ -9,13 +9,26 @@ import jwt from 'jsonwebtoken';
 import yaml from 'yamljs';
 import swaggerUi from 'swagger-ui-express';
 import { createRequire } from 'module';
+import { calculateFLLScore } from './lib/scoring.js';
 
-const require = createRequire(import.meta.url);
-const mic = require('node-mic');
+let currentDir;
+if (typeof __dirname !== 'undefined') {
+  currentDir = __dirname;
+} else {
+  currentDir = dirname(fileURLToPath(import.meta.url));
+}
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
 const JWT_SECRET = 'FLL2026';
+
+// nodeRequire implementation
+let nodeRequire;
+try {
+  const metaUrl = eval('import.meta.url');
+  nodeRequire = createRequire(metaUrl);
+} catch (e) {
+  nodeRequire = (typeof require !== 'undefined') ? require : null;
+}
 
 // Import database modules
 import { getUsers, createUser, deleteUser, authenticateUser } from './databases/users.js';
@@ -26,54 +39,29 @@ import { getTeams, createTeam } from './databases/teams.js';
 import { getAwards, updateAward, updateAnnouncement, resetAwards, initAwardsDB, updateCeremonyMode } from './databases/awards.js';
 
 // Load Swagger document
-const swaggerDocument = yaml.load(join(__dirname, 'swagger.yaml'));
-
+if (process.env.NODE_ENV !== 'test') {
+const swaggerDocument = yaml.load(join(currentDir, 'swagger.yaml'));
 // Swagger UI
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+}
 
 const httpServer = createServer(app);
-const io = new Server(httpServer, {
-  cors: { origin: '*', methods: ['GET', 'POST', 'PUT', 'DELETE'], credentials: true },
-  pingTimeout: 30000, // 30 segundos antes de considerar a un cliente "muerto"
-  pingInterval: 10000, // Mandar ping cada 10 segundos
-  transports: ['websocket', 'polling']
-});
 
-function calculateFLLScore(m) {
-  let score = 0;
-  if (!m) return 0;
-  const isYes = (v) => v === 'yes' || v === true;
-  if (isYes(m.inspection)) score += 20;
-  const m01_soil = Math.min(parseInt(m.m01_soil) || 0, 5);
-  score += m01_soil * 10;
-  if (isYes(m.m01_brush)) score += 10;
-  const m02_sections = Math.min(parseInt(m.m02_sections) || 0, 3);
-  score += m02_sections * 10;
-  if (isYes(m.m03_minecart)) score += 30;
-  if (isYes(m.m03_bonus)) score += 10;
-  if (isYes(m.m04_artifact)) score += 30;
-  if (isYes(m.m04_support)) score += 10;
-  if (isYes(m.m05_floor)) score += 30;
-  if (isYes(m.m07_millstone)) score += 30;
-  if (isYes(m.m13_statue)) score += 30;
-  const m06_ore = Math.min(parseInt(m.m06_ore) || 0, 2);
-  score += m06_ore * 10;
-  const m08_preserved = Math.min(parseInt(m.m08_preserved) || 0, 4);
-  score += m08_preserved * 10;
-  if (isYes(m.m09_roof)) score += 20;
-  if (isYes(m.m09_wares)) score += 10;
-  if (isYes(m.m10_tipped)) score += 20;
-  if (isYes(m.m10_pan)) score += 10;
-  if (isYes(m.m11_raised)) score += 20;
-  if (isYes(m.m11_flag)) score += 10;
-  if (isYes(m.m12_sand)) score += 20;
-  if (isYes(m.m12_ship)) score += 10;
-  const m14_artifacts = Math.min(parseInt(m.m14_artifacts) || 0, 8);
-  score += m14_artifacts * 5;
-  const tokens = Math.max(0, Math.min(parseInt(m.precision_tokens) || 0, 6));
-  const precisionTable = { 6: 50, 5: 50, 4: 35, 3: 25, 2: 15, 1: 10, 0: 0 };
-  score += precisionTable[tokens] || 0;
-  return score;
+// Use a mock or dummy io for tests to avoid background connection attempts
+let io;
+if (process.env.NODE_ENV === 'test') {
+  io = {
+    emit: () => {},
+    on: () => {},
+    off: () => {}
+  };
+} else {
+  io = new Server(httpServer, {
+    cors: { origin: '*', methods: ['GET', 'POST', 'PUT', 'DELETE'], credentials: true },
+    pingTimeout: 30000,
+    pingInterval: 10000,
+    transports: ['websocket', 'polling']
+  });
 }
 
 // FUNCIÓN MAESTRA DE FINALIZACIÓN Y AVANCE
@@ -137,7 +125,7 @@ app.post('/api/brackets/generate', async (req, res) => {
   try {
     const { size, mode = '2vs2' } = req.body;
     const teams = shuffle(getTeams()).slice(0, size);
-    const matchesPath = join(__dirname, 'data', 'matches.json');
+    const matchesPath = join(currentDir, 'data', 'matches.json');
     writeFileSync(matchesPath, JSON.stringify({ matches: [] }));
 
     const bracket = await createBracket({ name: `Tournament ${mode}`, size, mode, status: "active", date: new Date().toISOString() });
@@ -188,6 +176,9 @@ app.put('/api/matches/:id', async (req, res) => {
       missionsA1: mA1, missionsA2: mA2, missionsB1: mB1, missionsB2: mB2, 
       scoreA: sA, scoreB: sB 
     });
+
+    // Enviar el match actualizado directamente a todos
+    io.emit('matchUpdate', updated);
 
     // 3. Si se acaba de marcar como finalizado, ejecutar la lógica de avance
     if (updated.status === 'finished' && existing.status !== 'finished') {
@@ -285,6 +276,7 @@ const startServerTimer = () => {
 let globalVolume = 0;
 let isCaptureActive = false;
 
+if (process.env.NODE_ENV !== 'test') {
 io.on('connection', (socket) => {
   console.log(`[SOCKET] Nueva conexión: ${socket.id}`);
   
@@ -300,6 +292,13 @@ io.on('connection', (socket) => {
   socket.on('startTimer', async () => io.emit('timerUpdate', await updateTimer({ isRunning: true })));
   socket.on('pauseTimer', async () => io.emit('timerUpdate', await updateTimer({ isRunning: false })));
   socket.on('resetTimer', async () => io.emit('timerUpdate', await updateTimer({ timeRemaining: 150, isRunning: false })));
+
+  socket.on('assignMatchToField', async ({ fieldId, matchId }) => {
+    const timer = await getTimer();
+    const fields = { ...timer.fields, [fieldId]: matchId };
+    const updated = await updateTimer({ fields });
+    io.emit('timerUpdate', updated);
+  });
 
   socket.on('getAwards', () => socket.emit('awardsUpdate', getAwards()));
 
@@ -346,6 +345,7 @@ io.on('connection', (socket) => {
     io.emit('display_status_update', isActive ? 'LIVE' : 'READY');
   });
 });
+}
 
 // Desactivamos el micrófono local por hardware para evitar conflictos y priorizar alianzas
 const startServer = async () => {
@@ -362,4 +362,8 @@ function shuffle(array) {
   return arr;
 }
 
-startServer();
+if (process.env.NODE_ENV !== 'test') {
+  startServer();
+}
+
+export { app, httpServer, io };

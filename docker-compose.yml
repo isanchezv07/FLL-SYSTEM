@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  scoring-system:
+    build: .
+    ports:
+      - "4321:4321"
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - ./src/server/data:/app/src/server/data
+    restart: unless-stopped

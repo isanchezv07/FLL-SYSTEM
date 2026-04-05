@@ -9,6 +9,8 @@ import { Trophy, Megaphone } from 'lucide-react';
 interface TimerState {
   timeRemaining: number;
   isRunning: boolean;
+  fieldCount: number;
+  fields?: Record<string, string | null>;
 }
 
 interface WinnerInfo {
@@ -19,7 +21,8 @@ interface WinnerInfo {
 }
 
 export default function LegoTimerDisplay() {
-  const [timer, setTimer] = useState<TimerState>({ timeRemaining: 150, isRunning: false });
+  const [timer, setTimer] = useState<TimerState>({ timeRemaining: 150, isRunning: false, fieldCount: 4, fields: {} });
+  const [selectedField, setSelectedField] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isConnected, setIsConnected] = useState(true);
   const [activeMatch, setActiveMatch] = useState<any | null>(null);
@@ -31,34 +34,40 @@ export default function LegoTimerDisplay() {
   const awardRevealAudio = useRef<HTMLAudioElement | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Monitor fullscreen changes
+  // Load selected field from localStorage on mount
   useEffect(() => {
-    const handler = () => setIsFullscreen(!!document.fullscreenElement);
-    document.addEventListener('fullscreenchange', handler);
-    return () => document.removeEventListener('fullscreenchange', handler);
+    const saved = localStorage.getItem('selectedField');
+    if (saved) setSelectedField(saved);
   }, []);
 
-  // Fullscreen on Enter
-  useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.key === 'Enter' && !document.fullscreenElement && containerRef.current) {
-        containerRef.current.requestFullscreen().catch(console.error);
-      }
-    };
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, []);
-  
+  const handleFieldSelect = (fieldId: string) => {
+    setSelectedField(fieldId);
+    localStorage.setItem('selectedField', fieldId);
+  };
+
   const fetchActiveMatch = useCallback(async () => {
     try {
-      const res = await fetch('/api/matches');
-      const data = await res.json();
-      const list = Array.isArray(data) ? data : [];
-      const sorted = list.sort((a: any, b: any) => (a.round ?? 0) - (b.round ?? 0) || (a.position ?? 0) - (b.position ?? 0));
-      const picked = sorted.find((m: any) => m?.status === 'in_progress') || sorted.find((m: any) => m?.status === 'pending') || sorted[0] || null;
-      setActiveMatch(picked);
+      if (!selectedField || !timer?.fields?.[selectedField]) {
+        const res = await fetch('/api/matches');
+        const data = await res.json();
+        const list = Array.isArray(data) ? data : [];
+        const sorted = list.sort((a: any, b: any) => (a.round ?? 0) - (b.round ?? 0) || (a.position ?? 0) - (b.position ?? 0));
+        const picked = sorted.find((m: any) => m?.status === 'in_progress') || sorted.find((m: any) => m?.status === 'pending') || sorted[0] || null;
+        setActiveMatch(picked);
+        return;
+      }
+
+      const matchId = timer.fields[selectedField];
+      // Solo pedimos el match si ha cambiado el ID para evitar parpadeos
+      if (activeMatch?.id === matchId) return;
+
+      const res = await fetch(`/api/matches/${matchId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setActiveMatch(data);
+      }
     } catch { }
-  }, []);
+  }, [selectedField, timer?.fields, activeMatch?.id]);
 
   useEffect(() => {
     // Inicializar audio
@@ -70,21 +79,40 @@ export default function LegoTimerDisplay() {
     socket.on('awardsUpdate', (data) => setAwardsData(data));
     socket.on("connect", () => setIsConnected(true));
     socket.on("disconnect", () => setIsConnected(false));
+
+    // Nueva escucha para actualizaciones instantáneas de puntos SIN fetch
+    socket.on('matchUpdate', (updatedMatch: any) => {
+      setActiveMatch(prev => {
+        if (prev?.id === updatedMatch.id) {
+          // Solo actualizamos si realmente es nuestro partido activo para no parpadear
+          return { ...prev, ...updatedMatch };
+        }
+        return prev;
+      });
+    });
     
     socket.on('matchWinnerDeclared', (data: WinnerInfo) => {
-      setWinner(data);
+      // Solo lanzamos victoria si el ganador pertenece al match de nuestra cancha
+      setWinner(prev => {
+        if (activeMatch?.teamA1 === data.team1 || activeMatch?.teamB1 === data.team1) {
+           return data;
+        }
+        return prev;
+      });
+      
       setNextMatchCountdown(10);
       
-      victoryAudio.current?.play().catch(e => console.log("Audio play blocked"));
-
-      const end = Date.now() + 7 * 1000;
-      const colors = data.alliance === 'A' ? ['#2563eb', '#ffffff', '#60a5fa'] : ['#dc2626', '#ffffff', '#f87171'];
-
-      (function frame() {
-        confetti({ particleCount: 4, angle: 60, spread: 55, origin: { x: 0 }, colors });
-        confetti({ particleCount: 4, angle: 120, spread: 55, origin: { x: 1 }, colors });
-        if (Date.now() < end) requestAnimationFrame(frame);
-      }());
+      // ... (mismo código de audio y confeti pero condicionado)
+      if (activeMatch?.teamA1 === data.team1 || activeMatch?.teamB1 === data.team1) {
+        victoryAudio.current?.play().catch(e => console.log("Audio play blocked"));
+        const end = Date.now() + 7 * 1000;
+        const colors = data.alliance === 'A' ? ['#2563eb', '#ffffff', '#60a5fa'] : ['#dc2626', '#ffffff', '#f87171'];
+        (function frame() {
+          confetti({ particleCount: 4, angle: 60, spread: 55, origin: { x: 0 }, colors });
+          confetti({ particleCount: 4, angle: 120, spread: 55, origin: { x: 1 }, colors });
+          if (Date.now() < end) requestAnimationFrame(frame);
+        }());
+      }
 
       const interval = setInterval(() => {
         setNextMatchCountdown(prev => {
@@ -106,10 +134,11 @@ export default function LegoTimerDisplay() {
     return () => {
       socket.off('timerUpdate');
       socket.off('matchesUpdate');
+      socket.off('matchUpdate');
       socket.off('matchWinnerDeclared');
       socket.off('awardsUpdate');
     };
-  }, [fetchActiveMatch]);
+  }, [fetchActiveMatch, activeMatch?.id, activeMatch?.teamA1, activeMatch?.teamB1]);
 
   // Efecto para detectar cuando se revela un ganador y lanzar confeti
   useEffect(() => {
@@ -179,6 +208,27 @@ export default function LegoTimerDisplay() {
   return (
     <div ref={containerRef} className="h-screen w-screen bg-[#020617] text-white relative overflow-hidden font-sans flex flex-col p-6 lg:p-10 selection:bg-none">
       
+      {/* 🏟️ SELECTOR DE CANCHA (Solo si no hay una seleccionada o para cambiar) */}
+      {!selectedField && (
+        <div className="fixed inset-0 z-[200] bg-slate-950 flex flex-col items-center justify-center p-10">
+          <h2 className="text-4xl font-black uppercase tracking-tighter mb-10 text-blue-500">Seleccionar Cancha</h2>
+          <div className="grid grid-cols-2 gap-6 max-w-2xl w-full">
+            {Array.from({ length: timer.fieldCount || 4 }).map((_, idx) => {
+              const f = `cancha${idx + 1}`;
+              return (
+                <button 
+                  key={f}
+                  onClick={() => handleFieldSelect(f)}
+                  className="bg-slate-900 hover:bg-blue-600 border-2 border-slate-800 p-10 rounded-3xl text-2xl font-black uppercase transition-all"
+                >
+                  {f.replace('cancha', 'Cancha ')}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* 🌌 FONDO DINÁMICO */}
       <div className="absolute inset-0 z-0 pointer-events-none">
         <div className={`absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full blur-[120px] transition-colors duration-1000 ${isCritical ? 'bg-red-600/15' : 'bg-blue-600/10'}`} />
@@ -397,7 +447,17 @@ export default function LegoTimerDisplay() {
                 </div>
                 <div>
                   <h1 className="text-3xl font-black uppercase tracking-tighter text-white/90">Championship <span className="text-blue-500">2026</span></h1>
-                  <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.4em] mt-1">Live Digital Feed</p>
+                  <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.4em] mt-1 flex items-center gap-2">
+                    Live Digital Feed 
+                    {selectedField && (
+                      <span 
+                        onClick={() => setSelectedField(null)} 
+                        className="bg-blue-600/20 text-blue-400 px-2 py-0.5 rounded cursor-pointer hover:bg-blue-600 hover:text-white transition-colors"
+                      >
+                        • {selectedField.replace('cancha', 'CANCHA ')}
+                      </span>
+                    )}
+                  </p>
                 </div>
               </div>
               <div className="text-right">

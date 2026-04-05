@@ -1,0 +1,10 @@
+node_modules
+.git
+.DS_Store
+dist
+.astro
+.vscode
+*.log
+coverage
+src/server/data/*.json
+!src/server/data/teams.json

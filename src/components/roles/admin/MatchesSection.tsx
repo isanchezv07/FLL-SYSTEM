@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { socket } from '@/lib/socket';
-import { Trophy, Zap, Hash, Layers, RefreshCw, X, ChevronRight, Settings2, Target, Info, Play, Pause, RotateCcw, ChevronLeft } from 'lucide-react';
+import { Trophy, Zap, Hash, Layers, RefreshCw, X, ChevronRight, Settings2, Target, Info, Play, Pause, RotateCcw, ChevronLeft, Users } from 'lucide-react';
 import { missionBounds, missionValueFromMissionsFlat, missionValueToPatch } from '@/lib/fllMissionMapping';
 
 const MISSION_NAMES: Record<string, string> = {
@@ -41,19 +41,86 @@ interface Match {
   precision?: number;
 }
 
+interface TimerState {
+  fields: Record<string, string | null>;
+  fieldCount: number;
+}
+
 export default function MatchesSection() {
   const [matches, setMatches] = useState<Match[]>([]);
+  const [timerState, setTimerState] = useState<TimerState>({ fields: {}, fieldCount: 4 });
   const [loading, setLoading] = useState(true);
   const [bracketSize, setBracketSize] = useState(8);
   const [bracketMode, setBracketMode] = useState<'1vs1' | '2vs2'>('2vs2');
   const [editingMatchId, setEditingMatchId] = useState<string | null>(null);
+  
+  // Estados para Selección Múltiple
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   useEffect(() => {
     fetchMatches();
     const handler = () => fetchMatches();
     socket.on('matchesUpdate', handler);
-    return () => { socket.off('matchesUpdate', handler); };
+    socket.on('timerUpdate', (data) => setTimerState(data));
+    socket.emit('getTimer');
+    return () => { 
+      socket.off('matchesUpdate', handler); 
+      socket.off('timerUpdate');
+    };
   }, []);
+
+  const assignToField = (fieldId: string, matchId: string | null) => {
+    socket.emit('assignMatchToField', { fieldId, matchId });
+  };
+
+  const updateFieldCount = (count: number) => {
+    socket.emit('updateTimer', { fieldCount: count });
+  };
+
+  const toggleSelection = (id: string) => {
+    setSelectedIds(prev => {
+      if (prev.includes(id)) return prev.filter(i => i !== id);
+      const match = matches.find(m => m.id === id);
+      const firstSelected = matches.find(m => m.id === prev[0]);
+      // Validar que sea de la misma ronda que el primero seleccionado
+      if (firstSelected && match && match.round !== firstSelected.round) {
+        alert("Solo puedes seleccionar partidos de la misma ronda");
+        return prev;
+      }
+      return [...prev, id];
+    });
+  };
+
+  const launchSimultaneous = async () => {
+    if (selectedIds.length === 0) return;
+    if (selectedIds.length > timerState.fieldCount) {
+      alert(`Máximo ${timerState.fieldCount} partidos simultáneos (uno por cancha activa)`);
+      return;
+    }
+
+    // 1. Limpiar canchas actuales
+    for (let i = 1; i <= timerState.fieldCount; i++) {
+      socket.emit('assignMatchToField', { fieldId: `cancha${i}`, matchId: null });
+    }
+
+    // 2. Asignar nuevos y poner en progreso
+    for (let i = 0; i < selectedIds.length; i++) {
+      const mId = selectedIds[i];
+      socket.emit('assignMatchToField', { fieldId: `cancha${i+1}`, matchId: mId });
+      
+      await fetch(`/api/matches/${mId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'in_progress' })
+      });
+    }
+
+    setSelectionMode(false);
+    setSelectedIds([]);
+    socket.emit('resetTimer');
+    alert(`Lanzados ${selectedIds.length} partidos simultáneos`);
+  };
 
   const fetchMatches = async () => {
     try {
@@ -155,13 +222,40 @@ export default function MatchesSection() {
 
           {/* ENGINE CONTROLS (TIMER) */}
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => socket.emit('startTimer')}
-              className="flex items-center gap-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-10 py-5 rounded-[24px] font-black uppercase tracking-[0.2em] text-sm shadow-[0_0_30px_rgba(16,185,129,0.3)] transition-all active:scale-95 group"
-            >
-              <div className="w-3 h-3 bg-white rounded-full animate-pulse shadow-[0_0_10px_white]" />
-              Launch Engine
-            </button>
+             <div className="flex bg-slate-950 p-2 rounded-2xl border border-slate-800 mr-4">
+                <button 
+                  onClick={() => { setSelectionMode(false); setSelectedIds([]); }}
+                  className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${!selectionMode ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-white'}`}
+                >
+                  Clásico
+                </button>
+                <button 
+                  onClick={() => setSelectionMode(true)}
+                  className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${selectionMode ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-white'}`}
+                >
+                  Simultáneo
+                </button>
+             </div>
+
+            {!selectionMode ? (
+              <>
+                <button
+                  onClick={() => socket.emit('startTimer')}
+                  className="flex items-center gap-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-10 py-5 rounded-[24px] font-black uppercase tracking-[0.2em] text-sm shadow-[0_0_30px_rgba(16,185,129,0.3)] transition-all active:scale-95 group"
+                >
+                  <div className="w-3 h-3 bg-white rounded-full animate-pulse shadow-[0_0_10px_white]" />
+                  Launch Engine
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={launchSimultaneous}
+                disabled={selectedIds.length === 0}
+                className="flex items-center gap-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-10 py-5 rounded-[24px] font-black uppercase tracking-[0.2em] text-sm shadow-[0_0_30px_rgba(37,99,235,0.3)] transition-all active:scale-95 disabled:opacity-20 group"
+              >
+                Launch {selectedIds.length} Matches
+              </button>
+            )}
             
             <button
               onClick={() => socket.emit('pauseTimer')}
@@ -180,8 +274,19 @@ export default function MatchesSection() {
             </button>
           </div>
 
-          {/* Configuración de Bracket */}
+          {/* Configuración de Bracket y Canchas */}
           <div className="flex items-center gap-4 bg-slate-950/50 p-3 rounded-[24px] border border-slate-800/50">
+            <div className="flex flex-col px-2 border-r border-slate-800">
+              <span className="text-[8px] font-black text-slate-600 uppercase tracking-widest mb-1 text-center">Canchas</span>
+              <select 
+                value={timerState.fieldCount} 
+                onChange={(e) => updateFieldCount(Number(e.target.value))} 
+                className="bg-transparent text-emerald-400 font-black text-xs outline-none uppercase tracking-widest cursor-pointer"
+              >
+                {[1, 2, 3, 4, 5, 6].map(n => <option key={n} value={n}>{n} Canchas</option>)}
+              </select>
+            </div>
+            
             <div className="flex flex-col px-2">
               <span className="text-[8px] font-black text-slate-600 uppercase tracking-widest mb-1 text-center">Mode</span>
               <select value={bracketMode} onChange={(e) => setBracketMode(e.target.value as any)} className="bg-transparent text-blue-400 font-black text-xs outline-none uppercase tracking-widest cursor-pointer">
@@ -229,13 +334,44 @@ export default function MatchesSection() {
                 {round.matches.map(match => (
                   <div 
                     key={match.id}
-                    onClick={() => setEditingMatchId(match.id)}
+                    onClick={() => selectionMode ? toggleSelection(match.id) : setEditingMatchId(match.id)}
                     className={`group relative bg-slate-900/40 border-2 rounded-[32px] p-6 cursor-pointer transition-all duration-500 hover:scale-[1.05] hover:bg-slate-900 shadow-2xl ${
+                      selectedIds.includes(match.id) ? 'border-amber-500 bg-amber-500/10 shadow-amber-500/20' :
                       match.status === 'in_progress' ? 'border-blue-500 shadow-blue-500/20 bg-slate-900 animate-pulse-slow' : 'border-slate-800 hover:border-slate-700'
                     }`}
                   >
+                    {selectedIds.includes(match.id) && (
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-500 text-white px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest z-30 animate-bounce">
+                        Seleccionado
+                      </div>
+                    )}
                     <div className="absolute -top-3 left-8 bg-slate-950 px-4 py-1 rounded-full border border-slate-800 text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] z-10 group-hover:text-blue-400 transition-colors">MATCH #{match.position}</div>
                     
+                    {/* Field Assignment Selector */}
+                    <div className="absolute -top-3 right-4 z-20 flex gap-1">
+                      {Array.from({ length: timerState.fieldCount }).map((_, idx) => {
+                        const f = `cancha${idx + 1}`;
+                        const isAssigned = timerState.fields?.[f] === match.id;
+                        return (
+                          <button
+                            key={f}
+                            title={f}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              assignToField(f, isAssigned ? null : match.id);
+                            }}
+                            className={`w-5 h-5 rounded-full text-[8px] font-black flex items-center justify-center border transition-all ${
+                              isAssigned 
+                                ? 'bg-blue-600 border-blue-400 text-white shadow-[0_0_10px_rgba(37,99,235,0.5)]' 
+                                : 'bg-slate-900 border-slate-800 text-slate-600 hover:border-slate-500'
+                            }`}
+                          >
+                            {idx + 1}
+                          </button>
+                        );
+                      })}
+                    </div>
+
                     <div className="space-y-4 pt-2">
                       <div className="flex justify-between items-center">
                         <span className="text-xs font-black text-slate-300 uppercase truncate max-w-[150px]">{match.teamA1 || 'TBD'} {match.teamA2 && `+ ${match.teamA2}`}</span>

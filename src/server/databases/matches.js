@@ -8,8 +8,13 @@ import fs from 'fs';
 // Paths
 // -----------------------------------------
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const dataDir = join(__dirname, '..', 'data');
+let currentDir;
+if (typeof __dirname !== 'undefined') {
+  currentDir = __dirname;
+} else {
+  currentDir = dirname(fileURLToPath(import.meta.url));
+}
+const dataDir = join(currentDir, '..', 'data');
 const dbPath = join(dataDir, 'matches.json');
 
 // Crear carpeta /data si no existe

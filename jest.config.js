@@ -1,12 +1,12 @@
 /** @type {import('jest').Config} */
 export default {
-  preset: 'ts-jest/presets/default-esm',
+  // preset: 'ts-jest/presets/default-esm',
   testEnvironment: 'jsdom',
   extensionsToTreatAsEsm: ['.ts', '.tsx'],
   roots: ['<rootDir>/src'],
   testMatch: [
-    '**/__tests__/**/*.{ts,tsx}',
-    '**/*.{spec,test}.{ts,tsx}'
+    '**/__tests__/**/*.{ts,tsx,js}',
+    '**/*.{spec,test}.{ts,tsx,js}'
   ],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
@@ -14,15 +14,21 @@ export default {
     '\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$': 'jest-transform-stub'
   },
   transform: {
-    '^.+\\.(ts|tsx)$': ['ts-jest', {
-      useESM: true,
+    '^.+\\.(ts|tsx|js|jsx)$': ['ts-jest', {
+      useESM: false,
+      diagnostics: {
+        ignoreCodes: [1343]
+      },
       tsconfig: {
         jsx: 'react-jsx',
         esModuleInterop: true,
-        allowSyntheticDefaultImports: true
+        allowSyntheticDefaultImports: true,
       }
     }]
   },
+  transformIgnorePatterns: [
+    '/node_modules/(?!(lowdb|steno)/)'
+  ],
   setupFilesAfterEnv: ['<rootDir>/src/setupTests.ts'],
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',
