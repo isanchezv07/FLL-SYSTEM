@@ -122,22 +122,49 @@ Si ocurre un error crítico durante el torneo:
 
 ---
 
-## 🐳 8. Despliegue en Producción
+## 🚀 8. Guía de Ejecución y Despliegue
 
-### Docker Compose (Recomendado)
-```yaml
-services:
-  scoring-system:
-    build: .
-    ports:
-      - "4321:4321" # Frontend
-      - "3000:3000" # API & Sockets
-    volumes:
-      - ./src/server/data:/app/src/server/data # Persistencia persistente
+### Opción A: Ejecución Local (Desarrollo)
+Ideal para modificar el código y ver cambios al instante.
+1. **Instalar dependencias:** `npm install`
+2. **Iniciar todo el sistema:** `node start-server.js`
+   *   El frontend estará en `http://localhost:4321`
+   *   El backend estará en `http://localhost:3000`
+
+### Opción B: Ejecución con Docker (Producción)
+Recomendado para torneos reales. Asegura que el sistema sea estable y no dependa de las librerías instaladas en tu PC.
+1. **Construir e iniciar:**
+   ```bash
+   docker-compose up --build
+   ```
+2. **Detener el sistema:**
+   ```bash
+   docker-compose down
+   ```
+3. **Solución de problemas (Puerto ocupado):**
+   Si Docker falla porque el puerto ya está en uso, libera los puertos 4321 y 3000:
+   ```bash
+   kill -9 $(lsof -t -i:4321) && kill -9 $(lsof -t -i:3000)
+   ```
+
+---
+
+## 🌐 9. Acceso Remoto y LocalTunnel
+
+Si necesitas que alguien fuera de tu red Wi-Fi (por ejemplo, un juez remoto o público en internet) vea el marcador, puedes usar **LocalTunnel**.
+
+### Comando:
+```bash
+npx localtunnel --port 4321
 ```
 
-### Configuración de Red
-Es vital que el servidor esté en la misma red WiFi/LAN que los clientes. Los jueces acceden mediante la IP local (ej. `http://192.168.1.50:4321`).
+### ¿Para qué sirve?
+Este comando expone tu servidor local al internet público de forma segura y temporal.
+1. **Túnel Seguro:** Crea una conexión entre el servidor de LocalTunnel y tu puerto `4321`.
+2. **URL Pública:** Te entregará una dirección web (ej: `https://fll-score-2026.loca.lt`) que cualquiera puede abrir en su navegador.
+3. **Sin Configuración de Router:** No necesitas abrir puertos en tu modem (Port Forwarding), lo cual es ideal para redes de hoteles o centros de convenciones donde no tienes acceso al router.
+
+> **Importante:** LocalTunnel es solo para el Scoreboard visual. Los jueces deben estar preferiblemente en la misma red local para garantizar la mínima latencia posible en la carga de puntos.
 
 ---
 Desarrollado con estándares de ingeniería de software para garantizar un torneo justo y emocionante. 🤖🏆

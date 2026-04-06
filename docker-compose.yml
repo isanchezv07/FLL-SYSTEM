@@ -8,6 +8,7 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=production
+      - IS_DOCKER=true
     volumes:
       - ./src/server/data:/app/src/server/data
     restart: unless-stopped
