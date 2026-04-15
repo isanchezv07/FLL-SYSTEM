@@ -1,14 +1,22 @@
-version: '3.8'
-
 services:
   scoring-system:
     build: .
+    container_name: fll-scoring-system
     ports:
       - "4321:4321"
       - "3000:3000"
     environment:
       - NODE_ENV=production
       - IS_DOCKER=true
+      - PORT=4321
+      - HOST=0.0.0.0
     volumes:
       - ./src/server/data:/app/src/server/data
     restart: unless-stopped
+    # Add healthcheck to ensure the system is actually up
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/matches"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s

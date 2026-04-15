@@ -66,81 +66,90 @@ export default function InteractiveMap() {
 
   if (!isConfigured) {
     return (
-      <div className="w-full max-w-2xl mx-auto animate-in fade-in zoom-in duration-500">
-        <div className="bg-slate-900/80 backdrop-blur-2xl rounded-[48px] border border-slate-800 p-8 md:p-12 shadow-[0_32px_64px_rgba(0,0,0,0.6)]">
+      <div className="w-full max-w-2xl mx-auto animate-in fade-in zoom-in duration-500 py-12 px-4">
+        {/* Barra decorativa bandera de México */}
+        <div className="fixed top-0 left-0 w-full h-1 flex z-[60]">
+          <div className="h-full flex-1 bg-[#006847]"></div>
+          <div className="h-full flex-1 bg-white"></div>
+          <div className="h-full flex-1 bg-[#CE1126]"></div>
+        </div>
+
+        <div className="bg-white/80 backdrop-blur-2xl rounded-[48px] border border-white p-8 md:p-12 shadow-[0_32px_64px_-15px_rgba(0,0,0,0.1)]">
           <div className="flex flex-col items-center mb-12 text-center">
-            <div className="w-20 h-20 bg-blue-600/20 rounded-3xl flex items-center justify-center mb-6 border border-blue-500/30">
-              <Monitor className="text-blue-400 w-10 h-10" />
+            <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center mb-6 shadow-sm border border-gray-100 transform transition-transform hover:scale-105">
+              <img src="/img/logo_internacional.svg" alt="FLL Logo" className="h-12 w-auto" />
             </div>
-            <h2 className="text-4xl font-black uppercase tracking-tighter text-white mb-2">Setup Referee</h2>
-            <p className="text-slate-400 font-bold text-xs uppercase tracking-[0.3em]">Configure match & alliance</p>
+            <h2 className="text-4xl font-black uppercase tracking-tighter text-gray-900 mb-2 italic">
+              Setup <span className="text-[#006847]">Ref</span>er<span className="text-[#CE1126]">ee</span>
+            </h2>
+            <p className="text-gray-400 font-bold text-xs uppercase tracking-[0.3em]">Configuración de Mesa y Partido</p>
           </div>
 
           <div className="space-y-8">
             <div className="space-y-4">
               <div className="flex items-center gap-2 ml-4">
-                <Hash className="w-3 h-3 text-blue-500" />
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Select match</label>
+                <Hash className="w-3 h-3 text-[#006847]" />
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Seleccionar Partido</label>
               </div>
-              <select 
-                value={selectedMatchId} 
-                onChange={(e) => setSelectedMatchId(e.target.value)}
-                className="w-full bg-slate-950/50 p-5 rounded-[24px] border-2 border-slate-800 focus:border-blue-500 outline-none font-black text-white shadow-inner transition-all appearance-none cursor-pointer"
-              >
-                <option value="">-- Seleccionar Partido Activo --</option>
-                
-                {/* 1. Partidos asignados a canchas por el admin */}
-                <optgroup label="🔴 EN CANCHA (ASIGNADOS)">
-                  {Object.entries(timerState.fields || {}).map(([f, mId]) => {
-                    if (!mId) return null;
-                    const m = matches.find(match => match.id === mId);
-                    if (!m) return null;
-                    return (
-                      <option key={`field-${m.id}`} value={m.id}>
-                        {f.replace('cancha', 'CANCHA ')}: Match #{m.position} ({m.teamA1} vs {m.teamB1})
-                      </option>
-                    );
-                  })}
-                </optgroup>
+              <div className="relative">
+                <select 
+                  value={selectedMatchId} 
+                  onChange={(e) => setSelectedMatchId(e.target.value)}
+                  className="w-full bg-white p-5 rounded-[24px] border border-gray-200 focus:border-[#006847] focus:ring-4 focus:ring-[#006847]/5 outline-none font-bold text-gray-800 shadow-sm transition-all appearance-none cursor-pointer"
+                >
+                  <option value="">-- Seleccionar Partido Activo --</option>
+                  
+                  <optgroup label="🟢 EN CANCHA (ASIGNADOS)">
+                    {Object.entries(timerState.fields || {}).map(([f, mId]) => {
+                      if (!mId) return null;
+                      const m = matches.find(match => match.id === mId);
+                      if (!m) return null;
+                      return (
+                        <option key={`field-${m.id}`} value={m.id}>
+                          {f.replace('cancha', 'CANCHA ')}: Match #{m.position} ({m.teamA1} vs {m.teamB1})
+                        </option>
+                      );
+                    })}
+                  </optgroup>
 
-                {/* 2. Partidos marcados como 'in_progress' pero quizás no asignados a cancha física */}
-                <optgroup label="⏱️ OTROS PARTIDOS ACTIVOS">
-                  {matches
-                    .filter(m => m.status === 'in_progress' && !Object.values(timerState.fields).includes(m.id))
-                    .map(m => (
-                      <option key={`active-${m.id}`} value={m.id}>
-                        Match #{m.position} • Ronda {m.round}
-                      </option>
-                    ))
-                  }
-                </optgroup>
-
-                {matches.filter(m => m.status === 'in_progress' || Object.values(timerState.fields).includes(m.id)).length === 0 && (
-                  <option disabled>No hay partidos activos. Espera al Admin.</option>
-                )}
-              </select>
+                  <optgroup label="⏱️ OTROS PARTIDOS ACTIVOS">
+                    {matches
+                      .filter(m => m.status === 'in_progress' && !Object.values(timerState.fields).includes(m.id))
+                      .map(m => (
+                        <option key={`active-${m.id}`} value={m.id}>
+                          Match #{m.position} • Ronda {m.round}
+                        </option>
+                      ))
+                    }
+                  </optgroup>
+                </select>
+                <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                  <ChevronRight className="w-5 h-5 rotate-90" />
+                </div>
+              </div>
             </div>
 
             <div className="space-y-4">
               <div className="flex items-center gap-2 ml-4">
-                <Users className="w-3 h-3 text-blue-500" />
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Select Alliance Table</label>
+                <Users className="w-3 h-3 text-[#006847]" />
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Mesa de Alianza</label>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 {['A1', 'A2', 'B1', 'B2'].map(t => {
                   const teamName = matches.find(m => m.id === selectedMatchId)?.[`team${t}`];
+                  const isSelected = selectedTeam === t;
                   return (
                     <button
                       key={t}
                       onClick={() => setSelectedTeam(t)}
-                      className={`group p-6 rounded-[24px] font-black transition-all border-2 text-left shadow-lg active:scale-95 ${
-                        selectedTeam === t 
-                          ? 'bg-blue-600 border-blue-400 text-white shadow-blue-600/20' 
-                          : 'bg-slate-950/50 border-slate-800 text-slate-500 hover:border-slate-700'
+                      className={`group p-6 rounded-[24px] font-bold transition-all border text-left shadow-sm active:scale-95 ${
+                        isSelected 
+                          ? 'bg-gray-900 border-gray-900 text-white shadow-xl shadow-gray-900/20' 
+                          : 'bg-white border-gray-200 text-gray-500 hover:border-[#006847] hover:text-[#006847]'
                       }`}
                     >
-                      <div className={`text-[10px] uppercase tracking-widest mb-1 ${selectedTeam === t ? 'text-blue-200' : 'text-slate-600'}`}>Table {t}</div>
-                      <div className="text-sm uppercase tracking-tight truncate">{teamName || 'Empty'}</div>
+                      <div className={`text-[10px] uppercase tracking-widest mb-1 ${isSelected ? 'text-gray-400' : 'text-gray-400 group-hover:text-[#006847]'}`}>Table {t}</div>
+                      <div className="text-sm uppercase tracking-tight truncate font-black">{teamName || 'Vacío'}</div>
                     </button>
                   );
                 })}
@@ -150,49 +159,65 @@ export default function InteractiveMap() {
             <button
               onClick={handleConfirm}
               disabled={!selectedMatchId || !selectedTeam}
-              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-20 disabled:grayscale py-6 rounded-[24px] font-black uppercase tracking-[0.2em] text-sm text-white shadow-[0_20px_40px_rgba(37,99,235,0.3)] transition-all active:translate-y-1"
+              className="w-full bg-gray-900 hover:bg-black disabled:opacity-20 disabled:grayscale py-6 rounded-[24px] font-black uppercase tracking-[0.2em] text-sm text-white shadow-xl hover:shadow-gray-900/30 transition-all active:translate-y-1 transform hover:-translate-y-1"
             >
-              Start Session
+              Iniciar Sesión de Referee
             </button>
           </div>
+        </div>
+        
+        {/* Fondo decorativo tech */}
+        <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
+          <div className="absolute inset-0 bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:32px_32px] opacity-40"></div>
+          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#006847]/5 blur-[120px] rounded-full" />
+          <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#CE1126]/5 blur-[120px] rounded-full" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="w-full space-y-8 animate-in fade-in duration-700">
-      <div className="flex flex-col lg:flex-row gap-6 items-stretch">
-        <div className="flex-1 flex flex-wrap items-center gap-4 bg-slate-900/50 backdrop-blur-xl p-6 rounded-[32px] border border-slate-800 shadow-xl">
+    <div className="w-full min-h-screen bg-[#f8fafc] p-6 lg:p-12 space-y-8 animate-in fade-in duration-700 relative overflow-hidden font-sans">
+      {/* Barra decorativa bandera de México */}
+      <div className="fixed top-0 left-0 w-full h-1 flex z-[60]">
+        <div className="h-full flex-1 bg-[#006847]"></div>
+        <div className="h-full flex-1 bg-white"></div>
+        <div className="h-full flex-1 bg-[#CE1126]"></div>
+      </div>
+
+      <div className="relative z-10 flex flex-col lg:flex-row gap-6 items-stretch">
+        <div className="flex-1 flex flex-wrap items-center gap-6 bg-white/70 backdrop-blur-xl p-6 rounded-[32px] border border-white shadow-xl shadow-gray-200/50">
+          <div className="p-2 bg-white rounded-xl shadow-sm border border-gray-100">
+            <img src="/img/logo_internacional.svg" alt="FLL Logo" className="h-10 w-auto" />
+          </div>
           <MatchTimer />
-          <div className="h-10 w-px bg-slate-800 mx-2 hidden sm:block" />
+          <div className="h-10 w-px bg-gray-200 mx-2 hidden sm:block" />
           <div className="flex gap-4">
-            <div className="bg-slate-950 px-5 py-2.5 rounded-[20px] border border-slate-800 shadow-inner">
-              <div className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-0.5">Match</div>
-              <div className="text-xl font-black text-blue-400 tabular-nums leading-none">#{currentMatch?.position || '—'}</div>
+            <div className="bg-white px-5 py-3 rounded-[20px] border border-gray-100 shadow-sm">
+              <div className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-0.5">Partido</div>
+              <div className="text-xl font-black text-[#006847] tabular-nums leading-none">#{currentMatch?.position || '—'}</div>
             </div>
-            <div className="bg-slate-950 px-5 py-2.5 rounded-[20px] border border-slate-800 shadow-inner">
-              <div className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-0.5">Table</div>
-              <div className="text-xl font-black text-blue-400 leading-none">{selectedTeam}</div>
+            <div className="bg-white px-5 py-3 rounded-[20px] border border-gray-100 shadow-sm">
+              <div className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-0.5">Mesa</div>
+              <div className="text-xl font-black text-[#006847] leading-none">{selectedTeam}</div>
             </div>
           </div>
           <div className="flex-1 min-w-[150px] hidden md:block pl-4">
-            <div className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-0.5">Active Team</div>
-            <div className="text-sm font-black text-white uppercase tracking-tight truncate">{currentMatch?.[`team${selectedTeam}`] || '—'}</div>
+            <div className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-0.5">Equipo Activo</div>
+            <div className="text-sm font-black text-gray-800 uppercase tracking-tight truncate">{currentMatch?.[`team${selectedTeam}`] || '—'}</div>
           </div>
           <button 
             onClick={() => setIsConfigured(false)}
-            className="flex items-center gap-2 text-[9px] font-black bg-slate-800 hover:bg-slate-700 hover:text-white text-slate-400 px-5 py-3 rounded-[18px] uppercase tracking-[0.15em] transition-all border border-slate-700 active:scale-95"
+            className="flex items-center gap-2 text-[9px] font-black bg-white hover:bg-gray-50 text-gray-400 hover:text-[#CE1126] px-5 py-3 rounded-[18px] uppercase tracking-[0.15em] transition-all border border-gray-200 active:scale-95 shadow-sm"
           >
-            <RotateCcw className="w-3 h-3" /> Change
+            <RotateCcw className="w-3 h-3" /> Cambiar
           </button>
         </div>
       </div>
 
       <div className="relative group">
-        <div className="absolute inset-0 bg-blue-500/5 blur-[100px] rounded-full pointer-events-none" />
-        <div className="relative overflow-hidden rounded-[48px] shadow-[0_32px_64px_rgba(0,0,0,0.5)] bg-slate-950 border-4 border-slate-900">
-          <img src="/field.png" alt="FLL Field" className="w-full h-auto block" />
+        <div className="relative overflow-hidden rounded-[48px] shadow-[0_48px_80px_-20px_rgba(0,0,0,0.15)] bg-white border-8 border-white">
+          <img src="/field.png" alt="FLL Field" className="w-full h-auto block opacity-90 group-hover:opacity-100 transition-opacity duration-500" />
           {mapMarkers.map((marker) => (
             <a
               key={marker.id}
@@ -200,10 +225,7 @@ export default function InteractiveMap() {
               className="absolute group/marker"
               style={{ top: marker.top, left: marker.left, width: '7%', height: '9%', transform: 'translate(-50%, -50%)' }}
             >
-              <div className="w-full h-full rounded-full border-2 border-blue-500/0 group-hover/marker:border-blue-400 group-hover/marker:bg-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0)] group-hover/marker:shadow-[0_0_20px_rgba(59,130,246,0.5)]" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-2 h-2 " />
-              </div>
+              <div className="w-full h-full rounded-full border-4 border-transparent group-hover/marker:border-[#006847]/40 group-hover/marker:bg-[#006847]/10 transition-all duration-300" />
             </a>
           ))}
         </div>
@@ -214,12 +236,19 @@ export default function InteractiveMap() {
           <a
             key={marker.id}
             href={`/misiones/${marker.id}`}
-            className="flex flex-col items-center justify-center aspect-square bg-slate-900 border border-slate-800 rounded-[24px] hover:border-blue-500 hover:bg-slate-800 transition-all shadow-lg active:scale-90 group"
+            className="flex flex-col items-center justify-center aspect-square bg-white border border-gray-100 rounded-[24px] hover:border-[#006847] hover:shadow-xl hover:shadow-[#006847]/5 transition-all active:scale-90 group shadow-sm"
           >
-            <span className="text-xl font-black text-slate-600 group-hover:text-blue-400 transition-colors">{marker.id}</span>
-            <span className="text-[8px] font-black text-slate-700 group-hover:text-blue-500 uppercase tracking-widest mt-1">Goal</span>
+            <span className="text-2xl font-black text-gray-300 group-hover:text-[#006847] transition-colors italic">{marker.id}</span>
+            <span className="text-[8px] font-black text-gray-400 group-hover:text-gray-600 uppercase tracking-widest mt-1">Misión</span>
           </a>
         ))}
+      </div>
+
+      {/* Fondo decorativo tech */}
+      <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:32px_32px] opacity-40"></div>
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#006847]/5 blur-[120px] rounded-full" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#CE1126]/5 blur-[120px] rounded-full" />
       </div>
     </div>
   );

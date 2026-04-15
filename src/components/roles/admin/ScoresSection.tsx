@@ -74,29 +74,34 @@ export default function ScoresSection() {
   if (loading) return (
     <div className="flex flex-col items-center justify-center p-20 space-y-6">
       <div className="relative w-16 h-16">
-        <div className="absolute inset-0 border-4 border-blue-500/20 rounded-full" />
-        <div className="absolute inset-0 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+        <div className="absolute inset-0 border-4 border-[#006847]/10 rounded-full" />
+        <div className="absolute inset-0 border-4 border-[#006847] border-t-transparent rounded-full animate-spin" />
       </div>
-      <p className="text-slate-500 font-black uppercase tracking-[0.2em] text-xs">Processing Rankings</p>
+      <p className="text-gray-400 font-black uppercase tracking-[0.2em] text-xs">Procesando Rankings</p>
     </div>
   );
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-700">
+    <div className="space-y-8 animate-in fade-in duration-700 font-sans">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-black text-white tracking-tighter uppercase">Leaderboard</h2>
-          <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mt-1">Live Tournament Standings</p>
+          <h2 className="text-4xl font-black text-gray-900 tracking-tighter uppercase italic">
+            Tabla de <span className="text-[#006847]">Posi</span>cio<span className="text-[#CE1126]">nes</span>
+          </h2>
+          <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mt-1 flex items-center gap-2">
+            <span className="w-2 h-2 bg-[#006847] rounded-full animate-pulse" />
+            Resultados en vivo del torneo
+          </p>
         </div>
         <button 
           onClick={fetchScores}
-          className="p-3 bg-slate-900 hover:bg-slate-800 text-blue-400 rounded-2xl border border-slate-800 transition-all active:scale-90"
+          className="p-4 bg-white hover:bg-gray-50 text-[#006847] rounded-2xl border border-gray-100 transition-all active:scale-90 shadow-sm"
         >
           <RefreshCw className="w-5 h-5" />
         </button>
       </div>
 
-      <div className="grid grid-cols-1 gap-4">
+      <div className="grid grid-cols-1 gap-6">
         {ranking.length > 0 ? (
           ranking.map((team, index) => {
             const isFirst = index === 0;
@@ -105,56 +110,68 @@ export default function ScoresSection() {
             return (
               <div
                 key={team.team}
-                className={`group grid grid-cols-12 items-center px-8 py-6 rounded-[32px] border-2 transition-all duration-300 hover:scale-[1.02] ${
+                className={`group grid grid-cols-12 items-center px-8 py-7 rounded-[40px] border transition-all duration-500 hover:scale-[1.02] shadow-xl shadow-gray-200/40 relative overflow-hidden ${
                   isFirst 
-                    ? 'bg-blue-600 border-blue-400 shadow-[0_20px_40px_rgba(37,99,235,0.2)] text-white' 
-                    : isTop3 
-                      ? 'bg-slate-900 border-slate-700 text-slate-200' 
-                      : 'bg-slate-900/40 border-slate-800/50 text-slate-400'
+                    ? 'bg-gray-900 border-gray-900 text-white' 
+                    : 'bg-white border-white text-gray-800'
                 }`}
               >
+                {/* Decoración Bandera para el primero */}
+                {isFirst && (
+                  <div className="absolute top-0 left-0 w-full h-1 flex">
+                    <div className="h-full flex-1 bg-[#006847]"></div>
+                    <div className="h-full flex-1 bg-white"></div>
+                    <div className="h-full flex-1 bg-[#CE1126]"></div>
+                  </div>
+                )}
+
                 {/* Posición */}
                 <div className="col-span-1 flex items-center gap-4">
-                  <span className={`font-black text-2xl tabular-nums ${isFirst ? 'text-white' : 'text-slate-500'}`}>
+                  <span className={`font-black text-3xl tabular-nums italic ${isFirst ? 'text-white' : 'text-gray-200 group-hover:text-[#006847] transition-colors'}`}>
                     {(index + 1).toString().padStart(2, '0')}
                   </span>
                 </div>
 
                 {/* Info Equipo */}
                 <div className="col-span-7 flex items-center gap-6">
-                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-sm shadow-xl transition-transform group-hover:rotate-12 ${
-                    isFirst ? 'bg-white text-blue-600' : 'bg-slate-800 text-slate-400 border border-slate-700'
+                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center font-black text-sm shadow-xl transition-transform group-hover:rotate-12 border ${
+                    isFirst ? 'bg-white text-gray-900 border-gray-100' : 'bg-gray-50 text-gray-400 border-gray-100'
                   }`}>
                     {team.team.substring(0, 2).toUpperCase()}
                   </div>
                   <div className="flex flex-col">
-                    <span className={`font-black uppercase tracking-tight text-lg ${isFirst ? 'text-white' : 'text-slate-200'}`}>
+                    <span className={`font-black uppercase tracking-tight text-xl italic ${isFirst ? 'text-white' : 'text-gray-900'}`}>
                       {team.team}
                     </span>
-                    <span className={`text-[10px] font-bold uppercase tracking-widest ${isFirst ? 'text-blue-200' : 'text-slate-600'}`}>
-                      {team.matchesPlayed} Matches Played
-                    </span>
+                    <div className="flex items-center gap-3">
+                      <span className={`text-[10px] font-bold uppercase tracking-widest ${isFirst ? 'text-gray-400' : 'text-gray-400'}`}>
+                        {team.matchesPlayed} Partidos Jugados
+                      </span>
+                      {isTop3 && (
+                        <div className={`w-1.5 h-1.5 rounded-full ${index === 0 ? 'bg-[#006847]' : index === 1 ? 'bg-gray-300' : 'bg-[#CE1126]'}`} />
+                      )}
+                    </div>
                   </div>
                 </div>
 
                 {/* Puntos */}
                 <div className="col-span-4 text-right flex flex-col items-end">
-                  <div className={`font-mono font-black text-3xl tabular-nums ${isFirst ? 'text-white' : 'text-blue-400'}`}>
+                  <div className={`font-mono font-black text-4xl tabular-nums tracking-tighter ${isFirst ? 'text-white' : 'text-[#006847]'}`}>
                     {team.total.toLocaleString()}
                   </div>
-                  <span className={`text-[9px] font-black uppercase tracking-[0.2em] ${isFirst ? 'text-blue-200' : 'text-slate-600'}`}>
-                    Accumulated Points
+                  <span className={`text-[9px] font-black uppercase tracking-[0.2em] ${isFirst ? 'text-gray-500' : 'text-gray-400'}`}>
+                    Puntos Acumulados
                   </span>
                 </div>
               </div>
             );
           })
         ) : (
-          <div className="text-center py-32 bg-slate-900/20 rounded-[48px] border-4 border-dashed border-slate-800/50">
-            <div className="w-20 h-20 bg-slate-900 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-slate-800">
-              <Users className="w-10 h-10 text-slate-700" />
+          <div className="text-center py-32 bg-white rounded-[60px] border-4 border-dashed border-gray-100">
+            <div className="w-24 h-24 bg-gray-50 rounded-3xl flex items-center justify-center mx-auto mb-8 border border-gray-100 shadow-sm">
+              <Users className="w-12 h-12 text-gray-200" />
             </div>
-            <p className="text-slate-500 font-black uppercase tracking-widest text-sm">No match data available yet</p>
+            <p className="text-gray-400 font-black uppercase tracking-widest text-sm italic">No hay datos de partidos disponibles aún</p>
           </div>
         )}
       </div>

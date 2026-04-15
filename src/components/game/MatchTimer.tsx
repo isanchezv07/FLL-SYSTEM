@@ -31,17 +31,17 @@ export default function MatchTimer() {
   };
 
   const getStatusColor = () => {
-    if (timer.timeRemaining <= 10 && timer.isRunning) return 'text-red-500 drop-shadow-[0_0_12px_rgba(239,68,68,0.7)] animate-pulse';
-    if (timer.isRunning) return 'text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.4)]';
-    return 'text-slate-500';
+    if (timer.timeRemaining <= 10 && timer.isRunning) return 'text-[#CE1126] drop-shadow-[0_0_12px_rgba(206,17,38,0.4)] animate-pulse';
+    if (timer.isRunning) return 'text-[#006847] drop-shadow-[0_0_8px_rgba(0,104,71,0.2)]';
+    return 'text-gray-400';
   };
 
   return (
-    <div className="group flex items-center gap-4 bg-slate-900/50 backdrop-blur-xl px-5 py-2.5 rounded-2xl border border-slate-700/50 shadow-[0_8px_32px_rgba(0,0,0,0.4)] transition-all hover:border-slate-600">
+    <div className="group flex items-center gap-4 bg-white/70 backdrop-blur-xl px-5 py-2.5 rounded-2xl border border-white shadow-lg shadow-gray-200/50 transition-all hover:border-gray-200">
       <div className="relative">
-        <Clock className={`w-5 h-5 ${timer.isRunning ? 'text-blue-400 animate-spin-slow' : 'text-slate-600'}`} />
+        <Clock className={`w-5 h-5 transition-colors ${timer.isRunning ? 'text-[#006847]' : 'text-gray-300'}`} />
         {timer.isRunning && (
-          <div className="absolute inset-0 bg-blue-400/20 blur-md rounded-full animate-pulse" />
+          <div className="absolute inset-0 bg-[#006847]/10 blur-md rounded-full animate-pulse" />
         )}
       </div>
       
@@ -49,9 +49,9 @@ export default function MatchTimer() {
         {formatTime(timer.timeRemaining)}
       </div>
 
-      <div className="flex flex-col border-l border-slate-700/50 pl-4 h-full justify-center">
-        <span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] leading-none mb-1">Status</span>
-        <span className={`text-[10px] font-bold uppercase tracking-widest leading-none ${timer.isRunning ? 'text-emerald-500' : 'text-red-500'}`}>
+      <div className="flex flex-col border-l border-gray-100 pl-4 h-full justify-center">
+        <span className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em] leading-none mb-1">Status</span>
+        <span className={`text-[10px] font-bold uppercase tracking-widest leading-none ${timer.isRunning ? 'text-[#006847]' : 'text-[#CE1126]'}`}>
           {timer.isRunning ? 'Live' : 'Stop'}
         </span>
       </div>
