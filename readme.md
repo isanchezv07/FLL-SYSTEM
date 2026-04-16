@@ -40,10 +40,16 @@
    ```
 
 ### Uso con Docker 🐳
-Para un despliegue rápido y consistente:
+Para construccion y despliegue rápido:
 ```bash
 docker-compose up --build
 ```
+
+Para correr el contenedor ya creado:
+```bash
+docker-compose up
+```
+
 El sistema estará disponible en:
 - **Frontend:** [http://localhost:4321](http://localhost:4321)
 - **API Docs (Swagger):** [http://localhost:3000/api-docs](http://localhost:3000/api-docs)
