@@ -199,129 +199,128 @@ export default function MatchesSection() {
     <div className="space-y-10 pb-20 animate-in fade-in duration-700 font-sans">
       
       {/* 🚀 PANEL DE CONTROL MAESTRO (Sticky) */}
-      <div className="sticky top-4 z-40 bg-white/80 backdrop-blur-2xl border border-white rounded-[40px] p-6 shadow-[0_32px_64px_-15px_rgba(0,0,0,0.1)]">
-        <div className="flex flex-col xl:flex-row gap-8 items-center justify-between">
+      <div className="sticky top-4 z-40 bg-white/80 backdrop-blur-2xl border border-white rounded-[40px] p-4 lg:p-6 shadow-[0_32px_64px_-15px_rgba(0,0,0,0.1)]">
+        <div className="flex flex-wrap gap-6 items-center justify-center lg:justify-between">
           
           {/* Navegación de Partidos */}
-          <div className="flex items-center gap-4 bg-gray-50 p-2 rounded-[24px] border border-gray-100 shadow-inner">
+          <div className="flex items-center gap-2 sm:gap-4 bg-gray-50 p-2 rounded-[24px] border border-gray-100 shadow-inner">
             <button 
               onClick={() => socket.emit('prevMatch')}
-              className="p-4 bg-white hover:bg-gray-50 text-gray-400 hover:text-gray-900 rounded-2xl transition-all active:scale-90 border border-gray-200 shadow-sm"
+              className="p-3 sm:p-4 bg-white hover:bg-gray-50 text-gray-400 hover:text-gray-900 rounded-2xl transition-all active:scale-90 border border-gray-200 shadow-sm"
             >
-              <ChevronLeft className="w-6 h-6" />
+              <ChevronLeft className="w-5 h-5 sm:w-6 h-6" />
             </button>
-            <div className="px-6 text-center">
-              <div className="text-[9px] font-black text-[#006847] uppercase tracking-[0.3em] mb-1 italic">Navegación</div>
-              <div className="text-xl font-black text-gray-900 tabular-nums tracking-tighter uppercase italic">Cambiar Partido</div>
+            <div className="px-2 sm:px-6 text-center">
+              <div className="text-[8px] sm:text-[9px] font-black text-[#006847] uppercase tracking-[0.3em] mb-1 italic">Navegación</div>
+              <div className="text-sm sm:text-xl font-black text-gray-900 tabular-nums tracking-tighter uppercase italic">Cambiar Partido</div>
             </div>
             <button 
               onClick={() => socket.emit('nextMatch')}
-              className="p-4 bg-white hover:bg-gray-50 text-gray-400 hover:text-gray-900 rounded-2xl transition-all active:scale-90 border border-gray-200 shadow-sm"
+              className="p-3 sm:p-4 bg-white hover:bg-gray-50 text-gray-400 hover:text-gray-900 rounded-2xl transition-all active:scale-90 border border-gray-200 shadow-sm"
             >
-              <ChevronRight className="w-6 h-6" />
+              <ChevronRight className="w-5 h-5 sm:w-6 h-6" />
             </button>
           </div>
 
           {/* ENGINE CONTROLS (TIMER) */}
-          <div className="flex items-center gap-3">
-             <div className="flex bg-gray-50 p-2 rounded-2xl border border-gray-100 shadow-inner mr-4">
+          <div className="flex flex-wrap items-center justify-center gap-3">
+             <div className="flex bg-gray-50 p-1.5 rounded-2xl border border-gray-100 shadow-inner">
                 <button 
                   onClick={() => { setSelectionMode(false); setSelectedIds([]); }}
-                  className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${!selectionMode ? 'bg-gray-900 text-white shadow-md' : 'text-gray-400 hover:text-gray-900'}`}
+                  className={`px-3 py-2 rounded-xl text-[8px] sm:text-[9px] font-black uppercase tracking-widest transition-all ${!selectionMode ? 'bg-gray-900 text-white shadow-md' : 'text-gray-400 hover:text-gray-900'}`}
                 >
                   Clásico
                 </button>
                 <button 
                   onClick={() => setSelectionMode(true)}
-                  className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${selectionMode ? 'bg-gray-900 text-white shadow-md' : 'text-gray-400 hover:text-gray-900'}`}
+                  className={`px-3 py-2 rounded-xl text-[8px] sm:text-[9px] font-black uppercase tracking-widest transition-all ${selectionMode ? 'bg-gray-900 text-white shadow-md' : 'text-gray-400 hover:text-gray-900'}`}
                 >
                   Simultáneo
                 </button>
              </div>
 
             {!selectionMode ? (
-              <>
-                <button
-                  onClick={() => socket.emit('startTimer')}
-                  className="flex items-center gap-4 bg-[#006847] hover:bg-[#005a3e] text-white px-10 py-5 rounded-[24px] font-black uppercase tracking-[0.2em] text-sm shadow-xl shadow-[#006847]/20 transition-all active:scale-95 group transform hover:-translate-y-1"
-                >
-                  <div className="w-3 h-3 bg-white rounded-full animate-pulse shadow-[0_0_10px_white]" />
-                  Iniciar Motor
-                </button>
-              </>
+              <button
+                onClick={() => socket.emit('startTimer')}
+                className="flex items-center gap-2 sm:gap-4 bg-[#006847] hover:bg-[#005a3e] text-white px-6 sm:px-10 py-4 sm:py-5 rounded-[24px] font-black uppercase tracking-[0.2em] text-[10px] sm:text-sm shadow-xl shadow-[#006847]/20 transition-all active:scale-95 group transform hover:-translate-y-1"
+              >
+                <div className="w-2 h-2 sm:w-3 h-3 bg-white rounded-full animate-pulse shadow-[0_0_10px_white]" />
+                Iniciar Motor
+              </button>
             ) : (
               <button
                 onClick={launchSimultaneous}
                 disabled={selectedIds.length === 0}
-                className="flex items-center gap-4 bg-gray-900 hover:bg-black text-white px-10 py-5 rounded-[24px] font-black uppercase tracking-[0.2em] text-sm shadow-xl shadow-gray-900/20 transition-all active:scale-95 disabled:opacity-20 group transform hover:-translate-y-1"
+                className="flex items-center gap-2 sm:gap-4 bg-gray-900 hover:bg-black text-white px-6 sm:px-10 py-4 sm:py-5 rounded-[24px] font-black uppercase tracking-[0.2em] text-[10px] sm:text-sm shadow-xl shadow-gray-900/20 transition-all active:scale-95 disabled:opacity-20 group transform hover:-translate-y-1"
               >
                 Lanzar {selectedIds.length} Partidos
               </button>
             )}
             
-            <button
-              onClick={() => socket.emit('pauseTimer')}
-              className="p-5 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded-[24px] border border-amber-200 transition-all active:scale-90 shadow-sm"
-              title="Pause Timer"
-            >
-              <Pause className="w-6 h-6 fill-current" />
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => socket.emit('pauseTimer')}
+                className="p-4 sm:p-5 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded-[24px] border border-amber-200 transition-all active:scale-90 shadow-sm"
+                title="Pause Timer"
+              >
+                <Pause className="w-5 h-5 sm:w-6 h-6 fill-current" />
+              </button>
 
-            <button
-              onClick={() => socket.emit('resetTimer')}
-              className="p-5 bg-red-50 hover:bg-red-100 text-[#CE1126] rounded-[24px] border border-red-200 transition-all active:scale-90 shadow-sm"
-              title="Reset Timer"
-            >
-              <RotateCcw className="w-6 h-6" />
-            </button>
+              <button
+                onClick={() => socket.emit('resetTimer')}
+                className="p-4 sm:p-5 bg-red-50 hover:bg-red-100 text-[#CE1126] rounded-[24px] border border-red-200 transition-all active:scale-90 shadow-sm"
+                title="Reset Timer"
+              >
+                <RotateCcw className="w-5 h-5 sm:w-6 h-6" />
+              </button>
+            </div>
           </div>
 
           {/* Configuración de Bracket y Canchas */}
-          <div className="flex items-center gap-4 bg-gray-50 p-3 rounded-[24px] border border-gray-100 shadow-inner">
+          <div className="flex flex-wrap items-center justify-center gap-4 bg-gray-50 p-3 rounded-[24px] border border-gray-100 shadow-inner">
             <button 
               onClick={() => setShowAllianceSelection(true)}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold uppercase tracking-widest text-[9px] transition-all shadow-md active:scale-95"
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-6 py-3 rounded-xl font-bold uppercase tracking-widest text-[8px] sm:text-[9px] transition-all shadow-md active:scale-95"
             >
               <Shield className="w-3 h-3" />
               Alianzas
             </button>
-            <div className="w-px h-8 bg-gray-200" />
-            <div className="flex flex-col px-2 border-r border-gray-200">
-              <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1 text-center">Canchas</span>
-              <select 
-                value={timerState.fieldCount} 
-                onChange={(e) => updateFieldCount(Number(e.target.value))} 
-                className="bg-transparent text-[#006847] font-black text-xs outline-none uppercase tracking-widest cursor-pointer"
-              >
-                {[1, 2, 3, 4, 5, 6].map(n => <option key={n} value={n}>{n} Canchas</option>)}
-              </select>
-            </div>
             
-            <div className="flex flex-col px-2">
-              <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1 text-center">Modo</span>
-              <select value={bracketMode} onChange={(e) => setBracketMode(e.target.value as any)} className="bg-transparent text-gray-900 font-black text-xs outline-none uppercase tracking-widest cursor-pointer">
-                <option value="1vs1">1 vs 1</option>
-                <option value="2vs2">2 vs 2</option>
-              </select>
+            <div className="flex items-center gap-2 sm:gap-4">
+              <div className="flex flex-col px-2 border-r border-gray-200">
+                <span className="text-[7px] sm:text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1 text-center">Canchas</span>
+                <select 
+                  value={timerState.fieldCount} 
+                  onChange={(e) => updateFieldCount(Number(e.target.value))} 
+                  className="bg-transparent text-[#006847] font-black text-[10px] sm:text-xs outline-none uppercase tracking-widest cursor-pointer"
+                >
+                  {[1, 2, 3, 4, 5, 6].map(n => <option key={n} value={n}>{n} Canchas</option>)}
+                </select>
+              </div>
+              
+              <div className="flex flex-col px-2 border-r border-gray-200">
+                <span className="text-[7px] sm:text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1 text-center">Modo</span>
+                <select value={bracketMode} onChange={(e) => setBracketMode(e.target.value as any)} className="bg-transparent text-gray-900 font-black text-[10px] sm:text-xs outline-none uppercase tracking-widest cursor-pointer">
+                  <option value="1vs1">1 vs 1</option>
+                  <option value="2vs2">2 vs 2</option>
+                </select>
+              </div>
+
+              <div className="flex flex-col px-2">
+                <span className="text-[7px] sm:text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1 text-center">Top</span>
+                <select
+                  value={bracketSize}
+                  onChange={(e) => setBracketSize(Number(e.target.value))}
+                  className="bg-transparent font-black text-[10px] sm:text-xs uppercase tracking-widest focus:outline-none px-1 text-gray-900 cursor-pointer"
+                >
+                  {[0, 4, 8, 16, 32].map(n => <option key={n} value={n}>{n}</option>)}
+                </select>
+              </div>
             </div>
-            <div className="w-px h-8 bg-gray-200" />
-            <select
-              value={bracketSize}
-              onChange={(e) => setBracketSize(Number(e.target.value))}
-              className="bg-transparent font-black text-xs uppercase tracking-widest focus:outline-none px-2 text-gray-900"
-            >
-              {[0, 4, 8, 16, 32].map(n => <option key={n} value={n}>Top {n}</option>)}
-            </select>
-            <button 
-              onClick={createBracket}
-              className="flex items-center gap-2 bg-white hover:bg-gray-50 text-[#006847] border border-gray-200 px-6 py-3 rounded-xl font-bold uppercase tracking-widest text-[9px] transition-all shadow-sm active:scale-95"
-            >
-              <Layers className="w-3 h-3" />
-              Nuevo Bracket
-            </button>
           </div>
         </div>
       </div>
+
 
       {/* 📊 VISUALIZACIÓN DE BRACKET */}
       <div className="px-4">

@@ -3,8 +3,8 @@
     {
       "id": "1",
       "name": "Core Values",
-      "teamNumber": "",
-      "teamName": "",
+      "teamNumber": "101",
+      "teamName": "Cyber Bots 101",
       "revealed": false,
       "revealedTitle": false,
       "revealedWinner": false
@@ -12,8 +12,8 @@
     {
       "id": "2",
       "name": "Innovation Project",
-      "teamNumber": "",
-      "teamName": "",
+      "teamNumber": "104",
+      "teamName": "Mega Masters 104",
       "revealedTitle": false,
       "revealedWinner": false
     },
@@ -43,7 +43,7 @@
     }
   ],
   "announcement": {
-    "text": "",
+    "text": "test",
     "active": false
   },
   "ceremonyMode": false

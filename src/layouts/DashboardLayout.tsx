@@ -65,6 +65,7 @@ export default function DashboardLayout({ activeTab, setActiveTab, children }: P
           {/* Navigation */}
           <nav className="flex flex-wrap gap-3 mb-8">
             <NavButton id="users" label="Usuarios" icon={Users} active={activeTab === 'users'} onClick={setActiveTab} />
+            <NavButton id="teams" label="Equipos" icon={Users} active={activeTab === 'teams'} onClick={setActiveTab} />
             <NavButton id="matches" label="Partidos" icon={Settings} active={activeTab === 'matches'} onClick={setActiveTab} />
             <NavButton id="scores" label="Ranking" icon={Trophy} active={activeTab === 'scores'} onClick={setActiveTab} />
             <NavButton id="awards" label="Premios" icon={Trophy} active={activeTab === 'awards'} onClick={setActiveTab} />
@@ -91,8 +92,4 @@ export default function DashboardLayout({ activeTab, setActiveTab, children }: P
       </div>
     );
 }
-] right-[-10%] w-[40%] h-[40%] bg-[#CE1126]/5 blur-[120px] rounded-full" />
-        </div>
-      </div>
-    );
-}
+

@@ -1,14 +1,13 @@
 import { useState, useEffect } from 'react';
-import { io } from 'socket.io-client';
+import { socket } from '@/lib/socket';
 
 import DashboardLayout from '@/layouts/DashboardLayout';
 import UsersSection from '@/components/roles/admin/UsersSection';
+import TeamsSection from '@/components/roles/admin/TeamsSection';
 import MatchesSection from '@/components/roles/admin/MatchesSection';
 import ScoresSection from '@/components/roles/admin/ScoresSection';
 import AwardsSection from '@/components/roles/admin/AwardsSection';
 import ScreensSection from '@/components/roles/admin/Screens';
-
-const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<'users' | 'teams' | 'matches' | 'scores' | 'awards' | 'screens'>('users');
@@ -21,13 +20,15 @@ export default function AdminDashboard() {
     checkAuth();
     fetchData();
 
-    const socket = io(`http://${hostname}:3000`);
-
     socket.on('usersUpdate', fetchData);
     socket.on('teamsUpdate', fetchData);
     socket.on('matchesUpdate', fetchData);
 
-    return () => socket.disconnect();
+    return () => {
+      socket.off('usersUpdate', fetchData);
+      socket.off('teamsUpdate', fetchData);
+      socket.off('matchesUpdate', fetchData);
+    };
   }, []);
 
   const checkAuth = () => {
@@ -47,15 +48,21 @@ export default function AdminDashboard() {
       'Content-Type': 'application/json'
     };
 
-    const [u, m] = await Promise.all([
-      fetch('/api/users', { headers }),
-      fetch('/api/matches', { headers })
-    ]);
+    try {
+      const [u, t, m] = await Promise.all([
+        fetch('/api/users', { headers }),
+        fetch('/api/teams', { headers }),
+        fetch('/api/matches', { headers })
+      ]);
 
-    if (u.ok) setUsers(await u.json());
-    if (m.ok) setMatches(await m.json());
-
-    setLoading(false);
+      if (u.ok) setUsers(await u.json());
+      if (t.ok) setTeams(await t.json());
+      if (m.ok) setMatches(await m.json());
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (loading) return <div className="p-10">Cargando...</div>;
@@ -64,6 +71,10 @@ export default function AdminDashboard() {
     <DashboardLayout activeTab={activeTab} setActiveTab={setActiveTab}>
       {activeTab === 'users' && (
         <UsersSection users={users} refresh={fetchData} />
+      )}
+
+      {activeTab === 'teams' && (
+        <TeamsSection teams={teams} refresh={fetchData} />
       )}
 
       {activeTab === 'matches' && (
@@ -79,11 +90,6 @@ export default function AdminDashboard() {
       )}
 
       {activeTab === 'screens' && (
-        <ScreensSection />
-      )}
-    </DashboardLayout>
-  );
-}ctiveTab === 'screens' && (
         <ScreensSection />
       )}
     </DashboardLayout>

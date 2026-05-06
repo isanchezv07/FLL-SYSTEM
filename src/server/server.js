@@ -226,15 +226,21 @@ app.put('/api/matches/:id', async (req, res) => {
       scoreA: sA, scoreB: sB 
     });
 
-    // Enviar el match actualizado directamente a todos
+    // Enviar el match actualizado directamente a todos (esto lleva los puntos)
     io.emit('matchUpdate', updated);
 
-    // 3. Si se acaba de marcar como finalizado, ejecutar la lógica de avance
+    // 3. Solo emitimos matchesUpdate (refresco total de lista) si hubo cambio estructural
+    const structuralChange = matchData.status || matchData.teamA1 || matchData.teamA2 || matchData.teamB1 || matchData.teamB2;
+    
+    if (structuralChange) {
+      io.emit('matchesUpdate');
+    }
+
+    // 4. Si se acaba de marcar como finalizado, ejecutar la lógica de avance
     if (updated.status === 'finished' && existing.status !== 'finished') {
       await finalizeAndAdvanceMatch(id);
     }
 
-    io.emit('matchesUpdate');
     res.json(updated);
   } catch (error) { 
     console.error(error);
