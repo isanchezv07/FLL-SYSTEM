@@ -147,4 +147,11 @@ export const getMatchById = async (id) => {
   return match;
 };
 
+export const resetMatches = async () => {
+  await db.read();
+  db.data.matches = [];
+  await db.write();
+  return { success: true };
+};
+
 export default db;

@@ -46,6 +46,27 @@ export const createTeam = async (teamData) => {
   return newTeam;
 };
 
+// Actualizar un equipo
+export const updateTeam = async (id, teamData) => {
+  const teams = getTeams();
+  const index = teams.findIndex(t => t.id === id);
+  if (index === -1) return null;
+
+  teams[index] = { ...teams[index], ...teamData };
+  writeFileSync(DB_PATH, JSON.stringify({ teams }, null, 2));
+  return teams[index];
+};
+
+// Eliminar un equipo
+export const deleteTeam = async (id) => {
+  const teams = getTeams();
+  const filtered = teams.filter(t => t.id !== id);
+  if (teams.length === filtered.length) return false;
+
+  writeFileSync(DB_PATH, JSON.stringify({ teams: filtered }, null, 2));
+  return true;
+};
+
 // Función adicional para buscar por número (útil para validaciones)
 export const getTeamByNumber = (number) => {
   const teams = getTeams();

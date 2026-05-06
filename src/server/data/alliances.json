@@ -1,0 +1,49 @@
+{
+  "active": false,
+  "alliances": [
+    {
+      "id": 1,
+      "teams": [
+        "101",
+        "145"
+      ],
+      "teamNames": [
+        "Cyber Bots 101",
+        "Giga Force 145"
+      ]
+    },
+    {
+      "id": 2,
+      "teams": [
+        "142",
+        "173"
+      ],
+      "teamNames": [
+        "Robo Engineers 142",
+        "Techno Dragons 173"
+      ]
+    },
+    {
+      "id": 3,
+      "teams": [
+        "103",
+        "141"
+      ],
+      "teamNames": [
+        "Techno Builders 103",
+        "Cyber Explorers 141"
+      ]
+    },
+    {
+      "id": 4,
+      "teams": [
+        "104",
+        "139"
+      ],
+      "teamNames": [
+        "Mega Masters 104",
+        "Nano Knights 139"
+      ]
+    }
+  ]
+}

@@ -46,13 +46,22 @@ export default function Mission1() {
   }, []);
 
   useEffect(() => {
-    if (!matchId) return;
-    loadInspection();
+    const handler = () => { if (matchId) loadInspection(); };
+    const resetHandler = () => {
+      localStorage.removeItem('activeMatchId');
+      setMatchId(null);
+      setInspectionA(false);
+      setInspectionB(false);
+    };
 
-    const handler = () => loadInspection();
     socket.on('matchesUpdate', handler);
+    socket.on('tournamentReset', resetHandler);
+
+    if (matchId) loadInspection();
+
     return () => {
       socket.off('matchesUpdate', handler);
+      socket.off('tournamentReset', resetHandler);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [matchId]);

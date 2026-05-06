@@ -11,8 +11,9 @@ import ScreensSection from '@/components/roles/admin/Screens';
 const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<'users' | 'matches' | 'scores' | 'awards' | 'screens'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'teams' | 'matches' | 'scores' | 'awards' | 'screens'>('users');
   const [users, setUsers] = useState([]);
+  const [teams, setTeams] = useState([]);
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -23,6 +24,7 @@ export default function AdminDashboard() {
     const socket = io(`http://${hostname}:3000`);
 
     socket.on('usersUpdate', fetchData);
+    socket.on('teamsUpdate', fetchData);
     socket.on('matchesUpdate', fetchData);
 
     return () => socket.disconnect();
@@ -77,6 +79,11 @@ export default function AdminDashboard() {
       )}
 
       {activeTab === 'screens' && (
+        <ScreensSection />
+      )}
+    </DashboardLayout>
+  );
+}ctiveTab === 'screens' && (
         <ScreensSection />
       )}
     </DashboardLayout>

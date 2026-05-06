@@ -61,11 +61,24 @@ export default function FLLMissionCounter({ mission, title, subtitle, images, va
   }, []);
 
   useEffect(() => {
-    if (!matchId) return;
-    load();
-    const handler = () => load();
+    const handler = () => { if (matchId) load(); };
+    const resetHandler = () => {
+      localStorage.removeItem('activeMatchId');
+      localStorage.removeItem('activeTeam');
+      setMatchId(null);
+      setActiveTeam(null);
+      setMatch(null);
+    };
+
     socket.on('matchesUpdate', handler);
-    return () => { socket.off('matchesUpdate', handler); };
+    socket.on('tournamentReset', resetHandler);
+    
+    if (matchId) load();
+
+    return () => { 
+      socket.off('matchesUpdate', handler); 
+      socket.off('tournamentReset', resetHandler);
+    };
   }, [matchId, mission]);
 
   const commit = async (nextVal: number) => {

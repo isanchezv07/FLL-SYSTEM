@@ -111,4 +111,11 @@ export const addMatchToBracket = async (bracketId, matchData) => {
   return newMatch;
 };
 
+export const clearBrackets = async () => {
+  await db.read();
+  db.data.brackets = [];
+  await db.write();
+  return { success: true };
+};
+
 export default db;

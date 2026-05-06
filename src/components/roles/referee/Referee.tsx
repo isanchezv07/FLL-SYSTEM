@@ -39,10 +39,18 @@ export default function InteractiveMap() {
     }
     socket.on("matchesUpdate", fetchMatches);
     socket.on("timerUpdate", (data) => setTimerState(data));
+    socket.on("tournamentReset", () => {
+      localStorage.removeItem("activeMatchId");
+      localStorage.removeItem("activeTeam");
+      setSelectedMatchId("");
+      setSelectedTeam("");
+      setIsConfigured(false);
+    });
     socket.emit("getTimer");
     return () => { 
       socket.off("matchesUpdate", fetchMatches); 
       socket.off("timerUpdate");
+      socket.off("tournamentReset");
     };
   }, []);
 

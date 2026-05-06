@@ -1,5 +1,5 @@
 import MatchTimer from "@/components/game/MatchTimer";
-import { LogOut, LayoutDashboard, Settings, Trophy, GitFork, Users } from "lucide-react";
+import { LogOut, LayoutDashboard, Settings, Trophy, GitFork, Users, Shield } from "lucide-react";
 
 interface Props {
     activeTab: string;
@@ -87,6 +87,11 @@ export default function DashboardLayout({ activeTab, setActiveTab, children }: P
           <div className="absolute inset-0 bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:32px_32px] opacity-30"></div>
           <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#006847]/5 blur-[120px] rounded-full" />
           <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#CE1126]/5 blur-[120px] rounded-full" />
+        </div>
+      </div>
+    );
+}
+] right-[-10%] w-[40%] h-[40%] bg-[#CE1126]/5 blur-[120px] rounded-full" />
         </div>
       </div>
     );

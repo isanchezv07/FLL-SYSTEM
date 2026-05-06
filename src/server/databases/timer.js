@@ -45,6 +45,10 @@ export const initTimerDB = async () => {
     };
     await db.write();
   } else {
+    // Limpieza agresiva: si existe allianceSelection, la quitamos
+    if (db.data.timer.allianceSelection) {
+      delete db.data.timer.allianceSelection;
+    }
     // Asegurar que existan las propiedades nuevas si es una base de datos vieja
     if (db.data.timer.fieldCount === undefined) db.data.timer.fieldCount = 4;
     if (!db.data.timer.fields) {
@@ -60,16 +64,37 @@ export const initTimerDB = async () => {
 // Timer operations
 export const getTimer = async () => {
   await db.read();
+  // Doble check de limpieza al leer
+  if (db.data.timer.allianceSelection) {
+    delete db.data.timer.allianceSelection;
+    await db.write();
+  }
   return db.data.timer;
 };
 
 export const updateTimer = async (timerData) => {
   await db.read();
   
-  db.data.timer = {
-    ...db.data.timer,
-    ...timerData,
-    updatedAt: new Date().toISOString()
+  // Lista blanca de propiedades permitidas para el timer
+  const allowedKeys = ['timeRemaining', 'isRunning', 'fieldCount', 'fields'];
+  const cleanIncomingData = {};
+  
+  allowedKeys.forEach(key => {
+    if (timerData[key] !== undefined) {
+      cleanIncomingData[key] = timerData[key];
+    }
+  });
+
+  // Reconstruir el objeto timer solo con propiedades permitidas de forma EXPLÍCITA
+  const currentTimer = db.data.timer;
+  db.data = {
+    timer: {
+      timeRemaining: cleanIncomingData.timeRemaining !== undefined ? cleanIncomingData.timeRemaining : currentTimer.timeRemaining,
+      isRunning: cleanIncomingData.isRunning !== undefined ? cleanIncomingData.isRunning : currentTimer.isRunning,
+      fieldCount: cleanIncomingData.fieldCount !== undefined ? cleanIncomingData.fieldCount : currentTimer.fieldCount,
+      fields: cleanIncomingData.fields !== undefined ? cleanIncomingData.fields : currentTimer.fields,
+      updatedAt: new Date().toISOString()
+    }
   };
   
   await db.write();
@@ -82,6 +107,8 @@ export const resetTimer = async () => {
   db.data.timer = {
     timeRemaining: 150,
     isRunning: false,
+    fieldCount: db.data.timer.fieldCount || 4,
+    fields: db.data.timer.fields || {},
     updatedAt: new Date().toISOString()
   };
   

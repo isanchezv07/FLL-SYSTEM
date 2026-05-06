@@ -1,18 +1,11 @@
 ---
-import { ViewTransitions } from 'astro:transitions';
+import Layout from '@/layouts/Layout.astro';
 import MisionSelector from "@/components/missions/MissionSelector";
 
 const { id } = Astro.params;
-const { title, points, desc } = Astro.props;
+const { title } = Astro.props;
 ---
 
-<html lang="es">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{title}</title>
-  </head>
-  <body>
-    <MisionSelector id={id} client:load />
-  </body>
-</html>
+<Layout title={title || "Misión"}>
+  <MisionSelector id={id} client:load />
+</Layout>

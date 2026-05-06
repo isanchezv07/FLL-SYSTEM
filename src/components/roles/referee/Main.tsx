@@ -111,11 +111,20 @@ export default function HeadLegoTimer() {
       }
     };
 
+    const handler = () => fetchMatches();
+    const resetHandler = () => {
+      localStorage.removeItem('activeMatchId');
+      setActiveMatch(null);
+    };
+
+    socket.on('matchesUpdate', handler);
+    socket.on('tournamentReset', resetHandler);
+
     fetchMatches();
-    socket.on('matchesUpdate', fetchMatches);
 
     return () => {
-      socket.off('matchesUpdate', fetchMatches);
+      socket.off('matchesUpdate', handler);
+      socket.off('tournamentReset', resetHandler);
     };
   }, []);
 

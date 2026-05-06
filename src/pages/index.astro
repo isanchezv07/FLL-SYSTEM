@@ -1,25 +1,9 @@
 ---
+import Layout from '@/layouts/Layout.astro';
 import LoginForm from '@/components/auth/LoginForm';
 const title = "FLL México - Iniciar Sesión";
 ---
 
-<html lang="es">
-  <head>
-    <meta charset="utf-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="generator" content={Astro.generator} />
-    <title>{title}</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap"
-      rel="stylesheet"
-    />
-  </head>
-  <body class="bg-[#f8fafc] min-h-screen">
-    <main>
-      <LoginForm client:load />
-    </main>
-  </body>
-</html>
+<Layout title={title}>
+  <LoginForm client:load />
+</Layout>

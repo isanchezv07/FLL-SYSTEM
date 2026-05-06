@@ -2,8 +2,9 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { socket } from '@/lib/socket';
-import { Trophy, Zap, Hash, Layers, RefreshCw, X, ChevronRight, Settings2, Target, Info, Play, Pause, RotateCcw, ChevronLeft, Users } from 'lucide-react';
+import { Trophy, Zap, Hash, Layers, RefreshCw, X, ChevronRight, Settings2, Target, Info, Play, Pause, RotateCcw, ChevronLeft, Users, Shield } from 'lucide-react';
 import { missionBounds, missionValueFromMissionsFlat, missionValueToPatch } from '@/lib/fllMissionMapping';
+import AllianceSelection from './AllianceSelection';
 
 const MISSION_NAMES: Record<string, string> = {
   '1': "Surface Brushing",
@@ -53,6 +54,7 @@ export default function MatchesSection() {
   const [bracketSize, setBracketSize] = useState(8);
   const [bracketMode, setBracketMode] = useState<'1vs1' | '2vs2'>('2vs2');
   const [editingMatchId, setEditingMatchId] = useState<string | null>(null);
+  const [showAllianceSelection, setShowAllianceSelection] = useState(false);
   
   // Estados para Selección Múltiple
   const [selectionMode, setSelectionMode] = useState(false);
@@ -276,6 +278,14 @@ export default function MatchesSection() {
 
           {/* Configuración de Bracket y Canchas */}
           <div className="flex items-center gap-4 bg-gray-50 p-3 rounded-[24px] border border-gray-100 shadow-inner">
+            <button 
+              onClick={() => setShowAllianceSelection(true)}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold uppercase tracking-widest text-[9px] transition-all shadow-md active:scale-95"
+            >
+              <Shield className="w-3 h-3" />
+              Alianzas
+            </button>
+            <div className="w-px h-8 bg-gray-200" />
             <div className="flex flex-col px-2 border-r border-gray-200">
               <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1 text-center">Canchas</span>
               <select 
@@ -326,7 +336,7 @@ export default function MatchesSection() {
         </div>
 
         <div className="flex gap-12 overflow-x-auto pb-12 scrollbar-hide snap-x">
-          {rounds.map(round => (
+          {rounds.length > 0 ? rounds.map(round => (
             <div key={round.number} className="flex-shrink-0 w-80 space-y-8 snap-start">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center border border-gray-100 font-black text-lg text-[#006847] shadow-lg shadow-gray-200/50 italic">{round.number}</div>
@@ -400,7 +410,13 @@ export default function MatchesSection() {
                 ))}
               </div>
             </div>
-          ))}
+          )) : (
+            <div className="flex-1 flex flex-col items-center justify-center py-20 bg-gray-50/50 rounded-[48px] border-4 border-dashed border-gray-100">
+               <Shield className="w-16 h-16 text-gray-200 mb-6" />
+               <p className="text-gray-400 font-black uppercase tracking-widest text-xs">No hay partidos programados</p>
+               <p className="text-gray-300 text-[10px] font-bold uppercase tracking-widest mt-2">Usa el botón de Alianzas para iniciar el draft</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -467,6 +483,10 @@ export default function MatchesSection() {
             </div>
           </div>
         </div>
+      )}
+
+      {showAllianceSelection && (
+        <AllianceSelection onClose={() => setShowAllianceSelection(false)} />
       )}
     </div>
   );

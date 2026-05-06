@@ -32,10 +32,12 @@ try {
 
 // Import database modules
 import { getUsers, createUser, deleteUser, authenticateUser } from './databases/users.js';
-import { initMatchesDB, getMatches, createMatch, updateMatch, getMatchById  } from './databases/matches.js';
-import { initBracketsDB, getBrackets, createBracket } from './databases/brackets.js';
-import { initTimerDB, getTimer, updateTimer } from './databases/timer.js';
-import { getTeams, createTeam } from './databases/teams.js'; 
+import { initMatchesDB, getMatches, createMatch, updateMatch, getMatchById, resetMatches  } from './databases/matches.js';
+import { initBracketsDB, getBrackets, createBracket, clearBrackets } from './databases/brackets.js';
+import { initTimerDB, getTimer, updateTimer, resetTimer } from './databases/timer.js';
+import { getTeams, createTeam, updateTeam, deleteTeam } from './databases/teams.js';
+import { getAlliances, updateAlliances, initAlliancesDB, resetAlliances } from './databases/alliances.js';
+ 
 import { getAwards, updateAward, updateAnnouncement, resetAwards, initAwardsDB, updateCeremonyMode } from './databases/awards.js';
 
 // Load Swagger document
@@ -62,6 +64,18 @@ if (process.env.NODE_ENV === 'test') {
     pingInterval: 10000,
     transports: ['websocket', 'polling']
   });
+}
+
+// Helper to broadcast timer
+async function broadcastTimerUpdate() {
+  const timer = await getTimer();
+  io.emit('timerUpdate', timer);
+}
+
+// Helper to broadcast alliances
+async function broadcastAlliancesUpdate() {
+  const alliances = await getAlliances();
+  io.emit('alliancesUpdate', alliances);
 }
 
 // FUNCIÓN MAESTRA DE FINALIZACIÓN Y AVANCE
@@ -123,10 +137,24 @@ app.post('/api/login', async (req, res) => {
 
 app.post('/api/brackets/generate', async (req, res) => {
   try {
-    const { size, mode = '2vs2' } = req.body;
-    const teams = shuffle(getTeams()).slice(0, size);
-    const matchesPath = join(currentDir, 'data', 'matches.json');
-    writeFileSync(matchesPath, JSON.stringify({ matches: [] }));
+    const { size, mode = '2vs2', alliances } = req.body;
+    let teams;
+    
+    if (alliances && alliances.length > 0) {
+      teams = alliances.flat().map(t => ({ number: t }));
+    } else {
+      teams = shuffle(getTeams()).slice(0, size);
+    }
+
+    // Reset current state correctly via DB
+    await resetMatches();
+    await clearBrackets();
+    
+    // Clear timer fields too
+    const timer = await getTimer();
+    const fields = {};
+    Object.keys(timer.fields || {}).forEach(f => fields[f] = null);
+    await updateTimer({ fields });
 
     const bracket = await createBracket({ name: `Tournament ${mode}`, size, mode, status: "active", date: new Date().toISOString() });
     const rounds = mode === '1vs1' ? Math.log2(size) : Math.log2(size) - 1;
@@ -150,7 +178,28 @@ app.post('/api/brackets/generate', async (req, res) => {
         });
       }
     }
-    io.emit('bracketsUpdate'); io.emit('matchesUpdate');
+    
+    await broadcastTimerUpdate();
+    io.emit('bracketsUpdate'); 
+    io.emit('matchesUpdate');
+    io.emit('tournamentReset');
+    res.json({ success: true });
+  } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+app.post('/api/brackets/reset', async (req, res) => {
+  try {
+    await resetMatches();
+    await clearBrackets();
+    const timer = await getTimer();
+    const fields = {};
+    Object.keys(timer.fields || {}).forEach(f => fields[f] = null);
+    await updateTimer({ fields });
+
+    await broadcastTimerUpdate();
+    io.emit('bracketsUpdate');
+    io.emit('matchesUpdate');
+    io.emit('tournamentReset');
     res.json({ success: true });
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
@@ -193,9 +242,29 @@ app.put('/api/matches/:id', async (req, res) => {
   }
 });
 
-app.get('/api/matches', async (req, res) => res.json(await getMatches()));
-app.get('/api/matches/:id', async (req, res) => res.json(await getMatchById(req.params.id)));
-app.get('/api/brackets', async (req, res) => res.json(await getBrackets()));
+app.get('/api/matches', async (req, res) => {
+  try {
+    res.json(await getMatches());
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/matches/:id', async (req, res) => {
+  try {
+    res.json(await getMatchById(req.params.id));
+  } catch (error) {
+    res.status(404).json({ error: error.message });
+  }
+});
+
+app.get('/api/brackets', async (req, res) => {
+  try {
+    res.json(await getBrackets());
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // Users Endpoints
 app.get('/api/users', async (req, res) => res.json(getUsers()));
@@ -206,13 +275,24 @@ app.post('/api/users', async (req, res) => {
     res.json(user);
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
-app.delete('/api/users/:id', async (req, res) => {
+app.delete('/api/teams/:id', async (req, res) => {
   try {
-    await deleteUser(req.params.id);
-    io.emit('usersUpdate');
+    await deleteTeam(req.params.id);
+    io.emit('teamsUpdate');
     res.json({ success: true });
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
+
+// Alliances Endpoints
+app.get('/api/alliances', async (req, res) => res.json(await getAlliances()));
+app.post('/api/alliances', async (req, res) => {
+  try {
+    await updateAlliances(req.body);
+    await broadcastAlliancesUpdate();
+    res.json(await getAlliances());
+  } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
 
 // Teams Endpoints
 app.get('/api/teams', async (req, res) => res.json(getTeams()));
@@ -263,11 +343,11 @@ const startServerTimer = () => {
   timerInterval = setInterval(async () => {
     const timer = await getTimer();
     if (timer.isRunning && timer.timeRemaining > 0) {
-      const updated = await updateTimer({ timeRemaining: timer.timeRemaining - 1 });
-      io.emit('timerUpdate', updated);
+      await updateTimer({ timeRemaining: timer.timeRemaining - 1 });
+      await broadcastTimerUpdate();
     } else if (timer.isRunning && timer.timeRemaining <= 0) {
       await updateTimer({ isRunning: false });
-      io.emit('timerUpdate', { timeRemaining: 0, isRunning: false });
+      await broadcastTimerUpdate();
     }
   }, 1000);
 };
@@ -287,17 +367,34 @@ io.on('connection', (socket) => {
   socket.emit('display_status_update', isCaptureActive ? 'LIVE' : 'READY');
   
   // ... resto de manejadores
-  socket.on('getTimer', async () => socket.emit('timerUpdate', await getTimer()));
-  socket.on('updateTimer', async (d) => io.emit('timerUpdate', await updateTimer(d)));
-  socket.on('startTimer', async () => io.emit('timerUpdate', await updateTimer({ isRunning: true })));
-  socket.on('pauseTimer', async () => io.emit('timerUpdate', await updateTimer({ isRunning: false })));
-  socket.on('resetTimer', async () => io.emit('timerUpdate', await updateTimer({ timeRemaining: 150, isRunning: false })));
+  socket.on('getTimer', async () => {
+    await broadcastTimerUpdate();
+  });
+  socket.on('updateTimer', async (d) => {
+    // Si d contiene allianceSelection por error del front, lo ignoramos para que no se meta en timer.json
+    const { allianceSelection, ...timerData } = d;
+    await updateTimer(timerData);
+    await broadcastTimerUpdate();
+  });
+
+  socket.on('updateAlliances', async (d) => {
+    await updateAlliances(d);
+    await broadcastAlliancesUpdate();
+  });
+  
+  socket.on('getAlliances', async () => {
+    await broadcastTimerUpdate();
+    await broadcastAlliancesUpdate();
+  });
+  socket.on('startTimer', async () => { await updateTimer({ isRunning: true }); await broadcastTimerUpdate(); });
+  socket.on('pauseTimer', async () => { await updateTimer({ isRunning: false }); await broadcastTimerUpdate(); });
+  socket.on('resetTimer', async () => { await updateTimer({ timeRemaining: 150, isRunning: false }); await broadcastTimerUpdate(); });
 
   socket.on('assignMatchToField', async ({ fieldId, matchId }) => {
     const timer = await getTimer();
     const fields = { ...timer.fields, [fieldId]: matchId };
-    const updated = await updateTimer({ fields });
-    io.emit('timerUpdate', updated);
+    await updateTimer({ fields });
+    await broadcastTimerUpdate();
   });
 
   socket.on('getAwards', () => socket.emit('awardsUpdate', getAwards()));
@@ -315,7 +412,8 @@ io.on('connection', (socket) => {
       if (pending.length > 0) await updateMatch(pending[0].id, { status: 'in_progress' });
     }
     io.emit('matchesUpdate');
-    io.emit('timerUpdate', await updateTimer({ timeRemaining: 150, isRunning: false }));
+    await updateTimer({ timeRemaining: 150, isRunning: false });
+    await broadcastTimerUpdate();
   });
 
   socket.on('prevMatch', async () => {
@@ -330,7 +428,8 @@ io.on('connection', (socket) => {
       }
     }
     io.emit('matchesUpdate');
-    io.emit('timerUpdate', await updateTimer({ timeRemaining: 150, isRunning: false }));
+    await updateTimer({ timeRemaining: 150, isRunning: false });
+    await broadcastTimerUpdate();
   });
 
   // Recibir volumen desde un cliente (SoundSource) y retransmitirlo a todos
@@ -347,9 +446,12 @@ io.on('connection', (socket) => {
 });
 }
 
-// Desactivamos el micrófono local por hardware para evitar conflictos y priorizar alianzas
 const startServer = async () => {
-  await initMatchesDB(); await initBracketsDB(); await initTimerDB(); await initAwardsDB();
+  await initMatchesDB(); 
+  await initBracketsDB(); 
+  await initTimerDB(); 
+  await initAwardsDB(); 
+  await initAlliancesDB();
   httpServer.listen(3000, '0.0.0.0', () => console.log(`LEGO Engine Online on port 3000`));
 };
 

@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { socket } from '@/lib/socket';
 import confetti from 'canvas-confetti';
-import { Trophy, Megaphone } from 'lucide-react';
+import { Trophy, Megaphone, Shield } from 'lucide-react';
 
 interface TimerState {
   timeRemaining: number;
@@ -22,6 +22,7 @@ interface WinnerInfo {
 
 export default function LegoTimerDisplay() {
   const [timer, setTimer] = useState<TimerState>({ timeRemaining: 150, isRunning: false, fieldCount: 4, fields: {} });
+  const [alliances, setAlliances] = useState<any>(null);
   const [selectedField, setSelectedField] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isConnected, setIsConnected] = useState(true);
@@ -75,6 +76,7 @@ export default function LegoTimerDisplay() {
     awardRevealAudio.current = new Audio('/sounds/start_bell(5).wav');
 
     socket.on('timerUpdate', (data) => setTimer(data));
+    socket.on('alliancesUpdate', (data) => setAlliances(data));
     socket.on('matchesUpdate', fetchActiveMatch);
     socket.on('awardsUpdate', (data) => setAwardsData(data));
     socket.on("connect", () => setIsConnected(true));
@@ -196,6 +198,7 @@ export default function LegoTimerDisplay() {
   const revealedAward = awardsData?.awards?.find((a: any) => a.revealedTitle);
   const activeAnnouncement = awardsData?.announcement?.active ? awardsData.announcement.text : null;
   const isCeremonyMode = awardsData?.ceremonyMode;
+  const allianceSelection = alliances;
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -255,6 +258,69 @@ export default function LegoTimerDisplay() {
                  {activeAnnouncement}
                </p>
              </div>
+          </motion.div>
+        ) : allianceSelection?.active ? (
+          /* 🛡️ PANTALLA DE SELECCIÓN DE ALIANZAS 🛡️ */
+          <motion.div
+            key="alliance-selection"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.05 }}
+            className="absolute inset-0 z-[110] flex flex-col items-center justify-center bg-[#020617] p-10 overflow-hidden"
+          >
+            {/* Background elements */}
+            <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#2563eb 2px, transparent 2px)', backgroundSize: '40px 40px' }} />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[80%] bg-blue-600/5 blur-[120px] rounded-full" />
+
+            <div className="relative z-10 w-full max-w-[90vw] flex flex-col items-center">
+              <motion.div
+                initial={{ y: -20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                className="flex items-center gap-6 mb-12"
+              >
+                <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-blue-500/40">
+                  <Shield className="w-8 h-8 text-white" />
+                </div>
+                <h2 className="text-[5vw] font-black uppercase tracking-tighter italic text-white leading-none">
+                  Draft de <span className="text-blue-500">Alianzas</span>
+                </h2>
+              </motion.div>
+
+              <div className="grid grid-cols-4 gap-6 w-full">
+                {allianceSelection.alliances.map((alliance: any, idx: number) => (
+                  <motion.div
+                    key={alliance.id}
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.1 }}
+                    className="bg-slate-900/40 backdrop-blur-md border border-slate-800 rounded-[40px] p-8 flex flex-col items-center shadow-xl relative overflow-hidden group"
+                  >
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-indigo-600" />
+                    
+                    <div className="w-16 h-16 bg-slate-950 rounded-2xl flex items-center justify-center mb-6 border border-slate-800 shadow-inner">
+                      <span className="text-2xl font-black italic text-blue-500">{alliance.id}</span>
+                    </div>
+
+                    <div className="space-y-4 w-full">
+                      {alliance.teamNames.map((name: string, tIdx: number) => (
+                        <div key={tIdx} className="text-center">
+                          <div className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Equipo {tIdx + 1}</div>
+                          <div className="text-xl font-black text-white uppercase tracking-tight leading-tight line-clamp-2">
+                            {name}
+                          </div>
+                          <div className="text-[10px] font-mono font-bold text-slate-500 mt-1">#{alliance.teams[tIdx]}</div>
+                        </div>
+                      ))}
+                      {alliance.teamNames.length === 0 && (
+                        <div className="py-8 text-center text-slate-700 font-black uppercase tracking-widest text-[10px] italic">
+                          Esperando Selección...
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
           </motion.div>
         ) : revealedAward ? (
           /* 🏆 PANTALLA DE PREMIO 🏆 */
