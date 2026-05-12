@@ -69,6 +69,20 @@ const SoundSource: React.FC = () => {
     setError(null);
     addLog("Solicitando micrófono...");
 
+    // Verificar si el navegador soporta getUserMedia
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      const isNotSecure = window.location.protocol !== 'https:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+      
+      if (isNotSecure) {
+        setError("ERROR: El micrófono requiere HTTPS para funcionar en dispositivos móviles. Usa localhost o configura un túnel seguro (ngrok).");
+        addLog("❌ Error: Contexto no seguro");
+      } else {
+        setError("Tu navegador no soporta acceso al micrófono.");
+        addLog("❌ Error: MediaDevices no soportado");
+      }
+      return;
+    }
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       addLog("🎤 Micrófono concedido");

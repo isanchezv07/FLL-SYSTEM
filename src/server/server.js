@@ -59,10 +59,18 @@ if (process.env.NODE_ENV === 'test') {
   };
 } else {
   io = new Server(httpServer, {
-    cors: { origin: '*', methods: ['GET', 'POST', 'PUT', 'DELETE'], credentials: true },
-    pingTimeout: 30000,
-    pingInterval: 10000,
-    transports: ['websocket', 'polling']
+    cors: { 
+      origin: (origin, callback) => {
+        // Permitimos cualquier origen en desarrollo/red local
+        callback(null, true);
+      },
+      methods: ['GET', 'POST'],
+      credentials: true 
+    },
+    allowEIO3: true,
+    pingTimeout: 60000,
+    pingInterval: 25000,
+    transports: ['polling', 'websocket']
   });
 }
 
@@ -122,6 +130,17 @@ async function finalizeAndAdvanceMatch(matchId) {
 }
 
 app.use(express.json());
+
+// Configuración de CORS manual para Express
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
 
 // API Endpoints
 app.post('/api/login', async (req, res) => {

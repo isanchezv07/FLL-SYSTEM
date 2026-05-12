@@ -4,13 +4,13 @@
     "isRunning": false,
     "fieldCount": 6,
     "fields": {
-      "cancha1": null,
-      "cancha2": null,
-      "cancha3": null,
+      "cancha1": "match-1-1",
+      "cancha2": "match-1-1",
+      "cancha3": "match-1-1",
       "cancha4": null,
       "cancha5": null,
-      "cancha6": null
+      "cancha6": "match-1-1"
     },
-    "updatedAt": "2026-05-06T23:09:34.377Z"
+    "updatedAt": "2026-05-11T17:23:54.255Z"
   }
 }

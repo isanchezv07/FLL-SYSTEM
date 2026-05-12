@@ -9,14 +9,8 @@ export type DummySocket = {
   connected: boolean;
 };
 
-// Fix for Docker: The Express backend lives on port 3000
-// If we are in the browser, connect directly to the backend port
-const socketUrl = isBrowser 
-  ? `${window.location.protocol}//${window.location.hostname}:3000`
-  : '';
-
 export const socket: DummySocket | ReturnType<typeof io> = isBrowser
-  ? io(socketUrl, {
+  ? io({
       // FORZAMOS solo websocket. Esto evita el "xhr poll error" 
       // porque deja de hacer peticiones HTTP constantes.
       transports: ['websocket'], 

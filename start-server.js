@@ -57,6 +57,21 @@ frontend.on('error', (err) => {
   console.error(`[Frontend] Failed to start:`, err);
 });
 
+// 3. START LOCALTUNNEL
+console.log(`[Tunnel] Starting LocalTunnel on port 4321...`);
+const tunnel = spawn(
+  'npx',
+  ['localtunnel', '--port', '4321'],
+  {
+    stdio: 'inherit',
+    shell: true
+  }
+);
+
+tunnel.on('error', (err) => {
+  console.error(`[Tunnel] Failed to start:`, err);
+});
+
 // 3. Status display
 const localIP = ip.address();
 const isDocker = process.env.IS_DOCKER === 'true' || localIP.startsWith('172.');
@@ -83,6 +98,7 @@ const shutdown = () => {
   console.log('\nShutting down servers...');
   if (backend) backend.kill();
   if (frontend) frontend.kill();
+  if (tunnel) tunnel.kill();
   process.exit(0);
 };
 

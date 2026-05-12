@@ -7,6 +7,9 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
+    "server": "node start-server.js",
+    "tunnel": "npx localtunnel --port 4321",
+    "start": "concurrently \"npm run server\" \"npm run tunnel\"",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage"
