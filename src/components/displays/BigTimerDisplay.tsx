@@ -29,6 +29,7 @@ export default function LegoTimerDisplay() {
   const [winner, setWinner] = useState<WinnerInfo | null>(null);
   const [nextMatchCountdown, setNextMatchCountdown] = useState(10);
   const [awardsData, setAwardsData] = useState<any>({ awards: [], announcement: { text: '', active: false }, ceremonyMode: false });
+  const [qualisData, setQualisData] = useState<any>({ matches: [], currentIndex: -1, enabled: false });
   
   const victoryAudio = useRef<HTMLAudioElement | null>(null);
   const awardRevealAudio = useRef<HTMLAudioElement | null>(null);
@@ -39,6 +40,7 @@ export default function LegoTimerDisplay() {
   const selectedFieldRef = useRef<string | null>(null);
   const timerFieldsRef = useRef<Record<string, string | null>>({});
   const lastRevealedAwardId = useRef<string | null>(null);
+  const qualisDataRef = useRef<any>({ matches: [], currentIndex: -1, enabled: false });
 
   // Load selected field from localStorage on mount
   useEffect(() => {
@@ -90,6 +92,17 @@ export default function LegoTimerDisplay() {
     } catch { }
   }, []);
 
+  const fetchQualis = useCallback(async () => {
+    try {
+      const res = await fetch('/api/qualis');
+      if (res.ok) {
+        const data = await res.json();
+        setQualisData(data);
+        qualisDataRef.current = data;
+      }
+    } catch { }
+  }, []);
+
   const handleFieldSelect = (fieldId: string) => {
     setSelectedField(fieldId);
     selectedFieldRef.current = fieldId;
@@ -105,6 +118,28 @@ export default function LegoTimerDisplay() {
     socket.on('alliancesUpdate', (data) => setAlliances(data));
     socket.on('matchesUpdate', () => fetchActiveMatch());
     socket.on('awardsUpdate', (data) => setAwardsData(data));
+    socket.on('qualisUpdate', (data) => {
+      const prev = qualisDataRef.current;
+      const currentMatch = data.matches[data.currentIndex];
+      const prevMatch = prev.matches[prev.currentIndex];
+      
+      // Reset any ongoing confetti when changing matches
+      if (data.currentIndex !== prev.currentIndex) {
+        confetti.reset();
+      }
+
+      // Trigger confetti ONLY if:
+      // 1. Qualis display is enabled
+      // 2. Current match has a winner
+      // 3. We are on the SAME match AND the winner just changed
+      if (data.enabled && currentMatch?.winner && 
+         (data.currentIndex === prev.currentIndex && currentMatch.winner !== prevMatch?.winner)) {
+        triggerQualisConfetti();
+      }
+      
+      qualisDataRef.current = data;
+      setQualisData(data);
+    });
     socket.on("connect", () => setIsConnected(true));
     socket.on("disconnect", () => setIsConnected(false));
 
@@ -121,15 +156,16 @@ export default function LegoTimerDisplay() {
     socket.on('matchWinnerDeclared', (data: WinnerInfo) => {
       const currentActive = activeMatchRef.current;
       if (currentActive?.teamA1 === data.team1 || currentActive?.teamB1 === data.team1) {
+        confetti.reset(); // Stop previous animations
         setWinner(data);
         setNextMatchCountdown(10);
         
         victoryAudio.current?.play().catch(e => console.log("Audio play blocked"));
-        const end = Date.now() + 7 * 1000;
-        const colors = data.alliance === 'A' ? ['#2563eb', '#ffffff', '#60a5fa'] : ['#dc2626', '#ffffff', '#f87171'];
+        const end = Date.now() + 5 * 1000;
+        const colors = ['#FFD700', '#FFA500', '#FACC15', '#FFFFFF'];
         (function frame() {
-          confetti({ particleCount: 3, angle: 60, spread: 55, origin: { x: 0 }, colors });
-          confetti({ particleCount: 3, angle: 120, spread: 55, origin: { x: 1 }, colors });
+          confetti({ particleCount: 3, angle: 60, spread: 55, origin: { x: 0, y: 0.7 }, colors });
+          confetti({ particleCount: 3, angle: 120, spread: 55, origin: { x: 1, y: 0.7 }, colors });
           if (Date.now() < end) requestAnimationFrame(frame);
         }());
 
@@ -148,8 +184,10 @@ export default function LegoTimerDisplay() {
     });
     
     fetchActiveMatch();
+    fetchQualis();
     socket.emit('getTimer');
     socket.emit('getAwards');
+    socket.emit('getQualis');
 
     return () => {
       socket.off('timerUpdate');
@@ -162,6 +200,27 @@ export default function LegoTimerDisplay() {
       socket.off('disconnect');
     };
   }, [fetchActiveMatch]);
+
+  const triggerConfetti = () => {
+    const end = Date.now() + 7 * 1000;
+    const colors = winner?.alliance === 'A' ? ['#2563eb', '#ffffff', '#60a5fa'] : ['#dc2626', '#ffffff', '#f87171'];
+    (function frame() {
+      confetti({ particleCount: 3, angle: 60, spread: 55, origin: { x: 0 }, colors });
+      confetti({ particleCount: 3, angle: 120, spread: 55, origin: { x: 1 }, colors });
+      if (Date.now() < end) requestAnimationFrame(frame);
+    }());
+  };
+
+  const triggerQualisConfetti = () => {
+    confetti.reset();
+    const end = Date.now() + 3 * 1000;
+    const colors = ['#FFD700', '#FFA500', '#FACC15', '#FFFFFF'];
+    (function frame() {
+      confetti({ particleCount: 2, angle: 60, spread: 55, origin: { x: 0, y: 0.7 }, colors });
+      confetti({ particleCount: 2, angle: 120, spread: 55, origin: { x: 1, y: 0.7 }, colors });
+      if (Date.now() < end) requestAnimationFrame(frame);
+    }());
+  };
 
   // Efecto para detectar cuando se revela un ganador y lanzar confeti
   useEffect(() => {
@@ -212,11 +271,12 @@ export default function LegoTimerDisplay() {
   };
 
   const isCritical = timer.timeRemaining <= 30 && timer.isRunning;
+  const currentQualisMatch = qualisData.matches[qualisData.currentIndex];
 
   return (
     <div ref={containerRef} className="h-screen w-screen bg-[#020617] text-white relative overflow-hidden font-sans flex flex-col p-6 lg:p-10 selection:bg-none">
       
-      {!selectedField && (
+      {!selectedField && !qualisData.enabled && (
         <div className="fixed inset-0 z-[200] bg-slate-950 flex flex-col items-center justify-center p-10">
           <h2 className="text-4xl font-black uppercase tracking-tighter mb-10 text-blue-500">Seleccionar Cancha</h2>
           <div className="grid grid-cols-2 gap-6 max-w-2xl w-full">
@@ -260,6 +320,67 @@ export default function LegoTimerDisplay() {
                  {activeAnnouncement}
                </p>
              </div>
+          </motion.div>
+        ) : qualisData.enabled ? (
+          <motion.div
+            key="qualis"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.1 }}
+            className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-slate-950 p-10"
+          >
+             <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#ffffff 2px, transparent 2px)', backgroundSize: '40px 40px' }} />
+             
+             {!currentQualisMatch ? (
+               <div className="text-white/20 text-4xl font-black uppercase tracking-widest">MODO QUALIS</div>
+             ) : (
+               <div className="w-full max-w-7xl flex flex-col items-center gap-12">
+                  <div className="flex flex-col items-center mb-4">
+                    <div className="bg-blue-600 px-6 py-2 rounded-full text-white font-black text-sm tracking-[0.3em] uppercase mb-4 shadow-xl shadow-blue-500/20">
+                      QUALIFYING MATCH #{qualisData.currentIndex + 1}
+                    </div>
+                    <h2 className="text-white/40 text-2xl font-black uppercase tracking-tighter">ENFRENTAMIENTO</h2>
+                  </div>
+
+                  <div className="flex items-center justify-center gap-16 w-full">
+                    {/* Team 1 */}
+                    <div className="flex-1 flex flex-col items-end text-right gap-6">
+                      <div className={`p-8 rounded-[40px] border-4 transition-all duration-700 w-full ${
+                        currentQualisMatch.winner === currentQualisMatch.team1 
+                        ? 'bg-green-600 border-green-400 shadow-[0_0_80px_rgba(34,197,94,0.3)] scale-105' 
+                        : 'bg-white/5 border-white/10'
+                      }`}>
+                        <div className="text-white/40 text-sm font-black uppercase mb-2 tracking-widest">TEAM 1</div>
+                        <div className="text-5xl md:text-7xl font-black text-white truncate">{currentQualisMatch.team1}</div>
+                      </div>
+                      {currentQualisMatch.winner === currentQualisMatch.team1 && (
+                        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-3 text-green-400 font-black text-2xl">
+                          <Trophy size={32} /> GANADOR
+                        </motion.div>
+                      )}
+                    </div>
+
+                    <div className="text-6xl font-black text-blue-500 italic px-4">VS</div>
+
+                    {/* Team 2 */}
+                    <div className="flex-1 flex flex-col items-start text-left gap-6">
+                      <div className={`p-8 rounded-[40px] border-4 transition-all duration-700 w-full ${
+                        currentQualisMatch.winner === currentQualisMatch.team2 
+                        ? 'bg-green-600 border-green-400 shadow-[0_0_80px_rgba(34,197,94,0.3)] scale-105' 
+                        : 'bg-white/5 border-white/10'
+                      }`}>
+                        <div className="text-white/40 text-sm font-black uppercase mb-2 tracking-widest">TEAM 2</div>
+                        <div className="text-5xl md:text-7xl font-black text-white truncate">{currentQualisMatch.team2}</div>
+                      </div>
+                      {currentQualisMatch.winner === currentQualisMatch.team2 && (
+                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-3 text-green-400 font-black text-2xl">
+                          GANADOR <Trophy size={32} />
+                        </motion.div>
+                      )}
+                    </div>
+                  </div>
+               </div>
+             )}
           </motion.div>
         ) : alliances?.active ? (
           <motion.div
@@ -381,6 +502,67 @@ export default function LegoTimerDisplay() {
               Closing <span className="text-blue-500">Ceremony</span>
             </h1>
             <p className="text-2xl font-black uppercase tracking-[0.5em] text-slate-500 mt-4">Awards Presentation</p>
+          </motion.div>
+        ) : qualisData.enabled ? (
+          <motion.div
+            key="qualis"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.1 }}
+            className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-slate-950 p-10"
+          >
+             <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#ffffff 2px, transparent 2px)', backgroundSize: '40px 40px' }} />
+             
+             {!currentQualisMatch ? (
+               <div className="text-white/20 text-4xl font-black uppercase tracking-widest">MODO QUALIS</div>
+             ) : (
+               <div className="w-full max-w-7xl flex flex-col items-center gap-12">
+                  <div className="flex flex-col items-center mb-4">
+                    <div className="bg-blue-600 px-6 py-2 rounded-full text-white font-black text-sm tracking-[0.3em] uppercase mb-4 shadow-xl shadow-blue-500/20">
+                      QUALIFYING MATCH #{qualisData.currentIndex + 1}
+                    </div>
+                    <h2 className="text-white/40 text-2xl font-black uppercase tracking-tighter">ENFRENTAMIENTO</h2>
+                  </div>
+
+                  <div className="flex items-center justify-center gap-16 w-full">
+                    {/* Team 1 */}
+                    <div className="flex-1 flex flex-col items-end text-right gap-6">
+                      <div className={`p-8 rounded-[40px] border-4 transition-all duration-700 w-full ${
+                        currentQualisMatch.winner === currentQualisMatch.team1 
+                        ? 'bg-green-600 border-green-400 shadow-[0_0_80px_rgba(34,197,94,0.3)] scale-105' 
+                        : 'bg-white/5 border-white/10'
+                      }`}>
+                        <div className="text-white/40 text-sm font-black uppercase mb-2 tracking-widest">TEAM 1</div>
+                        <div className="text-5xl md:text-7xl font-black text-white truncate">{currentQualisMatch.team1}</div>
+                      </div>
+                      {currentQualisMatch.winner === currentQualisMatch.team1 && (
+                        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-3 text-green-400 font-black text-2xl">
+                          <Trophy size={32} /> GANADOR
+                        </motion.div>
+                      )}
+                    </div>
+
+                    <div className="text-6xl font-black text-blue-500 italic px-4">VS</div>
+
+                    {/* Team 2 */}
+                    <div className="flex-1 flex flex-col items-start text-left gap-6">
+                      <div className={`p-8 rounded-[40px] border-4 transition-all duration-700 w-full ${
+                        currentQualisMatch.winner === currentQualisMatch.team2 
+                        ? 'bg-green-600 border-green-400 shadow-[0_0_80px_rgba(34,197,94,0.3)] scale-105' 
+                        : 'bg-white/5 border-white/10'
+                      }`}>
+                        <div className="text-white/40 text-sm font-black uppercase mb-2 tracking-widest">TEAM 2</div>
+                        <div className="text-5xl md:text-7xl font-black text-white truncate">{currentQualisMatch.team2}</div>
+                      </div>
+                      {currentQualisMatch.winner === currentQualisMatch.team2 && (
+                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-3 text-green-400 font-black text-2xl">
+                          GANADOR <Trophy size={32} />
+                        </motion.div>
+                      )}
+                    </div>
+                  </div>
+               </div>
+             )}
           </motion.div>
         ) : winner ? (
           <motion.div 

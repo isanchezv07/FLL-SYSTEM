@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { socket } from '@/lib/socket';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 import DashboardLayout from '@/layouts/DashboardLayout';
 import UsersSection from '@/components/roles/admin/UsersSection';
@@ -8,9 +10,10 @@ import MatchesSection from '@/components/roles/admin/MatchesSection';
 import ScoresSection from '@/components/roles/admin/ScoresSection';
 import AwardsSection from '@/components/roles/admin/AwardsSection';
 import ScreensSection from '@/components/roles/admin/Screens';
+import QualisSection from '@/components/roles/admin/QualisSection';
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<'users' | 'teams' | 'matches' | 'scores' | 'awards' | 'screens'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'teams' | 'matches' | 'scores' | 'awards' | 'screens' | 'qualis'>('users');
   const [users, setUsers] = useState([]);
   const [teams, setTeams] = useState([]);
   const [matches, setMatches] = useState([]);
@@ -69,6 +72,7 @@ export default function AdminDashboard() {
 
   return (
     <DashboardLayout activeTab={activeTab} setActiveTab={setActiveTab}>
+      <ToastContainer position="top-right" autoClose={3000} theme="dark" />
       {activeTab === 'users' && (
         <UsersSection users={users} refresh={fetchData} />
       )}
@@ -91,6 +95,10 @@ export default function AdminDashboard() {
 
       {activeTab === 'screens' && (
         <ScreensSection />
+      )}
+
+      {activeTab === 'qualis' && (
+        <QualisSection />
       )}
     </DashboardLayout>
   );

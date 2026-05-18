@@ -37,6 +37,7 @@ import { initBracketsDB, getBrackets, createBracket, clearBrackets } from './dat
 import { initTimerDB, getTimer, updateTimer, resetTimer } from './databases/timer.js';
 import { getTeams, createTeam, updateTeam, deleteTeam } from './databases/teams.js';
 import { getAlliances, updateAlliances, initAlliancesDB, resetAlliances } from './databases/alliances.js';
+import { getQualis, updateQualis, nextQualisMatch, prevQualisMatch, resetQualis, initQualisDB, updateQualisMatch, setQualisEnabled } from './databases/qualis.js';
  
 import { getAwards, updateAward, updateAnnouncement, resetAwards, initAwardsDB, updateCeremonyMode } from './databases/awards.js';
 
@@ -318,6 +319,42 @@ app.post('/api/alliances', async (req, res) => {
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
+// Qualis Endpoints
+app.get('/api/qualis', async (req, res) => res.json(await getQualis()));
+app.post('/api/qualis', async (req, res) => {
+  try {
+    console.log('[API] POST /api/qualis - Body:', JSON.stringify(req.body).substring(0, 100) + '...');
+    const updated = await updateQualis(req.body);
+    io.emit('qualisUpdate', updated); // Aseguramos que se emita a todos
+    res.json(updated);
+  } catch (error) { 
+    console.error('[API] Error en POST /api/qualis:', error);
+    res.status(500).json({ error: error.message }); 
+  }
+});
+app.post('/api/qualis/reset', async (req, res) => {
+  try {
+    const updated = await resetQualis();
+    io.emit('qualisUpdate', updated);
+    res.json(updated);
+  } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+
+app.post('/api/qualis/toggle', async (req, res) => {
+  try {
+    const updated = await setQualisEnabled(req.body.enabled);
+    io.emit('qualisUpdate', updated);
+    res.json(updated);
+  } catch (error) { res.status(500).json({ error: error.message }); }
+});
+app.put('/api/qualis/match/:index', async (req, res) => {
+  try {
+    const updated = await updateQualisMatch(parseInt(req.params.index), req.body);
+    io.emit('qualisUpdate', updated);
+    res.json(updated);
+  } catch (error) { res.status(500).json({ error: error.message }); }
+});
 
 // Teams Endpoints
 app.get('/api/teams', async (req, res) => res.json(getTeams()));
@@ -457,6 +494,20 @@ io.on('connection', (socket) => {
     await broadcastTimerUpdate();
   });
 
+  socket.on('getQualis', async () => {
+    socket.emit('qualisUpdate', await getQualis());
+  });
+
+  socket.on('nextQualisMatch', async () => {
+    const updated = await nextQualisMatch();
+    io.emit('qualisUpdate', updated);
+  });
+
+  socket.on('prevQualisMatch', async () => {
+    const updated = await prevQualisMatch();
+    io.emit('qualisUpdate', updated);
+  });
+
   // Recibir volumen desde un cliente (SoundSource) y retransmitirlo a todos
   socket.on('sound_volume', (volume) => {
     globalVolume = volume;
@@ -477,6 +528,7 @@ const startServer = async () => {
   await initTimerDB(); 
   await initAwardsDB(); 
   await initAlliancesDB();
+  await initQualisDB();
   httpServer.listen(3000, '0.0.0.0', () => console.log(`LEGO Engine Online on port 3000`));
 };
 

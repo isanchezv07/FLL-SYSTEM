@@ -1,5 +1,5 @@
 import MatchTimer from "@/components/game/MatchTimer";
-import { LogOut, LayoutDashboard, Settings, Trophy, GitFork, Users, Shield } from "lucide-react";
+import { LogOut, LayoutDashboard, Settings, Trophy, GitFork, Users, Shield, Radio } from "lucide-react";
 
 interface Props {
     activeTab: string;
@@ -70,6 +70,7 @@ export default function DashboardLayout({ activeTab, setActiveTab, children }: P
             <NavButton id="scores" label="Ranking" icon={Trophy} active={activeTab === 'scores'} onClick={setActiveTab} />
             <NavButton id="awards" label="Premios" icon={Trophy} active={activeTab === 'awards'} onClick={setActiveTab} />
             <NavButton id="screens" label="Pantallas" icon={Trophy} active={activeTab === 'screens'} onClick={setActiveTab} />
+            <NavButton id="qualis" label="Qualis" icon={Radio} active={activeTab === 'qualis'} onClick={setActiveTab} />
           </nav>
     
           {/* Main Content Area */}

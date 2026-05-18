@@ -115,6 +115,21 @@ export default function ScreensSection() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
+      {/* Enlaces a Pantallas */}
+      <div className="bg-slate-900/40 p-8 rounded-[40px] border border-slate-800 shadow-2xl backdrop-blur-md">
+        <h3 className="text-xl font-black uppercase tracking-tighter text-white mb-6">Pantallas de Visualización</h3>
+        <div className="flex flex-wrap gap-4">
+          <a href="/displays/live" target="_blank" className="bg-slate-800 hover:bg-blue-600 text-white px-6 py-4 rounded-2xl font-bold transition-all flex items-center gap-3 border border-slate-700 hover:border-blue-400">
+            <Eye className="w-5 h-5" />
+            Display Principal (Live)
+          </a>
+          <a href="/displays/timer" target="_blank" className="bg-slate-800 hover:bg-blue-600 text-white px-6 py-4 rounded-2xl font-bold transition-all flex items-center gap-3 border border-slate-700 hover:border-blue-400">
+            <Play className="w-5 h-5" />
+            Display de Timer (Incluye Qualis)
+          </a>
+        </div>
+      </div>
+
       {/* Header & Mode Selector */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-slate-900/40 p-8 rounded-[40px] border border-slate-800 shadow-2xl backdrop-blur-md">
         <div>
