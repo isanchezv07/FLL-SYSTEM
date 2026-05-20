@@ -1,6 +1,5 @@
 # FLL-SYSTEM: LEGO Engine 🤖🏆
 
-[![CI](https://github.com/your-repo/fll-system/actions/workflows/ci.yml/badge.svg)](https://github.com/your-repo/fll-system/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 **FLL-SYSTEM** es un sistema profesional de gestión y puntuación local para torneos de **FIRST LEGO League (FLL)**. Diseñado para ser rápido, confiable y fácil de desplegar en redes locales.
