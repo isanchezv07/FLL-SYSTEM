@@ -1,11 +1,31 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { socket } from '@/lib/socket';
 import confetti from 'canvas-confetti';
-import { Trophy, Megaphone, Shield } from 'lucide-react';
+import { Trophy, Megaphone, Shield, Settings, X } from 'lucide-react';
 
+// ─── OBS Chroma-key background modes ────────────────────────────────────────
+type ChromaMode = 'transparent' | 'green' | 'magenta' | 'none';
+
+const CHROMA_STYLES: Record<ChromaMode, React.CSSProperties> = {
+  none:        { background: '#020617' },
+  transparent: { background: 'transparent' },
+  green:       { background: '#00ff00' },
+  magenta:     { background: '#ff00ff' },
+};
+
+const CHROMA_HIDES_BLOBS = new Set<ChromaMode>(['green', 'magenta']);
+
+const formatTime = (seconds: number) => {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 interface TimerState {
   timeRemaining: number;
   isRunning: boolean;
@@ -20,7 +40,111 @@ interface WinnerInfo {
   score: number;
 }
 
-export default function LegoTimerDisplay() {
+// ─── OS-style Settings Window ────────────────────────────────────────────────
+function SettingsWindow({
+  mode,
+  onChange,
+  onClose,
+}: {
+  mode: ChromaMode;
+  onChange: (m: ChromaMode) => void;
+  onClose: () => void;
+}) {
+  const options: { value: ChromaMode; label: string; description: string; preview: React.ReactNode }[] = [
+    {
+      value: 'none',
+      label: 'None',
+      description: 'Solid dark background',
+      preview: <div className="w-full h-full rounded bg-[#020617] border border-slate-700" />,
+    },
+    {
+      value: 'transparent',
+      label: 'Transparent',
+      description: 'True alpha — use Browser Source',
+      preview: (
+        <div className="w-full h-full rounded border border-slate-600 overflow-hidden" style={{
+          backgroundImage: 'linear-gradient(45deg, #555 25%, transparent 25%), linear-gradient(-45deg, #555 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #555 75%), linear-gradient(-45deg, transparent 75%, #555 75%)',
+          backgroundSize: '8px 8px',
+          backgroundPosition: '0 0, 0 4px, 4px -4px, -4px 0px',
+          backgroundColor: '#333',
+        }} />
+      ),
+    },
+    {
+      value: 'green',
+      label: 'Green Key',
+      description: 'Chroma key — #00FF00',
+      preview: <div className="w-full h-full rounded" style={{ background: '#00ff00' }} />,
+    },
+    {
+      value: 'magenta',
+      label: 'Magenta Key',
+      description: 'Chroma key — #FF00FF',
+      preview: <div className="w-full h-full rounded" style={{ background: '#ff00ff' }} />,
+    },
+  ];
+
+  const content = (
+    <div
+      style={{ position: 'fixed', inset: 0, zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      onClick={onClose}
+    >
+      {/* backdrop */}
+      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }} />
+
+      {/* window */}
+      <div
+        style={{ position: 'relative', width: 420, background: '#0f172a', border: '1px solid #334155', borderRadius: 16, boxShadow: '0 32px 80px rgba(0,0,0,0.8)', overflow: 'hidden' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* title bar */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 20px', background: '#1e293b', borderBottom: '1px solid #334155' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Settings style={{ width: 16, height: 16, color: '#94a3b8' }} />
+            <span style={{ fontSize: 12, fontWeight: 900, color: '#e2e8f0', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Overlay Settings</span>
+          </div>
+          <button
+            onClick={onClose}
+            style={{ width: 24, height: 24, borderRadius: '50%', background: '#334155', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >
+            <X style={{ width: 12, height: 12, color: '#94a3b8' }} />
+          </button>
+        </div>
+
+        {/* content */}
+        <div style={{ padding: 20 }}>
+          <p style={{ fontSize: 10, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.3em', color: '#64748b', marginBottom: 16 }}>Background Mode</p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            {options.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => onChange(opt.value)}
+                style={{
+                  display: 'flex', flexDirection: 'column', gap: 8, padding: 12,
+                  borderRadius: 12, border: `1px solid ${mode === opt.value ? '#3b82f6' : '#334155'}`,
+                  background: mode === opt.value ? 'rgba(59,130,246,0.1)' : 'rgba(30,41,59,0.5)',
+                  cursor: 'pointer', textAlign: 'left',
+                  outline: mode === opt.value ? '1px solid rgba(59,130,246,0.5)' : 'none',
+                }}
+              >
+                <div style={{ height: 48, width: '100%' }}>{opt.preview}</div>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: mode === opt.value ? '#60a5fa' : '#e2e8f0' }}>{opt.label}</div>
+                  <div style={{ fontSize: 10, color: '#64748b', marginTop: 2 }}>{opt.description}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  return createPortal(content, document.body);
+}
+
+// ─── Main Component ──────────────────────────────────────────────────────────
+export default function BigTimerDisplay() {
   const [timer, setTimer] = useState<TimerState>({ timeRemaining: 150, isRunning: false, fieldCount: 4, fields: {} });
   const [alliances, setAlliances] = useState<any>(null);
   const [selectedField, setSelectedField] = useState<string | null>(null);
@@ -30,34 +154,70 @@ export default function LegoTimerDisplay() {
   const [nextMatchCountdown, setNextMatchCountdown] = useState(10);
   const [awardsData, setAwardsData] = useState<any>({ awards: [], announcement: { text: '', active: false }, ceremonyMode: false });
   const [qualisData, setQualisData] = useState<any>({ matches: [], currentIndex: -1, enabled: false });
-  
+
+  // ── OBS chroma state ─────────────────────────────────────────────────────
+  const [chromaMode, setChromaMode] = useState<ChromaMode>('none');
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [showControls, setShowControls] = useState(false);
+  const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const wake = () => {
+      setShowControls(true);
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+      idleTimerRef.current = setTimeout(() => setShowControls(false), 2500);
+    };
+    window.addEventListener('mousemove', wake);
+    window.addEventListener('mousedown', wake);
+    return () => {
+      window.removeEventListener('mousemove', wake);
+      window.removeEventListener('mousedown', wake);
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    };
+  }, []);
+
+  // Refs para evitar bucles de dependencia y re-registros de socket
   const victoryAudio = useRef<HTMLAudioElement | null>(null);
   const awardRevealAudio = useRef<HTMLAudioElement | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  
-  // Refs para evitar bucles de dependencia y re-registros de socket
   const activeMatchRef = useRef<any>(null);
   const selectedFieldRef = useRef<string | null>(null);
   const timerFieldsRef = useRef<Record<string, string | null>>({});
   const lastRevealedAwardId = useRef<string | null>(null);
   const qualisDataRef = useRef<any>({ matches: [], currentIndex: -1, enabled: false });
 
-  // Load selected field from localStorage on mount
+  // Load selected field and chroma from localStorage on mount
   useEffect(() => {
-    const saved = localStorage.getItem('selectedField');
-    if (saved) {
-      setSelectedField(saved);
-      selectedFieldRef.current = saved;
+    const savedField = localStorage.getItem('selectedField');
+    if (savedField) {
+      setSelectedField(savedField);
+      selectedFieldRef.current = savedField;
     }
-    // Inicializar audio
+    const savedChroma = localStorage.getItem('chromaMode') as ChromaMode | null;
+    if (savedChroma && savedChroma in CHROMA_STYLES) setChromaMode(savedChroma);
+
     victoryAudio.current = new Audio('/sounds/end_match(7).wav');
     awardRevealAudio.current = new Audio('/sounds/start_bell(5).wav');
   }, []);
 
+  const handleChromaChange = useCallback((m: ChromaMode) => {
+    setChromaMode(m);
+    localStorage.setItem('chromaMode', m);
+  }, []);
+
+  const handleSettingsToggle = useCallback(() => setSettingsOpen((v) => !v), []);
+
+  // OBS Browser Source requires html/body to also be transparent
+  useEffect(() => {
+    const t = chromaMode === 'transparent';
+    document.documentElement.style.background = t ? 'transparent' : '';
+    document.body.style.background = t ? 'transparent' : '';
+    return () => { document.documentElement.style.background = ''; document.body.style.background = ''; };
+  }, [chromaMode]);
+
   const lastFetchTime = useRef<number>(0);
 
   const fetchActiveMatch = useCallback(async () => {
-    // Throttle: No más de una petición cada 2 segundos para la lista completa
     const now = Date.now();
     if (now - lastFetchTime.current < 2000) return;
     lastFetchTime.current = now;
@@ -110,6 +270,17 @@ export default function LegoTimerDisplay() {
     fetchActiveMatch();
   };
 
+  const triggerQualisConfetti = useCallback(() => {
+    confetti.reset();
+    const end = Date.now() + 3 * 1000;
+    const colors = ['#FFD700', '#FFA500', '#FACC15', '#FFFFFF'];
+    (function frame() {
+      confetti({ particleCount: 2, angle: 60, spread: 55, origin: { x: 0, y: 0.7 }, colors });
+      confetti({ particleCount: 2, angle: 120, spread: 55, origin: { x: 1, y: 0.7 }, colors });
+      if (Date.now() < end) requestAnimationFrame(frame);
+    }());
+  }, []);
+
   useEffect(() => {
     socket.on('timerUpdate', (data) => {
       setTimer(data);
@@ -123,15 +294,10 @@ export default function LegoTimerDisplay() {
       const currentMatch = data.matches[data.currentIndex];
       const prevMatch = prev.matches[prev.currentIndex];
       
-      // Reset any ongoing confetti when changing matches
       if (data.currentIndex !== prev.currentIndex) {
         confetti.reset();
       }
 
-      // Trigger confetti ONLY if:
-      // 1. Qualis display is enabled
-      // 2. Current match has a winner
-      // 3. We are on the SAME match AND the winner just changed
       if (data.enabled && currentMatch?.winner && 
          (data.currentIndex === prev.currentIndex && currentMatch.winner !== prevMatch?.winner)) {
         triggerQualisConfetti();
@@ -156,11 +322,11 @@ export default function LegoTimerDisplay() {
     socket.on('matchWinnerDeclared', (data: WinnerInfo) => {
       const currentActive = activeMatchRef.current;
       if (currentActive?.teamA1 === data.team1 || currentActive?.teamB1 === data.team1) {
-        confetti.reset(); // Stop previous animations
+        confetti.reset();
         setWinner(data);
         setNextMatchCountdown(10);
         
-        victoryAudio.current?.play().catch(e => console.log("Audio play blocked"));
+        victoryAudio.current?.play().catch(() => {});
         const end = Date.now() + 5 * 1000;
         const colors = ['#FFD700', '#FFA500', '#FACC15', '#FFFFFF'];
         (function frame() {
@@ -194,35 +360,14 @@ export default function LegoTimerDisplay() {
       socket.off('alliancesUpdate');
       socket.off('matchesUpdate');
       socket.off('awardsUpdate');
+      socket.off('qualisUpdate');
       socket.off('matchUpdate');
       socket.off('matchWinnerDeclared');
       socket.off('connect');
       socket.off('disconnect');
     };
-  }, [fetchActiveMatch]);
+  }, [fetchActiveMatch, fetchQualis, triggerQualisConfetti]);
 
-  const triggerConfetti = () => {
-    const end = Date.now() + 7 * 1000;
-    const colors = winner?.alliance === 'A' ? ['#2563eb', '#ffffff', '#60a5fa'] : ['#dc2626', '#ffffff', '#f87171'];
-    (function frame() {
-      confetti({ particleCount: 3, angle: 60, spread: 55, origin: { x: 0 }, colors });
-      confetti({ particleCount: 3, angle: 120, spread: 55, origin: { x: 1 }, colors });
-      if (Date.now() < end) requestAnimationFrame(frame);
-    }());
-  };
-
-  const triggerQualisConfetti = () => {
-    confetti.reset();
-    const end = Date.now() + 3 * 1000;
-    const colors = ['#FFD700', '#FFA500', '#FACC15', '#FFFFFF'];
-    (function frame() {
-      confetti({ particleCount: 2, angle: 60, spread: 55, origin: { x: 0, y: 0.7 }, colors });
-      confetti({ particleCount: 2, angle: 120, spread: 55, origin: { x: 1, y: 0.7 }, colors });
-      if (Date.now() < end) requestAnimationFrame(frame);
-    }());
-  };
-
-  // Efecto para detectar cuando se revela un ganador y lanzar confeti
   useEffect(() => {
     const revealedAward = awardsData?.awards?.find((a: any) => a.revealedWinner);
   
@@ -236,19 +381,10 @@ export default function LegoTimerDisplay() {
       const prizeColors = ['#FFD700', '#D4AF37', '#FDF5E6', '#C0C0C0', '#FFFFFF'];
   
       const interval: any = setInterval(() => {
-        const timeLeft = animationEnd - Date.now();
-        if (timeLeft <= 0) return clearInterval(interval);
+        if (Date.now() >= animationEnd) return clearInterval(interval);
   
-      const particleCount = 45; 
-        const defaults = {
-          startVelocity: 45,
-          spread: 90,
-          ticks: 200,
-          zIndex: 200,
-          colors: prizeColors,
-          gravity: 0.7,
-          scalar: 1.2,
-        };
+        const particleCount = 45; 
+        const defaults = { startVelocity: 45, spread: 90, ticks: 200, zIndex: 200, colors: prizeColors, gravity: 0.7, scalar: 1.2 };
   
         confetti({ ...defaults, particleCount, angle: 65, origin: { x: -0.1, y: 0.7 } });
         confetti({ ...defaults, particleCount, angle: 115, origin: { x: 1.1, y: 0.7 } });
@@ -263,18 +399,18 @@ export default function LegoTimerDisplay() {
   const revealedAwardTitle = awardsData?.awards?.find((a: any) => a.revealedTitle);
   const activeAnnouncement = awardsData?.announcement?.active ? awardsData.announcement.text : null;
   const isCeremonyMode = awardsData?.ceremonyMode;
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
   const isCritical = timer.timeRemaining <= 30 && timer.isRunning;
+  const hideBlobs = CHROMA_HIDES_BLOBS.has(chromaMode);
   const currentQualisMatch = qualisData.matches[qualisData.currentIndex];
 
   return (
-    <div ref={containerRef} className="h-screen w-screen bg-[#020617] text-white relative overflow-hidden font-sans flex flex-col p-6 lg:p-10 selection:bg-none">
+    <>
+    <style>{`@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,600;0,700;0,900;1,700;1,900&display=swap');`}</style>
+    <div 
+      ref={containerRef} 
+      className="h-screen w-screen text-white relative overflow-hidden flex flex-col selection:bg-none"
+      style={{ ...CHROMA_STYLES[chromaMode], fontFamily: "'Barlow Condensed', 'Arial Narrow', Arial, sans-serif" }}
+    >
       
       {!selectedField && !qualisData.enabled && (
         <div className="fixed inset-0 z-[200] bg-slate-950 flex flex-col items-center justify-center p-10">
@@ -296,10 +432,12 @@ export default function LegoTimerDisplay() {
         </div>
       )}
 
-      <div className="absolute inset-0 z-0 pointer-events-none">
-        <div className={`absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full blur-[120px] transition-colors duration-1000 ${isCritical ? 'bg-red-600/15' : 'bg-blue-600/10'}`} />
-        <div className={`absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full blur-[120px] transition-colors duration-1000 ${isCritical ? 'bg-red-900/15' : 'bg-indigo-600/10'}`} />
-      </div>
+      {!hideBlobs && (
+        <div className="absolute inset-0 z-0 pointer-events-none">
+          <div className={`absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full blur-[120px] transition-colors duration-1000 ${isCritical ? 'bg-red-600/15' : 'bg-blue-600/10'}`} />
+          <div className={`absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full blur-[120px] transition-colors duration-1000 ${isCritical ? 'bg-red-900/15' : 'bg-indigo-600/10'}`} />
+        </div>
+      )}
 
       <AnimatePresence mode="wait">
         {activeAnnouncement ? (
@@ -334,47 +472,63 @@ export default function LegoTimerDisplay() {
              {!currentQualisMatch ? (
                <div className="text-white/20 text-4xl font-black uppercase tracking-widest">MODO QUALIS</div>
              ) : (
-               <div className="w-full max-w-7xl flex flex-col items-center gap-12">
+               <div className="w-full max-w-[90vw] flex flex-col items-center gap-12">
                   <div className="flex flex-col items-center mb-4">
-                    <div className="bg-blue-600 px-6 py-2 rounded-full text-white font-black text-sm tracking-[0.3em] uppercase mb-4 shadow-xl shadow-blue-500/20">
+                    <div className="bg-blue-600 px-8 py-3 rounded-full text-white font-black text-xl tracking-[0.3em] uppercase mb-4 shadow-2xl shadow-blue-500/40">
                       QUALIFYING MATCH #{qualisData.currentIndex + 1}
                     </div>
-                    <h2 className="text-white/40 text-2xl font-black uppercase tracking-tighter">ENFRENTAMIENTO</h2>
+                    <h2 className="text-white/40 text-2xl font-black uppercase tracking-[0.5em]">VS</h2>
                   </div>
 
-                  <div className="flex items-center justify-center gap-16 w-full">
+                  <div className="flex items-center justify-center gap-12 w-full">
                     {/* Team 1 */}
                     <div className="flex-1 flex flex-col items-end text-right gap-6">
-                      <div className={`p-8 rounded-[40px] border-4 transition-all duration-700 w-full ${
+                      <div className={`p-10 rounded-[60px] border-4 transition-all duration-700 w-full relative overflow-hidden ${
                         currentQualisMatch.winner === currentQualisMatch.team1 
-                        ? 'bg-green-600 border-green-400 shadow-[0_0_80px_rgba(34,197,94,0.3)] scale-105' 
+                        ? 'bg-green-600 border-green-400 shadow-[0_0_100px_rgba(34,197,94,0.4)] scale-105' 
                         : 'bg-white/5 border-white/10'
                       }`}>
-                        <div className="text-white/40 text-sm font-black uppercase mb-2 tracking-widest">TEAM 1</div>
-                        <div className="text-5xl md:text-7xl font-black text-white truncate">{currentQualisMatch.team1}</div>
+                        <div className="flex justify-between items-center mb-6">
+                          <div className="bg-white/10 px-4 py-1 rounded-full text-[12px] font-black tracking-widest uppercase">Team 1</div>
+                          {currentQualisMatch.country1 && (
+                            <div className="text-white/60 text-lg font-black uppercase tracking-widest">{currentQualisMatch.country1}</div>
+                          )}
+                        </div>
+                        <div className="text-blue-400 text-3xl font-black mb-2 font-mono">#{currentQualisMatch.team1}</div>
+                        <div className="text-5xl md:text-8xl font-black text-white leading-none uppercase tracking-tighter">
+                          {currentQualisMatch.name1 || currentQualisMatch.team1}
+                        </div>
                       </div>
                       {currentQualisMatch.winner === currentQualisMatch.team1 && (
-                        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-3 text-green-400 font-black text-2xl">
-                          <Trophy size={32} /> GANADOR
+                        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-4 text-green-400 font-black text-4xl italic">
+                          <Trophy size={48} /> GANADOR
                         </motion.div>
                       )}
                     </div>
 
-                    <div className="text-6xl font-black text-blue-500 italic px-4">VS</div>
+                    <div className="text-[120px] font-black text-blue-500/20 italic select-none">VS</div>
 
                     {/* Team 2 */}
                     <div className="flex-1 flex flex-col items-start text-left gap-6">
-                      <div className={`p-8 rounded-[40px] border-4 transition-all duration-700 w-full ${
+                      <div className={`p-10 rounded-[60px] border-4 transition-all duration-700 w-full relative overflow-hidden ${
                         currentQualisMatch.winner === currentQualisMatch.team2 
-                        ? 'bg-green-600 border-green-400 shadow-[0_0_80px_rgba(34,197,94,0.3)] scale-105' 
+                        ? 'bg-green-600 border-green-400 shadow-[0_0_100px_rgba(34,197,94,0.4)] scale-105' 
                         : 'bg-white/5 border-white/10'
                       }`}>
-                        <div className="text-white/40 text-sm font-black uppercase mb-2 tracking-widest">TEAM 2</div>
-                        <div className="text-5xl md:text-7xl font-black text-white truncate">{currentQualisMatch.team2}</div>
+                        <div className="flex justify-between items-center mb-6">
+                          {currentQualisMatch.country2 && (
+                            <div className="text-white/60 text-lg font-black uppercase tracking-widest">{currentQualisMatch.country2}</div>
+                          )}
+                          <div className="bg-white/10 px-4 py-1 rounded-full text-[12px] font-black tracking-widest uppercase">Team 2</div>
+                        </div>
+                        <div className="text-blue-400 text-3xl font-black mb-2 font-mono">#{currentQualisMatch.team2}</div>
+                        <div className="text-5xl md:text-8xl font-black text-white leading-none uppercase tracking-tighter">
+                          {currentQualisMatch.name2 || currentQualisMatch.team2}
+                        </div>
                       </div>
                       {currentQualisMatch.winner === currentQualisMatch.team2 && (
-                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-3 text-green-400 font-black text-2xl">
-                          GANADOR <Trophy size={32} />
+                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-4 text-green-400 font-black text-4xl italic">
+                          GANADOR <Trophy size={48} />
                         </motion.div>
                       )}
                     </div>
@@ -421,7 +575,12 @@ export default function LegoTimerDisplay() {
                         <div key={tIdx} className="text-center">
                           <div className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Equipo {tIdx + 1}</div>
                           <div className="text-xl font-black text-white uppercase tracking-tight leading-tight line-clamp-2">{name}</div>
-                          <div className="text-[10px] font-mono font-bold text-slate-500 mt-1">#{alliance.teams[tIdx]}</div>
+                          <div className="flex items-center justify-center gap-2 mt-1">
+                            <div className="text-[10px] font-mono font-bold text-slate-500">#{alliance.teams[tIdx]}</div>
+                            {alliance.teamCountries?.[tIdx] && (
+                              <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{alliance.teamCountries[tIdx]}</div>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -503,67 +662,6 @@ export default function LegoTimerDisplay() {
             </h1>
             <p className="text-2xl font-black uppercase tracking-[0.5em] text-slate-500 mt-4">Awards Presentation</p>
           </motion.div>
-        ) : qualisData.enabled ? (
-          <motion.div
-            key="qualis"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 1.1 }}
-            className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-slate-950 p-10"
-          >
-             <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#ffffff 2px, transparent 2px)', backgroundSize: '40px 40px' }} />
-             
-             {!currentQualisMatch ? (
-               <div className="text-white/20 text-4xl font-black uppercase tracking-widest">MODO QUALIS</div>
-             ) : (
-               <div className="w-full max-w-7xl flex flex-col items-center gap-12">
-                  <div className="flex flex-col items-center mb-4">
-                    <div className="bg-blue-600 px-6 py-2 rounded-full text-white font-black text-sm tracking-[0.3em] uppercase mb-4 shadow-xl shadow-blue-500/20">
-                      QUALIFYING MATCH #{qualisData.currentIndex + 1}
-                    </div>
-                    <h2 className="text-white/40 text-2xl font-black uppercase tracking-tighter">ENFRENTAMIENTO</h2>
-                  </div>
-
-                  <div className="flex items-center justify-center gap-16 w-full">
-                    {/* Team 1 */}
-                    <div className="flex-1 flex flex-col items-end text-right gap-6">
-                      <div className={`p-8 rounded-[40px] border-4 transition-all duration-700 w-full ${
-                        currentQualisMatch.winner === currentQualisMatch.team1 
-                        ? 'bg-green-600 border-green-400 shadow-[0_0_80px_rgba(34,197,94,0.3)] scale-105' 
-                        : 'bg-white/5 border-white/10'
-                      }`}>
-                        <div className="text-white/40 text-sm font-black uppercase mb-2 tracking-widest">TEAM 1</div>
-                        <div className="text-5xl md:text-7xl font-black text-white truncate">{currentQualisMatch.team1}</div>
-                      </div>
-                      {currentQualisMatch.winner === currentQualisMatch.team1 && (
-                        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-3 text-green-400 font-black text-2xl">
-                          <Trophy size={32} /> GANADOR
-                        </motion.div>
-                      )}
-                    </div>
-
-                    <div className="text-6xl font-black text-blue-500 italic px-4">VS</div>
-
-                    {/* Team 2 */}
-                    <div className="flex-1 flex flex-col items-start text-left gap-6">
-                      <div className={`p-8 rounded-[40px] border-4 transition-all duration-700 w-full ${
-                        currentQualisMatch.winner === currentQualisMatch.team2 
-                        ? 'bg-green-600 border-green-400 shadow-[0_0_80px_rgba(34,197,94,0.3)] scale-105' 
-                        : 'bg-white/5 border-white/10'
-                      }`}>
-                        <div className="text-white/40 text-sm font-black uppercase mb-2 tracking-widest">TEAM 2</div>
-                        <div className="text-5xl md:text-7xl font-black text-white truncate">{currentQualisMatch.team2}</div>
-                      </div>
-                      {currentQualisMatch.winner === currentQualisMatch.team2 && (
-                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-3 text-green-400 font-black text-2xl">
-                          GANADOR <Trophy size={32} />
-                        </motion.div>
-                      )}
-                    </div>
-                  </div>
-               </div>
-             )}
-          </motion.div>
         ) : winner ? (
           <motion.div 
             key="winner"
@@ -592,56 +690,148 @@ export default function LegoTimerDisplay() {
           </motion.div>
         ) : (
           <motion.div key="timer" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full flex flex-col">
-            <header className="relative z-10 flex justify-between items-end border-b-2 border-slate-800/50 pb-6 mb-4">
-              <div className="flex items-center gap-8">
-                <div className="bg-blue-600 px-6 py-2 rounded-lg skew-x-[-12deg]"><span className="text-3xl font-black italic block skew-x-[12deg]">FLL</span></div>
-                <div>
-                  <h1 className="text-3xl font-black uppercase tracking-tighter text-white/90">Championship <span className="text-blue-500">2026</span></h1>
-                  <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.4em] mt-1 flex items-center gap-2">
-                    Live Digital Feed {selectedField && <span onClick={() => setSelectedField(null)} className="bg-blue-600/20 text-blue-400 px-2 py-0.5 rounded cursor-pointer">• {selectedField.replace('cancha', 'CANCHA ')}</span>}
-                  </p>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-2xl font-black text-white uppercase tracking-tight">{activeMatch ? `Match #${activeMatch.position} • Round ${activeMatch.round}` : 'Arena Standby'}</div>
-              </div>
-            </header>
+            
+            {/* ── SCOREBOARD BAR ─────────────────────────────────────────────── */}
+            <div className="relative z-10 shrink-0" style={{ background: '#111111', boxShadow: '0 2px 20px rgba(0,0,0,0.8)', fontFamily: "'Segoe UI', Arial, sans-serif" }}>
 
-            <main className="relative z-10 flex-1 flex flex-col items-center justify-center">
-              <motion.div animate={isCritical ? { scale: [1, 1.03, 1] } : {}} transition={{ repeat: Infinity, duration: 1 }}>
-                <div className="bg-slate-900/40 backdrop-blur-md p-4 rounded-[60px] border border-slate-700/50">
-                  <div className="bg-slate-950 px-16 py-10 lg:px-24 lg:py-14 rounded-[50px] border-2 border-slate-800 text-center">
+              {/* Main row */}
+              <div className="flex flex-row items-stretch" style={{ height: 116 }}>
+
+                {/* Red team names — outer left */}
+                <div className="flex-1 flex flex-col justify-center px-6" style={{ borderRight: '1px solid #2a2a2a' }}>
+                  <span className="text-white font-semibold truncate" style={{ fontSize: 21 }}>{activeMatch?.teamA1 || 'TBD'}</span>
+                  <span className="font-semibold truncate" style={{ fontSize: 17, color: '#e05c6a' }}>{activeMatch?.teamA2 || '—'}</span>
+                </div>
+
+                {/* Red score — immediately left of timer */}
+                <div className="flex items-center justify-center shrink-0" style={{ background: '#c0392b', width: 140, borderRight: '2px solid #111' }}>
+                  <span className="text-white font-bold tabular-nums leading-none" style={{ fontSize: 80 }}>
+                    {activeMatch?.scoreA ?? 0}
+                  </span>
+                </div>
+
+                {/* Top Timer Box (Small version) */}
+                <div className="flex flex-col items-center justify-center shrink-0" style={{ background: '#ffffff', width: 210, borderLeft: '2px solid #ddd', borderRight: '2px solid #ddd' }}>
+                  <motion.div animate={isCritical ? { scale: [1, 1.05, 1] } : {}} transition={{ repeat: Infinity, duration: 0.85 }}>
                     <AnimatePresence mode="wait">
-                      <motion.div key={timer.timeRemaining} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className={`text-[25vh] leading-[0.8] font-black tabular-nums tracking-tighter ${timer.timeRemaining <= 10 ? 'text-red-500' : timer.timeRemaining <= 30 ? 'text-amber-400' : 'text-white'}`}>
+                      <motion.div
+                        key={timer.timeRemaining}
+                        initial={{ opacity: 0, y: 5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="font-bold tabular-nums leading-none text-center"
+                        style={{
+                          fontSize: 74,
+                          color: timer.timeRemaining <= 10 ? '#dc2626' : timer.timeRemaining <= 30 ? '#ea580c' : '#111111',
+                          letterSpacing: '0.02em',
+                        }}
+                      >
                         {formatTime(timer.timeRemaining)}
                       </motion.div>
                     </AnimatePresence>
-                  </div>
+                  </motion.div>
                 </div>
-              </motion.div>
-            </main>
 
-            <footer className="relative z-10 grid grid-cols-2 gap-8 h-[22vh]">
-              <div className="bg-slate-900/40 backdrop-blur-xl rounded-[32px] border-l-8 border-blue-600 p-6 flex justify-between items-center shadow-2xl">
-                <div className="space-y-1">
-                  <div className="text-blue-500 text-[10px] font-black uppercase tracking-[0.3em]">Alliance Alpha</div>
-                  <div className="text-2xl font-black text-white uppercase truncate max-w-[250px]">{activeMatch?.teamA1 || 'TBD'}</div>
-                  <div className="text-xl font-bold text-slate-500 uppercase truncate max-w-[250px]">{activeMatch?.teamA2 || 'TBD'}</div>
+                {/* Blue score — immediately right of timer */}
+                <div className="flex items-center justify-center shrink-0" style={{ background: '#1565c0', width: 140, borderLeft: '2px solid #111' }}>
+                  <span className="text-white font-bold tabular-nums leading-none" style={{ fontSize: 80 }}>
+                    {activeMatch?.scoreB ?? 0}
+                  </span>
                 </div>
-                <div className="text-blue-400 font-mono text-7xl font-black tabular-nums">{activeMatch?.scoreA || 0}</div>
-              </div>
-              <div className="bg-slate-900/40 backdrop-blur-xl rounded-[32px] border-r-8 border-red-600 p-6 flex justify-between items-center shadow-2xl">
-                <div className="text-red-400 font-mono text-7xl font-black tabular-nums order-2">{activeMatch?.scoreB || 0}</div>
-                <div className="space-y-1 order-1">
-                  <div className="text-red-500 text-[10px] font-black uppercase tracking-[0.3em]">Alliance Bravo</div>
-                  <div className="text-2xl font-black text-white uppercase truncate max-w-[250px]">{activeMatch?.teamB1 || 'TBD'}</div>
-                  <div className="text-xl font-bold text-slate-500 uppercase truncate max-w-[250px]">{activeMatch?.teamB2 || 'TBD'}</div>
+
+                {/* Blue team names — outer right */}
+                <div className="flex-1 flex flex-col justify-center px-6 items-end" style={{ borderLeft: '1px solid #2a2a2a' }}>
+                  <span className="text-white font-semibold truncate" style={{ fontSize: 21 }}>{activeMatch?.teamB1 || 'TBD'}</span>
+                  <span className="font-semibold truncate" style={{ fontSize: 17, color: '#60a5fa' }}>{activeMatch?.teamB2 || '—'}</span>
                 </div>
+
               </div>
-            </footer>
+
+              {/* Match info subtitle row */}
+              <div className="flex items-center justify-between px-4" style={{ height: 24, background: '#0a0a0a', borderTop: '1px solid #1e1e1e' }}>
+                <span className="font-semibold uppercase" style={{ fontSize: 10, color: '#c0392b', letterSpacing: '0.2em' }}>Red Alliance</span>
+                <span className="font-semibold text-center" style={{ fontSize: 10, color: '#444', letterSpacing: '0.25em' }}>
+                  Championship 2026{activeMatch ? `  ·  Match #${activeMatch.position}  ·  Round ${activeMatch.round}` : '  ·  Arena Standby'}
+                  {selectedField && (
+                    <span onClick={() => setSelectedField(null)} className="cursor-pointer ml-2" style={{ color: '#3b82f6' }}>
+                      · {selectedField.replace('cancha', 'Cancha ')}
+                    </span>
+                  )}
+                </span>
+                <span className="font-semibold uppercase" style={{ fontSize: 10, color: '#1565c0', letterSpacing: '0.2em' }}>Blue Alliance</span>
+              </div>
+            </div>
+
+            {/* ── BIG TIMER AREA ─────────────────────────────────────────────── */}
+            <div className="flex-1 flex flex-col items-center justify-center">
+               <motion.div 
+                 animate={isCritical ? { scale: [1, 1.03, 1] } : {}} 
+                 transition={{ repeat: Infinity, duration: 1 }}
+                 className="relative"
+               >
+                 <div className="bg-slate-900/40 backdrop-blur-md p-6 rounded-[80px] border border-slate-700/50 shadow-2xl relative z-10">
+                   <div className="bg-slate-950 px-20 py-12 lg:px-32 lg:py-20 rounded-[70px] border-2 border-slate-800 text-center shadow-inner min-w-[60vw]">
+                     <AnimatePresence mode="wait">
+                       <motion.div 
+                         key={timer.timeRemaining} 
+                         initial={{ opacity: 0, scale: 0.9 }} 
+                         animate={{ opacity: 1, scale: 1 }} 
+                         className={`text-[40vh] leading-[0.7] font-black tabular-nums tracking-tighter ${
+                           timer.timeRemaining <= 10 ? 'text-red-500' : 
+                           timer.timeRemaining <= 30 ? 'text-orange-500' : 
+                           'text-white'
+                         }`}
+                         style={{ textShadow: isCritical ? '0 0 60px rgba(239, 68, 68, 0.4)' : 'none' }}
+                       >
+                         {formatTime(timer.timeRemaining)}
+                       </motion.div>
+                     </AnimatePresence>
+                     
+                     {/* Match context helper label under big timer */}
+                     <div className="mt-8 text-slate-600 font-black uppercase tracking-[0.4em] text-xl">
+                       {activeMatch ? `Match #${activeMatch.position} · Round ${activeMatch.round}` : 'Standby'}
+                     </div>
+                   </div>
+                 </div>
+                 
+                 {/* Connection status indicator */}
+                 {!isConnected && (
+                   <motion.div 
+                     initial={{ opacity: 0 }} 
+                     animate={{ opacity: 1 }} 
+                     className="absolute -top-4 -right-4 bg-red-600 text-white px-4 py-1 rounded-full text-xs font-black uppercase tracking-widest z-20 shadow-lg"
+                   >
+                     Disconnected
+                   </motion.div>
+                 )}
+               </motion.div>
+            </div>
+
           </motion.div>
         )}
       </AnimatePresence>
     </div>
+
+      <AnimatePresence>
+        {settingsOpen && (
+          <SettingsWindow
+            mode={chromaMode}
+            onChange={handleChromaChange}
+            onClose={handleSettingsToggle}
+          />
+        )}
+      </AnimatePresence>
+
+      <button
+        onClick={handleSettingsToggle}
+        className="fixed top-4 right-4 z-[600] w-10 h-10 rounded-full bg-slate-900 border border-slate-700 flex items-center justify-center shadow-lg hover:bg-slate-800 transition-all duration-300"
+        style={{ opacity: showControls || settingsOpen ? 1 : 0, pointerEvents: showControls || settingsOpen ? 'auto' : 'none' }}
+        aria-label="OBS overlay settings"
+      >
+        {settingsOpen
+          ? <X className="w-5 h-5 text-slate-300" />
+          : <Settings className="w-5 h-5 text-slate-300" />
+        }
+      </button>
+    </>
   );
 }

@@ -7,7 +7,11 @@ import { toast } from 'react-toastify';
 
 interface QualisMatch {
   team1: string;
+  name1?: string;
+  country1?: string;
   team2: string;
+  name2?: string;
+  country2?: string;
   winner?: string;
 }
 
@@ -163,15 +167,25 @@ export default function QualisSection() {
               <div className="space-y-6">
                 <div className="flex items-center justify-between gap-4">
                   <div className={`flex-1 p-6 rounded-3xl border transition-all cursor-pointer ${currentMatch.winner === currentMatch.team1 ? 'bg-green-600 border-green-400' : 'bg-slate-800/50 border-slate-700'}`} onClick={() => setWinner(currentMatch.winner === currentMatch.team1 ? null : currentMatch.team1)}>
-                    <div className="text-slate-500 text-[10px] font-bold uppercase mb-1">TEAM 1</div>
-                    <div className="text-2xl font-black text-white">{currentMatch.team1}</div>
-                    {currentMatch.winner === currentMatch.team1 && <div className="text-[10px] font-bold text-white mt-2">GANADOR</div>}
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="text-slate-500 text-[10px] font-bold uppercase">TEAM 1</div>
+                      {currentMatch.country1 && <div className="text-slate-400 text-[9px] font-bold uppercase">{currentMatch.country1}</div>}
+                    </div>
+                    <div className="text-sm font-bold text-blue-400 mb-1">#{currentMatch.team1}</div>
+                    <div className="text-xl font-black text-white leading-tight">{currentMatch.name1 || currentMatch.team1}</div>
+                    {currentMatch.winner === currentMatch.team1 && <div className="text-[10px] font-bold text-white mt-3 bg-green-500/20 px-2 py-1 rounded inline-block">GANADOR</div>}
                   </div>
-                  <div className="text-2xl font-black text-blue-500">VS</div>
+                  
+                  <div className="text-2xl font-black text-blue-500 italic">VS</div>
+                  
                   <div className={`flex-1 p-6 rounded-3xl border transition-all cursor-pointer ${currentMatch.winner === currentMatch.team2 ? 'bg-green-600 border-green-400' : 'bg-slate-800/50 border-slate-700'}`} onClick={() => setWinner(currentMatch.winner === currentMatch.team2 ? null : currentMatch.team2)}>
-                    <div className="text-slate-500 text-[10px] font-bold uppercase mb-1">TEAM 2</div>
-                    <div className="text-2xl font-black text-white">{currentMatch.team2}</div>
-                    {currentMatch.winner === currentMatch.team2 && <div className="text-[10px] font-bold text-white mt-2">GANADOR</div>}
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="text-slate-500 text-[10px] font-bold uppercase">TEAM 2</div>
+                      {currentMatch.country2 && <div className="text-slate-400 text-[9px] font-bold uppercase">{currentMatch.country2}</div>}
+                    </div>
+                    <div className="text-sm font-bold text-blue-400 mb-1">#{currentMatch.team2}</div>
+                    <div className="text-xl font-black text-white leading-tight">{currentMatch.name2 || currentMatch.team2}</div>
+                    {currentMatch.winner === currentMatch.team2 && <div className="text-[10px] font-bold text-white mt-3 bg-green-500/20 px-2 py-1 rounded inline-block">GANADOR</div>}
                   </div>
                 </div>
 
@@ -228,7 +242,7 @@ export default function QualisSection() {
                   : 'bg-slate-800/40 border-slate-700 hover:bg-slate-800'
                 }`}
               >
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center mb-2">
                   <span className={`text-[10px] font-black px-2 py-1 rounded-md ${
                     idx === qualisData.currentIndex ? 'bg-white text-blue-600' : 'bg-slate-700 text-slate-400'
                   }`}>
@@ -238,10 +252,18 @@ export default function QualisSection() {
                     <Trophy size={14} className={idx === qualisData.currentIndex ? 'text-white' : 'text-yellow-500'} />
                   )}
                 </div>
-                <div className="flex justify-between mt-2 font-bold text-sm">
-                  <span className={idx === qualisData.currentIndex ? 'text-white' : 'text-slate-300'}>{m.team1}</span>
-                  <span className={idx === qualisData.currentIndex ? 'text-blue-200' : 'text-slate-500'}>vs</span>
-                  <span className={idx === qualisData.currentIndex ? 'text-white' : 'text-slate-300'}>{m.team2}</span>
+                <div className="flex justify-between items-center gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className={`text-[10px] font-bold truncate ${idx === qualisData.currentIndex ? 'text-blue-200' : 'text-slate-400'}`}>
+                      {m.name1 || m.team1}
+                    </div>
+                  </div>
+                  <span className={`text-xs font-black ${idx === qualisData.currentIndex ? 'text-blue-200' : 'text-slate-500'}`}>VS</span>
+                  <div className="flex-1 min-w-0 text-right">
+                    <div className={`text-[10px] font-bold truncate ${idx === qualisData.currentIndex ? 'text-blue-200' : 'text-slate-400'}`}>
+                      {m.name2 || m.team2}
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}

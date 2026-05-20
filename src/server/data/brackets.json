@@ -1,3 +1,13 @@
 {
-  "brackets": []
+  "brackets": [
+    {
+      "id": "1779238687428",
+      "name": "Tournament 2vs2",
+      "size": 0,
+      "mode": "2vs2",
+      "status": "active",
+      "date": "2026-05-20T00:58:07.428Z",
+      "createdAt": "2026-05-20T00:58:07.428Z"
+    }
+  ]
 }

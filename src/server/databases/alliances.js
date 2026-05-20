@@ -35,10 +35,11 @@ export const initAlliancesDB = async () => {
 export const getAlliances = async () => {
   await db.read();
   const teams = getTeams();
-  // Enriquecer las alianzas con los nombres de equipo actuales
+  // Enriquecer las alianzas con los nombres de equipo y países actuales
   const enrichedAlliances = (db.data.alliances || []).map(a => ({
     ...a,
-    teamNames: (a.teams || []).map(num => teams.find(t => t.number === num)?.name || `Equipo ${num}`)
+    teamNames: (a.teams || []).map(num => teams.find(t => t.number === num)?.name || `Equipo ${num}`),
+    teamCountries: (a.teams || []).map(num => teams.find(t => t.number === num)?.country || 'Unknown')
   }));
   
   return {

@@ -8,6 +8,7 @@ interface Team {
   id: string;
   number: string;
   name: string;
+  country: string;
 }
 
 interface Alliance {
@@ -61,7 +62,8 @@ export default function AllianceSelection({ onClose }: { onClose: () => void }) 
       active: isSelectionActive, 
       alliances: newAlliances.map(a => ({
         ...a,
-        teamNames: a.teams.map(num => teams.find(t => t.number === num)?.name || 'Unknown')
+        teamNames: a.teams.map(num => teams.find(t => t.number === num)?.name || 'Unknown'),
+        teamCountries: a.teams.map(num => teams.find(t => t.number === num)?.country || 'Unknown')
       }))
     });
   };
@@ -113,7 +115,8 @@ export default function AllianceSelection({ onClose }: { onClose: () => void }) 
       active, 
       alliances: alliancesData.alliances.map((a: any) => ({
         ...a,
-        teamNames: a.teams.map((num: string) => teams.find(t => t.number === num)?.name || 'Unknown')
+        teamNames: a.teams.map((num: string) => teams.find(t => t.number === num)?.name || 'Unknown'),
+        teamCountries: a.teams.map((num: string) => teams.find(t => t.number === num)?.country || 'Unknown')
       }))
     });
   };

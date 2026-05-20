@@ -469,47 +469,63 @@ export default function LegoTimerDisplay() {
              {!currentQualisMatch ? (
                <div className="text-white/20 text-4xl font-black uppercase tracking-widest">MODO QUALIS</div>
              ) : (
-               <div className="w-full max-w-7xl flex flex-col items-center gap-12">
+               <div className="w-full max-w-[90vw] flex flex-col items-center gap-12">
                   <div className="flex flex-col items-center mb-4">
-                    <div className="bg-blue-600 px-6 py-2 rounded-full text-white font-black text-sm tracking-[0.3em] uppercase mb-4 shadow-xl shadow-blue-500/20">
+                    <div className="bg-blue-600 px-8 py-3 rounded-full text-white font-black text-xl tracking-[0.3em] uppercase mb-4 shadow-2xl shadow-blue-500/40">
                       QUALIFYING MATCH #{qualisData.currentIndex + 1}
                     </div>
-                    <h2 className="text-white/40 text-2xl font-black uppercase tracking-tighter">ENFRENTAMIENTO</h2>
+                    <h2 className="text-white/40 text-2xl font-black uppercase tracking-[0.5em]">VS</h2>
                   </div>
 
-                  <div className="flex items-center justify-center gap-16 w-full">
+                  <div className="flex items-center justify-center gap-12 w-full">
                     {/* Team 1 */}
                     <div className="flex-1 flex flex-col items-end text-right gap-6">
-                      <div className={`p-8 rounded-[40px] border-4 transition-all duration-700 w-full ${
+                      <div className={`p-10 rounded-[60px] border-4 transition-all duration-700 w-full relative overflow-hidden ${
                         currentQualisMatch.winner === currentQualisMatch.team1 
-                        ? 'bg-green-600 border-green-400 shadow-[0_0_80px_rgba(34,197,94,0.3)] scale-105' 
+                        ? 'bg-green-600 border-green-400 shadow-[0_0_100px_rgba(34,197,94,0.4)] scale-105' 
                         : 'bg-white/5 border-white/10'
                       }`}>
-                        <div className="text-white/40 text-sm font-black uppercase mb-2 tracking-widest">TEAM 1</div>
-                        <div className="text-5xl md:text-7xl font-black text-white truncate">{currentQualisMatch.team1}</div>
+                        <div className="flex justify-between items-center mb-6">
+                          <div className="bg-white/10 px-4 py-1 rounded-full text-[12px] font-black tracking-widest uppercase">Team 1</div>
+                          {currentQualisMatch.country1 && (
+                            <div className="text-white/60 text-lg font-black uppercase tracking-widest">{currentQualisMatch.country1}</div>
+                          )}
+                        </div>
+                        <div className="text-blue-400 text-3xl font-black mb-2 font-mono">#{currentQualisMatch.team1}</div>
+                        <div className="text-5xl md:text-8xl font-black text-white leading-none uppercase tracking-tighter">
+                          {currentQualisMatch.name1 || currentQualisMatch.team1}
+                        </div>
                       </div>
                       {currentQualisMatch.winner === currentQualisMatch.team1 && (
-                        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-3 text-green-400 font-black text-2xl">
-                          <Trophy size={32} /> GANADOR
+                        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-4 text-green-400 font-black text-4xl italic">
+                          <Trophy size={48} /> GANADOR
                         </motion.div>
                       )}
                     </div>
 
-                    <div className="text-6xl font-black text-blue-500 italic px-4">VS</div>
+                    <div className="text-[120px] font-black text-blue-500/20 italic select-none">VS</div>
 
                     {/* Team 2 */}
                     <div className="flex-1 flex flex-col items-start text-left gap-6">
-                      <div className={`p-8 rounded-[40px] border-4 transition-all duration-700 w-full ${
+                      <div className={`p-10 rounded-[60px] border-4 transition-all duration-700 w-full relative overflow-hidden ${
                         currentQualisMatch.winner === currentQualisMatch.team2 
-                        ? 'bg-green-600 border-green-400 shadow-[0_0_80px_rgba(34,197,94,0.3)] scale-105' 
+                        ? 'bg-green-600 border-green-400 shadow-[0_0_100px_rgba(34,197,94,0.4)] scale-105' 
                         : 'bg-white/5 border-white/10'
                       }`}>
-                        <div className="text-white/40 text-sm font-black uppercase mb-2 tracking-widest">TEAM 2</div>
-                        <div className="text-5xl md:text-7xl font-black text-white truncate">{currentQualisMatch.team2}</div>
+                        <div className="flex justify-between items-center mb-6">
+                          {currentQualisMatch.country2 && (
+                            <div className="text-white/60 text-lg font-black uppercase tracking-widest">{currentQualisMatch.country2}</div>
+                          )}
+                          <div className="bg-white/10 px-4 py-1 rounded-full text-[12px] font-black tracking-widest uppercase">Team 2</div>
+                        </div>
+                        <div className="text-blue-400 text-3xl font-black mb-2 font-mono">#{currentQualisMatch.team2}</div>
+                        <div className="text-5xl md:text-8xl font-black text-white leading-none uppercase tracking-tighter">
+                          {currentQualisMatch.name2 || currentQualisMatch.team2}
+                        </div>
                       </div>
                       {currentQualisMatch.winner === currentQualisMatch.team2 && (
-                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-3 text-green-400 font-black text-2xl">
-                          GANADOR <Trophy size={32} />
+                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-4 text-green-400 font-black text-4xl italic">
+                          GANADOR <Trophy size={48} />
                         </motion.div>
                       )}
                     </div>
@@ -556,7 +572,12 @@ export default function LegoTimerDisplay() {
                         <div key={tIdx} className="text-center">
                           <div className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Equipo {tIdx + 1}</div>
                           <div className="text-xl font-black text-white uppercase tracking-tight leading-tight line-clamp-2">{name}</div>
-                          <div className="text-[10px] font-mono font-bold text-slate-500 mt-1">#{alliance.teams[tIdx]}</div>
+                          <div className="flex items-center justify-center gap-2 mt-1">
+                            <div className="text-[10px] font-mono font-bold text-slate-500">#{alliance.teams[tIdx]}</div>
+                            {alliance.teamCountries?.[tIdx] && (
+                              <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{alliance.teamCountries[tIdx]}</div>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -731,7 +752,7 @@ export default function LegoTimerDisplay() {
               <div className="flex items-center justify-between px-4" style={{ height: 24, background: '#0a0a0a', borderTop: '1px solid #1e1e1e' }}>
                 <span className="font-semibold uppercase" style={{ fontSize: 10, color: '#c0392b', letterSpacing: '0.2em' }}>Red Alliance</span>
                 <span className="font-semibold text-center" style={{ fontSize: 10, color: '#444', letterSpacing: '0.25em' }}>
-                  Championship 2026{activeMatch ? `  ·  Match #${activeMatch.position}  ·  Round ${activeMatch.round}` : '  ·  Arena Standby'}
+                  Open México 2026{activeMatch ? `  ·  Match #${activeMatch.position}  ·  Round ${activeMatch.round}` : '  ·  Arena Standby'}
                   {selectedField && (
                     <span onClick={() => setSelectedField(null)} className="cursor-pointer ml-2" style={{ color: '#3b82f6' }}>
                       · {selectedField.replace('cancha', 'Cancha ')}

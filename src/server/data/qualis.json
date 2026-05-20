@@ -1,31 +1,24 @@
 {
   "matches": [
     {
-      "team1": "1234 - Los Ingenieros",
-      "team2": "5678 - Robo-Masters",
+      "team1": "26001",
+      "name1": "Mechanic Sparkle",
+      "country1": "México",
+      "team2": "26034",
+      "name2": "Paleo Pangolins",
+      "country2": "USA",
       "winner": null
     },
     {
-      "team1": "9999 - Cyber Knights",
-      "team2": "1111 - Tech Titans",
-      "winner": "1111 - Tech Titans"
-    },
-    {
-      "team1": "4321 - Galactic Builders",
-      "team2": "8765 - Future Sparks",
+      "team1": "26002",
+      "name1": "LincesBots",
+      "country1": "México",
+      "team2": "26035",
+      "name2": "FIRST FUJISAN",
+      "country2": "Japan",
       "winner": null
-    },
-    {
-      "team1": "5555 - Iron Dragons",
-      "team2": "2222 - Storm Troopers",
-      "winner": "null"
-    },
-    {
-      "team1": "3333 - Pixel Pioneers",
-      "team2": "4444 - Code Ninjas",
-      "winner": "null"
     }
   ],
-  "currentIndex": 2,
+  "currentIndex": 0,
   "enabled": true
 }
