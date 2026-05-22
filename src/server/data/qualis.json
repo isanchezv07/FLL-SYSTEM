@@ -1,24 +1,5 @@
 {
-  "matches": [
-    {
-      "team1": "26001",
-      "name1": "Mechanic Sparkle",
-      "country1": "México",
-      "team2": "26034",
-      "name2": "Paleo Pangolins",
-      "country2": "USA",
-      "winner": null
-    },
-    {
-      "team1": "26002",
-      "name1": "LincesBots",
-      "country1": "México",
-      "team2": "26035",
-      "name2": "FIRST FUJISAN",
-      "country2": "Japan",
-      "winner": null
-    }
-  ],
-  "currentIndex": 0,
-  "enabled": true
+  "matches": [],
+  "currentIndex": -1,
+  "enabled": false
 }

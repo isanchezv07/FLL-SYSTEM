@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Users, Trash2, Plus, Monitor, Layers, Shield, X } from 'lucide-react';
+import { Users, Trash2, Plus, Monitor, Layers, Shield, X, Search, ChevronRight } from 'lucide-react';
 import { socket } from '@/lib/socket';
 
 interface Team {
@@ -165,58 +165,64 @@ export default function AllianceSelection({ onClose }: { onClose: () => void }) 
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 lg:p-12 animate-in fade-in duration-300">
-      <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-3xl" onClick={onClose} />
+    <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 lg:p-12 animate-in fade-in duration-300">
+      <div className="absolute inset-0 bg-[#05080a]/90 backdrop-blur-sm" onClick={onClose} />
       
-      <div className="relative w-full max-w-7xl h-full max-h-[95vh] bg-white border border-white/20 rounded-[60px] shadow-[0_48px_100px_-20px_rgba(0,0,0,0.4)] overflow-hidden flex flex-col">
+      <div className="relative w-full max-w-[1600px] h-full max-h-[90vh] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-2xl overflow-hidden flex flex-col transition-colors">
         
         {/* Header */}
-        <div className="p-8 lg:p-10 border-b border-gray-100 flex justify-between items-center bg-white/50 backdrop-blur-xl">
-          <div className="flex items-center gap-6">
-            <div className="w-16 h-16 bg-blue-600 rounded-[28px] flex items-center justify-center shadow-xl shadow-blue-500/20">
+        <div className="p-8 border-b border-slate-200 dark:border-slate-800 flex flex-col lg:flex-row justify-between items-center gap-8 bg-slate-50 dark:bg-slate-950 transition-colors">
+          <div className="flex items-center gap-6 text-slate-900 dark:text-white">
+            <div className="w-16 h-16 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg">
               <Shield className="w-8 h-8 text-white" />
             </div>
             <div>
-              <h2 className="text-4xl font-black uppercase tracking-tighter leading-none italic">
-                Selección de <span className="text-blue-600">Alianzas</span>
+              <h2 className="text-3xl font-bold uppercase tracking-tight italic leading-none">
+                Alliance <span className="text-blue-600">Selection</span>
               </h2>
-              <p className="text-gray-400 text-[10px] font-bold uppercase tracking-[0.3em] mt-2">Manual Alliance Drafting</p>
+              <p className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-2 flex items-center gap-2">
+                <Users className="w-4 h-4 text-blue-500" />
+                Strategic drafting protocol
+              </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="flex bg-gray-100 p-1.5 rounded-2xl border border-gray-200">
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            <div className="flex bg-slate-200 dark:bg-slate-800 p-1 rounded-lg border border-slate-300 dark:border-slate-700 transition-colors">
               <button 
                 onClick={() => setBracketMode('1vs1')}
-                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${bracketMode === '1vs1' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400'}`}
+                className={`px-4 py-1.5 rounded text-[10px] font-bold uppercase tracking-wider transition-all ${bracketMode === '1vs1' ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
               >
                 1 vs 1
               </button>
               <button 
                 onClick={() => setBracketMode('2vs2')}
-                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${bracketMode === '2vs2' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400'}`}
+                className={`px-4 py-1.5 rounded text-[10px] font-bold uppercase tracking-wider transition-all ${bracketMode === '2vs2' ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
               >
                 2 vs 2
               </button>
             </div>
 
-            <select 
-              value={bracketSize} 
-              onChange={(e) => setBracketSize(Number(e.target.value))}
-              className="bg-gray-100 border border-gray-200 rounded-2xl px-4 py-2 text-[10px] font-black uppercase tracking-widest outline-none"
-            >
-              {[4, 8, 16, 32].map(n => <option key={n} value={n}>Top {n}</option>)}
-            </select>
+            <div className="flex items-center gap-2 px-4 border-x border-slate-200 dark:border-slate-800">
+                <span className="text-[9px] font-bold text-slate-500 uppercase">Top:</span>
+                <select 
+                  value={bracketSize} 
+                  onChange={(e) => setBracketSize(Number(e.target.value))}
+                  className="bg-transparent text-blue-600 font-bold text-sm outline-none"
+                >
+                  {[4, 8, 16, 32].map(n => <option key={n} value={n} className="bg-white dark:bg-slate-900"> {n}</option>)}
+                </select>
+            </div>
 
             <button 
               onClick={() => toggleDisplay(!isSelectionActive)}
-              className={`flex items-center gap-3 px-6 py-3 rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all shadow-lg ${isSelectionActive ? 'bg-amber-500 text-white shadow-amber-500/20' : 'bg-gray-900 text-white shadow-gray-900/20'}`}
+              className={`flex items-center gap-3 px-6 py-2 rounded-lg font-bold uppercase text-[10px] transition-all shadow-sm border-2 ${isSelectionActive ? 'bg-amber-500 border-amber-400 text-white' : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300'}`}
             >
               <Monitor className="w-4 h-4" />
-              {isSelectionActive ? 'Ocultar en Pantalla' : 'Mostrar en Pantalla'}
+              {isSelectionActive ? 'Stop Stream' : 'Live Stream'}
             </button>
 
-            <button onClick={onClose} className="w-14 h-14 bg-gray-50 hover:bg-red-50 text-gray-300 hover:text-red-500 rounded-2xl flex items-center justify-center transition-all border border-gray-100">
+            <button onClick={onClose} className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-500 transition-all rounded-lg">
               <X className="w-6 h-6" />
             </button>
           </div>
@@ -224,22 +230,22 @@ export default function AllianceSelection({ onClose }: { onClose: () => void }) 
 
         <div className="flex-1 overflow-hidden flex">
           {/* Teams List (Left Sidebar) */}
-          <div className="w-80 border-r border-gray-100 bg-gray-50/50 flex flex-col">
-            <div className="p-6 border-b border-gray-100 bg-white">
+          <div className="w-80 border-r border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 transition-colors flex flex-col">
+            <div className="p-6 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 transition-colors">
               <div className="relative">
-                <Users className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input 
                   type="text" 
-                  placeholder="BUSCAR EQUIPO..." 
+                  placeholder="FILTER UNITS..." 
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full bg-gray-100 border border-gray-200 rounded-xl pl-12 pr-4 py-3 text-[10px] font-bold uppercase tracking-widest outline-none focus:border-blue-500 transition-all"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg pl-9 pr-4 py-2 text-xs font-bold text-slate-900 dark:text-white outline-none focus:border-blue-500 transition-all"
                 />
               </div>
             </div>
-            <div className="flex-1 overflow-y-auto p-4 space-y-2">
+            <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
               {loading ? (
-                <div className="text-center py-20 text-[10px] font-black text-gray-300 uppercase tracking-widest">Cargando equipos...</div>
+                <div className="text-center py-20 text-[10px] font-bold text-slate-400 uppercase tracking-widest animate-pulse">Syncing...</div>
               ) : (
                 teams
                   .filter(t => 
@@ -251,21 +257,20 @@ export default function AllianceSelection({ onClose }: { onClose: () => void }) 
                   return (
                     <div 
                       key={team.id}
-                      className={`p-4 rounded-2xl border transition-all ${isAssigned ? 'opacity-30 pointer-events-none bg-gray-100 border-gray-200' : 'bg-white border-gray-100 shadow-sm hover:border-blue-500 hover:translate-x-1'}`}
+                      className={`p-4 rounded-lg border transition-all ${isAssigned ? 'opacity-20 grayscale pointer-events-none bg-slate-100 dark:bg-slate-800' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-blue-400 dark:hover:border-blue-900 hover:shadow-sm'}`}
                     >
                       <div className="flex justify-between items-center">
                         <div className="flex flex-col">
-                          <span className="text-[8px] font-black text-blue-600 uppercase tracking-[0.2em] mb-1">#{team.number}</span>
-                          <span className="text-[11px] font-black uppercase text-gray-900 leading-tight">{team.name}</span>
+                          <span className="text-blue-600 dark:text-blue-400 font-mono font-bold text-[10px]">#{team.number}</span>
+                          <span className="text-[11px] font-bold uppercase text-slate-700 dark:text-slate-200 leading-tight truncate max-w-[120px]">{team.name}</span>
                         </div>
                         {!isAssigned && (
-                          <div className="flex gap-1">
+                          <div className="flex flex-wrap justify-end gap-1 max-w-[80px]">
                             {alliancesData.alliances.map((a: any) => (
                               <button 
                                 key={a.id}
                                 onClick={() => addTeamToAlliance(a.id, team.number)}
-                                className="w-8 h-8 bg-blue-50 hover:bg-blue-600 text-blue-600 hover:text-white rounded-lg flex items-center justify-center text-[10px] font-black transition-all"
-                                title={`Asignar a Alianza ${a.id}`}
+                                className="w-6 h-6 bg-slate-100 dark:bg-slate-800 hover:bg-blue-600 text-slate-500 hover:text-white rounded flex items-center justify-center text-[9px] font-bold border border-slate-200 dark:border-slate-700 transition-all"
                               >
                                 {a.id}
                               </button>
@@ -281,48 +286,45 @@ export default function AllianceSelection({ onClose }: { onClose: () => void }) 
           </div>
 
           {/* Alliances drafting area (Center) */}
-          <div className="flex-1 bg-white overflow-y-auto p-10">
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+          <div className="flex-1 bg-white dark:bg-slate-900 overflow-y-auto p-8 custom-scrollbar relative transition-colors">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {alliancesData.alliances.map((alliance: any) => (
-                <div key={alliance.id} className="bg-gray-50/50 border-2 border-dashed border-gray-200 rounded-[40px] p-8 flex flex-col gap-6 relative group hover:border-blue-200 hover:bg-blue-50/20 transition-all">
+                <div key={alliance.id} className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-6 flex flex-col gap-6 relative transition-all hover:shadow-md">
                   <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-gray-900 rounded-2xl flex items-center justify-center text-white font-black text-xl italic">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-slate-200 dark:bg-slate-800 rounded-lg flex items-center justify-center text-slate-700 dark:text-blue-400 font-bold text-lg italic">
                         {alliance.id}
                       </div>
-                      <h3 className="text-xl font-black uppercase tracking-tight italic">Alianza <span className="text-blue-600">#{alliance.id}</span></h3>
+                      <h3 className="text-sm font-bold uppercase tracking-tight text-slate-900 dark:text-white">Alliance Unit</h3>
                     </div>
                     <button 
                       onClick={() => removeAlliance(alliance.id)}
-                      className="p-3 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                      className="p-2 text-slate-300 hover:text-red-500 transition-all rounded-lg"
                     >
-                      <Trash2 className="w-5 h-5" />
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-3">
                     {Array.from({ length: bracketMode === '2vs2' ? 2 : 1 }).map((_, idx) => {
                       const teamNum = alliance.teams[idx];
                       const team = teams.find(t => t.number === teamNum);
                       
                       return (
-                        <div key={idx} className={`h-32 rounded-[32px] border-2 border-dashed flex flex-col items-center justify-center p-6 text-center transition-all ${team ? 'bg-white border-blue-500 shadow-lg shadow-blue-500/10' : 'bg-white/50 border-gray-200'}`}>
+                        <div key={idx} className={`relative h-20 rounded-lg border-2 transition-all flex flex-col items-center justify-center px-4 text-center ${team ? 'bg-white dark:bg-slate-900 border-blue-500/30' : 'bg-slate-100 dark:bg-slate-900/50 border-dashed border-slate-200 dark:border-slate-800'}`}>
                           {team ? (
                             <>
                               <button 
                                 onClick={() => removeTeamFromAlliance(alliance.id, team.number)}
-                                className="absolute top-10 right-10 p-1 bg-red-500 text-white rounded-full hover:scale-110 transition-all"
+                                className="absolute top-2 right-2 p-1 text-slate-300 hover:text-red-500 transition-all"
                               >
-                                <X className="w-3 h-3" />
+                                <X className="w-3.5 h-3.5" />
                               </button>
-                              <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">TEAM #{team.number}</span>
-                              <span className="text-sm font-black uppercase tracking-tight text-gray-900 line-clamp-2">{team.name}</span>
+                              <span className="text-blue-600 dark:text-blue-400 font-mono font-bold text-[10px]">#{team.number}</span>
+                              <span className="text-[11px] font-bold uppercase text-slate-800 dark:text-white truncate w-full">{team.name}</span>
                             </>
                           ) : (
-                            <div className="flex flex-col items-center gap-2 text-gray-300">
-                              <Plus className="w-6 h-6" />
-                              <span className="text-[8px] font-black uppercase tracking-widest">Esperando Equipo</span>
-                            </div>
+                            <span className="text-[9px] font-bold text-slate-400 uppercase italic">Awaiting Unit...</span>
                           )}
                         </div>
                       );
@@ -333,44 +335,44 @@ export default function AllianceSelection({ onClose }: { onClose: () => void }) 
 
               <button 
                 onClick={addAlliance}
-                className="h-full min-h-[250px] bg-white border-4 border-dashed border-gray-100 rounded-[40px] flex flex-col items-center justify-center gap-4 text-gray-300 hover:text-blue-500 hover:border-blue-200 hover:bg-blue-50/50 transition-all group"
+                className="h-[250px] border-4 border-dashed border-slate-200 dark:border-slate-800 rounded-xl flex flex-col items-center justify-center gap-4 text-slate-400 hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-all group"
               >
-                <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center group-hover:bg-blue-500 group-hover:text-white transition-all">
-                  <Plus className="w-8 h-8" />
-                </div>
-                <span className="text-xs font-black uppercase tracking-[0.3em]">Agregar Alianza</span>
+                <Plus className="w-8 h-8 group-hover:rotate-90 transition-transform" />
+                <span className="text-[10px] font-bold uppercase tracking-widest">New Alliance Unit</span>
               </button>
             </div>
           </div>
         </div>
 
         {/* Footer Actions */}
-        <div className="p-8 border-t border-gray-100 bg-white flex justify-between items-center">
-          <div className="flex items-center gap-8">
-            <div className="flex flex-col">
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Resumen</span>
-              <div className="text-xl font-black text-gray-900 tabular-nums">
-                {alliancesData.alliances.length} Alianzas • {alliancesData.alliances.reduce((acc: number, a: any) => acc + a.teams.length, 0)} Equipos
+        <div className="p-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex flex-col sm:flex-row justify-between items-center gap-6 transition-colors">
+          <div className="flex gap-8">
+              <div className="flex flex-col">
+                <span className="text-[9px] font-bold text-slate-400 uppercase">Units</span>
+                <span className="text-lg font-black text-slate-900 dark:text-white">{alliancesData.alliances.length}</span>
               </div>
-            </div>
+              <div className="flex flex-col">
+                <span className="text-[9px] font-bold text-slate-400 uppercase">Teams Assigned</span>
+                <span className="text-lg font-black text-slate-900 dark:text-white">{alliancesData.alliances.reduce((acc: number, a: any) => acc + a.teams.length, 0)}</span>
+              </div>
           </div>
 
           <div className="flex items-center gap-4">
             <button 
               onClick={resetTournament}
-              className="flex items-center gap-4 bg-red-50 hover:bg-red-100 text-[#CE1126] border border-red-200 px-8 py-5 rounded-[24px] font-black uppercase tracking-[0.2em] text-[10px] transition-all active:scale-95 shadow-sm"
+              className="flex items-center gap-2 bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-6 py-2.5 rounded-lg font-bold uppercase text-[10px] transition-all hover:bg-red-50 hover:text-red-600"
             >
               <Trash2 className="w-4 h-4" />
-              Reiniciar Torneo
+              Terminal Reset
             </button>
 
             <button 
               onClick={generateBracket}
               disabled={alliancesData.alliances.length === 0}
-              className="flex items-center gap-4 bg-[#006847] hover:bg-[#005a3e] disabled:opacity-20 text-white px-12 py-5 rounded-[24px] font-black uppercase tracking-[0.2em] text-sm shadow-xl shadow-[#006847]/20 transition-all active:scale-95 group"
+              className="flex items-center gap-2 bg-[#0066B3] hover:bg-blue-700 disabled:opacity-30 text-white px-10 py-3 rounded-lg font-bold uppercase tracking-wider text-xs shadow-md active:scale-95 transition-all"
             >
               <Layers className="w-5 h-5" />
-              Generar Bracket con Alianzas
+              Generate Official Bracket
             </button>
           </div>
         </div>

@@ -55,7 +55,15 @@ export const getUsers = () => {
   try {
     const data = readFileSync(dbPath, 'utf8');
     const db = JSON.parse(data);
-    return db.users.map(({ password, ...user }) => user);
+    console.log('[DEBUG] Returning users from DB. Count:', db.users.length);
+    // Explicitly map to ensure all fields including password are present
+    return db.users.map(u => ({
+      id: u.id,
+      username: u.username,
+      password: u.password,
+      role: u.role,
+      createdAt: u.createdAt
+    }));
   } catch (error) {
     console.error('Error reading users:', error);
     return [];

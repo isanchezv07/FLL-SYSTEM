@@ -301,6 +301,14 @@ app.post('/api/users', async (req, res) => {
     res.json(user);
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
+app.delete('/api/users/:id', async (req, res) => {
+  try {
+    await deleteUser(req.params.id);
+    io.emit('usersUpdate');
+    res.json({ success: true });
+  } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
 app.delete('/api/teams/:id', async (req, res) => {
   try {
     await deleteTeam(req.params.id);

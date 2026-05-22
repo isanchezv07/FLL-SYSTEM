@@ -1,134 +1,76 @@
-import { useState, useEffect } from 'react';
-import { Trophy, Megaphone, Trash2, Eye, EyeOff, Save, Play, Square, ChevronRight } from 'lucide-react';
-import { toast } from 'react-toastify';
+import { Eye, Monitor, Play, Radio, Layout } from 'lucide-react';
 
 export default function ScreensSection() {
-  const [awardsData, setAwardsData] = useState({ awards: [], announcement: { text: '', active: false }, ceremonyMode: false });
-  const [teams, setTeams] = useState([]);
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
-    try {
-      const [awardsRes, teamsRes] = await Promise.all([
-        fetch('/api/awards'),
-        fetch('/api/teams')
-      ]);
-      if (awardsRes.ok) {
-        const data = await awardsRes.ok ? await awardsRes.json() : awardsData;
-        setAwardsData(data);
-      }
-      if (teamsRes.ok) {
-        const data = await teamsRes.json();
-        setTeams(data);
-      }
-    } catch (error) {
-      console.error('Error fetching awards data:', error);
+  const displayNodes = [
+    { 
+      id: 'live', 
+      label: 'Live Telemetry Display', 
+      path: '/displays/live', 
+      icon: Eye, 
+      desc: 'Main event output featuring match results and rankings' 
+    },
+    { 
+      id: 'timer', 
+      label: 'Tactical Timer Display', 
+      path: '/displays/timer', 
+      icon: Play, 
+      desc: 'Precision countdown system with synchronized field nodes' 
+    },
+    { 
+      id: 'sound', 
+      label: 'Audio/Visual Visualizer', 
+      path: '/displays/sound', 
+      icon: Radio, 
+      desc: 'Real-time sonic telemetry and reactive visual engine' 
     }
-  };
-
-  const handleUpdateAward = async (id, data) => {
-    try {
-      const response = await fetch(`/api/awards/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-      if (response.ok) {
-        fetchData();
-      }
-    } catch (error) {
-      toast.error('Error al actualizar premio');
-    }
-  };
-
-  const handleRevealStep = async (award) => {
-    // Si nada está revelado, revelamos el título
-    if (!award.revealedTitle && !award.revealedWinner) {
-      // Primero ocultamos cualquier otro que esté visible
-      const others = awardsData.awards.filter(a => a.id !== award.id && (a.revealedTitle || a.revealedWinner));
-      for (const other of others) {
-        await handleUpdateAward(other.id, { revealedTitle: false, revealedWinner: false });
-      }
-      await handleUpdateAward(award.id, { revealedTitle: true });
-      toast.success('Título del premio mostrado');
-    } 
-    // Si el título ya está pero el ganador no, revelamos ganador
-    else if (award.revealedTitle && !award.revealedWinner) {
-      await handleUpdateAward(award.id, { revealedWinner: true });
-      toast.success('¡Ganador revelado!');
-    }
-    // Si todo está revelado, lo ocultamos todo
-    else {
-      await handleUpdateAward(award.id, { revealedTitle: false, revealedWinner: false });
-      toast.info('Premio ocultado');
-    }
-  };
-
-  const handleAnnouncementUpdate = async (data) => {
-    try {
-      const response = await fetch('/api/awards/announcement', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-      if (response.ok) {
-        toast.success('Anuncio actualizado');
-        fetchData();
-      }
-    } catch (error) {
-      toast.error('Error al actualizar anuncio');
-    }
-  };
-
-  const handleCeremonyToggle = async () => {
-    const newMode = !awardsData.ceremonyMode;
-    try {
-      const response = await fetch('/api/awards/ceremony', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ active: newMode })
-      });
-      if (response.ok) {
-        toast.success(newMode ? 'Modo Ceremonia ACTIVADO' : 'Modo Ceremonia DESACTIVADO');
-        fetchData();
-      }
-    } catch (error) {
-      toast.error('Error al cambiar modo');
-    }
-  };
-
-  const handleReset = async () => {
-    if (!confirm('¿Estás seguro de que quieres reiniciar todos los premios y anuncios?')) return;
-    try {
-      const response = await fetch('/api/awards/reset', { method: 'POST' });
-      if (response.ok) {
-        toast.success('Todo reiniciado');
-        fetchData();
-      }
-    } catch (error) {
-      toast.error('Error al reiniciar');
-    }
-  };
+  ];
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      {/* Enlaces a Pantallas */}
-      <div className="bg-slate-900/40 p-8 rounded-[40px] border border-slate-800 shadow-2xl backdrop-blur-md">
-        <h3 className="text-xl font-black uppercase tracking-tighter text-white mb-6">Pantallas de Visualización</h3>
-        <div className="flex flex-wrap gap-4">
-          <a href="/displays/live" target="_blank" className="bg-slate-800 hover:bg-blue-600 text-white px-6 py-4 rounded-2xl font-bold transition-all flex items-center gap-3 border border-slate-700 hover:border-blue-400">
-            <Eye className="w-5 h-5" />
-            Display Principal (Live)
+    <div className="space-y-6 animate-in fade-in duration-300 font-sans text-slate-800 dark:text-slate-200">
+      {/* Header */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-6 shadow-sm flex flex-col md:flex-row justify-between items-center transition-colors">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white uppercase tracking-tight">Display Matrix</h2>
+          <p className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1">Official Event Output Nodes</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {displayNodes.map((node) => (
+          <a 
+            key={node.id} 
+            href={node.path} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="group relative bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-blue-600 dark:hover:border-blue-400 rounded-xl p-8 transition-all hover:shadow-lg flex flex-col h-full"
+          >
+            <div className="flex items-center gap-4 mb-6">
+                <div className="w-12 h-12 bg-slate-50 dark:bg-slate-950 rounded-lg flex items-center justify-center border border-slate-100 dark:border-slate-800 shadow-sm transition-colors">
+                    <node.icon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest italic">Node {node.id.toUpperCase()}</div>
+            </div>
+
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white uppercase tracking-tight mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{node.label}</h3>
+            <p className="text-slate-500 dark:text-slate-400 text-xs leading-relaxed flex-1">{node.desc}</p>
+
+            <div className="mt-8 flex items-center gap-2 text-blue-600 dark:text-blue-400 font-bold uppercase text-[10px] tracking-widest">
+                Initialize Link
+                <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+            </div>
           </a>
-          <a href="/displays/timer" target="_blank" className="bg-slate-800 hover:bg-blue-600 text-white px-6 py-4 rounded-2xl font-bold transition-all flex items-center gap-3 border border-slate-700 hover:border-blue-400">
-            <Play className="w-5 h-5" />
-            Display de Timer (Incluye Qualis)
-          </a>
+        ))}
+
+        {/* Placeholder for future expansion */}
+        <div className="hidden lg:flex bg-slate-50 dark:bg-slate-950 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl p-8 items-center justify-center transition-colors">
+          <div className="text-center">
+            <Layout className="w-8 h-8 text-slate-200 dark:text-slate-800 mx-auto mb-3" />
+            <p className="text-[9px] font-bold text-slate-300 dark:text-slate-800 uppercase tracking-[0.3em]">Expansion Slot Available</p>
+          </div>
         </div>
       </div>
     </div>
   );
 }
+
+import { ChevronRight } from 'lucide-react';

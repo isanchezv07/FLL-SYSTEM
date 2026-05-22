@@ -1,11 +1,217 @@
-[
-  {
+{
+  "alianza1": {
     "team1": "26001",
     "name1": "Mechanic Sparkle",
     "country1": "México",
     "team2": "26034",
     "name2": "Paleo Pangolins",
+    "country2": "USA"
+  },
+  "alianza2": {
+    "team1": "26034",
+    "name1": "Paleo Pangolins",
+    "country1": "USA",
+    "team2": "26001",
+    "name2": "Mechanic Sparkle",
+    "country2": "Mexico",
+    "winner": null
+  },
+  "alianza3": {
+    "team1": "26002",
+    "name1": "LincesBots",
+    "country1": "México",
+    "team2": "26035",
+    "name2": "FIRST FUJISAN",
+    "country2": "Japan",
+    "winner": null
+  },
+  "alianza4": {
+    "team1": "26035",
+    "name1": "FIRST FUJISAN",
+    "country1": "Japan",
+    "team2": "26002",
+    "name2": "LincesBots",
+    "country2": "Mexico",
+    "winner": null
+  },
+  "alianza5": {
+    "team1": "26003",
+    "name1": "OVERTURE PURPLE",
+    "country1": "México",
+    "team2": "26036",
+    "name2": "Firecraft",
+    "country2": "Uruguay",
+    "winner": null
+  },
+  "alianza6": {
+    "team1": "26036",
+    "name1": "Firecraft",
+    "country1": "Uruguay",
+    "team2": "26003",
+    "name2": "OVERTURE PURPLE",
+    "country2": "Mexico",
+    "winner": null
+  },
+  "alianza7": {
+    "team1": "26004",
+    "name1": "Filadelfia Black Dragonflies",
+    "country1": "México",
+    "team2": "26037",
+    "name2": "Power Group",
+    "country2": "Uruguay",
+    "winner": null
+  },
+  "alianza8": {
+    "team1": "26037",
+    "name1": "Power Group",
+    "country1": "Uruguay",
+    "team2": "26004",
+    "name2": "Filadelfia Black Dragonflies",
+    "country2": "Mexico",
+    "winner": null
+  },
+  "alianza9": {
+    "team1": "26005",
+    "name1": "BlueBot",
+    "country1": "México",
+    "team2": "26006",
+    "name2": "SPACE BULLS",
+    "country2": "Mexico",
+    "winner": null
+  },
+  "alianza10": {
+    "team1": "26006",
+    "name1": "SPACE BULLS",
+    "country1": "México",
+    "team2": "26005",
+    "name2": "BlueBot",
+    "country2": "Mexico",
+    "winner": null
+  },
+  "alianza11": {
+    "team1": "26007",
+    "name1": "ZENITH",
+    "country1": "México",
+    "team2": "26041",
+    "name2": "Les heptahiéroglyphes",
+    "country2": "Canada",
+    "winner": null
+  },
+  "alianza12": {
+    "team1": "26041",
+    "name1": "Les heptahiéroglyphes",
+    "country1": "Canada",
+    "team2": "26007",
+    "name2": "ZENITH",
+    "country2": "Mexico",
+    "winner": null
+  },
+  "alianza13": {
+    "team1": "26008",
+    "name1": "KLEOX",
+    "country1": "México",
+    "team2": "26042",
+    "name2": "DCADS Robo Cubs",
     "country2": "USA",
     "winner": null
+  },
+  "alianza14": {
+    "team1": "26042",
+    "name1": "DCADS Robo Cubs",
+    "country1": "USA",
+    "team2": "26008",
+    "name2": "KLEOX",
+    "country2": "Mexico",
+    "winner": null
+  },
+  "alianza15": {
+    "team1": "26009",
+    "name1": "Electric Wasps",
+    "country1": "México",
+    "team2": "26043",
+    "name2": "R^2 (Rsquared)",
+    "country2": "Greece",
+    "winner": null
+  },
+  "alianza16": {
+    "team1": "26043",
+    "name1": "R^2 (Rsquared)",
+    "country1": "Greece",
+    "team2": "26009",
+    "name2": "Electric Wasps",
+    "country2": "Mexico",
+    "winner": null
+  },
+  "alianza17": {
+    "team1": "26010",
+    "name1": "Umbrella City",
+    "country1": "México",
+    "team2": "26044",
+    "name2": "TECH IT",
+    "country2": "Greece",
+    "winner": null
+  },
+  "alianza18": {
+    "team1": "26044",
+    "name1": "TECH IT",
+    "country1": "Greece",
+    "team2": "26010",
+    "name2": "Umbrella City",
+    "country2": "Mexico",
+    "winner": null
+  },
+  "alianza19": {
+    "team1": "26011",
+    "name1": "GeneBots",
+    "country1": "México",
+    "team2": "26045",
+    "name2": "Glauberbots",
+    "country2": "Germany",
+    "winner": null
+  },
+  "alianza20": {
+    "team1": "26045",
+    "name1": "Glauberbots",
+    "country1": "Germany",
+    "team2": "26011",
+    "name2": "GeneBots",
+    "country2": "Mexico",
+    "winner": null
+  },
+  "alianza21": {
+    "team1": "26012",
+    "name1": "Eoloteens - Fuerza Eolica del Istmo",
+    "country1": "México",
+    "team2": "26047",
+    "name2": "Jaguaretech Ignite",
+    "country2": "Paraguay",
+    "winner": null
+  },
+  "alianza22": {
+    "team1": "26047",
+    "name1": "Jaguaretech Ignite",
+    "country1": "Paraguay",
+    "team2": "26012",
+    "name2": "Eoloteens - Fuerza Eolica del Istmo",
+    "country2": "Mexico",
+    "winner": null
+  },
+  "alianza23": {
+    "team1": "26013",
+    "name1": "TecMinators",
+    "country1": "México",
+    "team2": "26048",
+    "name2": "Pirabyte",
+    "country2": "Paraguay",
+    "winner": null
+  },
+  "alianza24": {
+    "team1": "26048",
+    "name1": "Pirabyte",
+    "country1": "Paraguay",
+    "team2": "26013",
+    "name2": "TecMinators",
+    "country2": "Mexico",
+    "winner": null
   }
-]
+}
