@@ -1,5 +1,36 @@
 {
   "active": false,
-  "alliances": [],
-  "updatedAt": "2026-05-22T02:07:39.663Z"
+  "alliances": [
+    {
+      "id": 1,
+      "teams": [
+        "26001",
+        "26002"
+      ],
+      "teamNames": [
+        "Mechanic Sparkle",
+        "LincesBots"
+      ],
+      "teamCountries": [
+        "México",
+        "México"
+      ]
+    },
+    {
+      "id": 2,
+      "teams": [
+        "26035",
+        "26034"
+      ],
+      "teamNames": [
+        "FIRST FUJISAN",
+        "Paleo Pangolins"
+      ],
+      "teamCountries": [
+        "Japan",
+        "USA"
+      ]
+    }
+  ],
+  "updatedAt": "2026-05-22T22:21:12.505Z"
 }

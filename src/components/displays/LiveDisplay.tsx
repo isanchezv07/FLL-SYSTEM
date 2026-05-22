@@ -11,7 +11,7 @@ import { Trophy, Megaphone, Shield, Settings, X } from 'lucide-react';
 type ChromaMode = 'transparent' | 'green' | 'magenta' | 'none';
 
 const CHROMA_STYLES: Record<ChromaMode, React.CSSProperties> = {
-  none:        { background: '#020617' },
+  none:        { background: '#481F73' },
   transparent: { background: 'transparent' },
   green:       { background: '#00ff00' },
   magenta:     { background: '#ff00ff' },
@@ -55,7 +55,7 @@ function SettingsWindow({
       value: 'none',
       label: 'None',
       description: 'Solid dark background',
-      preview: <div className="w-full h-full rounded bg-[#020617] border border-slate-700" />,
+      preview: <div className="w-full h-full rounded border border-slate-700" style={{ background: '#481F73' }} />,
     },
     {
       value: 'transparent',
@@ -94,26 +94,26 @@ function SettingsWindow({
 
       {/* window */}
       <div
-        style={{ position: 'relative', width: 420, background: '#0f172a', border: '1px solid #334155', borderRadius: 16, boxShadow: '0 32px 80px rgba(0,0,0,0.8)', overflow: 'hidden' }}
+        style={{ position: 'relative', width: 420, background: '#481F73', border: '1px solid #6A86AE', borderRadius: 16, boxShadow: '0 32px 80px rgba(0,0,0,0.8)', overflow: 'hidden' }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* title bar */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 20px', background: '#1e293b', borderBottom: '1px solid #334155' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 20px', background: '#3A2E9C', borderBottom: '1px solid #6A86AE' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <Settings style={{ width: 16, height: 16, color: '#94a3b8' }} />
-            <span style={{ fontSize: 12, fontWeight: 900, color: '#e2e8f0', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Overlay Settings</span>
+            <span style={{ fontSize: 12, fontWeight: 900, color: '#FEFDFD', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Overlay Settings</span>
           </div>
           <button
             onClick={onClose}
-            style={{ width: 24, height: 24, borderRadius: '50%', background: '#334155', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            style={{ width: 24, height: 24, borderRadius: '50%', background: '#6A86AE', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >
-            <X style={{ width: 12, height: 12, color: '#94a3b8' }} />
+            <X style={{ width: 12, height: 12, color: '#FEFDFD' }} />
           </button>
         </div>
 
         {/* content */}
         <div style={{ padding: 20 }}>
-          <p style={{ fontSize: 10, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.3em', color: '#64748b', marginBottom: 16 }}>Background Mode</p>
+          <p style={{ fontSize: 10, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.3em', color: '#6A86AE', marginBottom: 16 }}>Background Mode</p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             {options.map((opt) => (
               <button
@@ -121,16 +121,16 @@ function SettingsWindow({
                 onClick={() => onChange(opt.value)}
                 style={{
                   display: 'flex', flexDirection: 'column', gap: 8, padding: 12,
-                  borderRadius: 12, border: `1px solid ${mode === opt.value ? '#3b82f6' : '#334155'}`,
-                  background: mode === opt.value ? 'rgba(59,130,246,0.1)' : 'rgba(30,41,59,0.5)',
+                  borderRadius: 12, border: `1px solid ${mode === opt.value ? '#66B4B2' : '#6A86AE'}`,
+                  background: mode === opt.value ? 'rgba(102,180,178,0.15)' : 'rgba(58,46,156,0.4)',
                   cursor: 'pointer', textAlign: 'left',
-                  outline: mode === opt.value ? '1px solid rgba(59,130,246,0.5)' : 'none',
+                  outline: mode === opt.value ? '1px solid rgba(102,180,178,0.5)' : 'none',
                 }}
               >
                 <div style={{ height: 48, width: '100%' }}>{opt.preview}</div>
                 <div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: mode === opt.value ? '#60a5fa' : '#e2e8f0' }}>{opt.label}</div>
-                  <div style={{ fontSize: 10, color: '#64748b', marginTop: 2 }}>{opt.description}</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: mode === opt.value ? '#66B4B2' : '#FEFDFD' }}>{opt.label}</div>
+                  <div style={{ fontSize: 10, color: '#6A86AE', marginTop: 2 }}>{opt.description}</div>
                 </div>
               </button>
             ))}
@@ -148,6 +148,7 @@ export default function LegoTimerDisplay() {
   const [timer, setTimer] = useState<TimerState>({ timeRemaining: 150, isRunning: false, fieldCount: 4, fields: {} });
   const [alliances, setAlliances] = useState<any>(null);
   const [selectedField, setSelectedField] = useState<string | null>(null);
+  const [isConnected, setIsConnected] = useState(true);
   const [activeMatch, setActiveMatch] = useState<any | null>(null);
   const [winner, setWinner] = useState<WinnerInfo | null>(null);
   const [nextMatchCountdown, setNextMatchCountdown] = useState(10);
@@ -349,6 +350,9 @@ export default function LegoTimerDisplay() {
       }
     });
 
+    socket.on("connect", () => setIsConnected(true));
+    socket.on("disconnect", () => setIsConnected(false));
+
     fetchActiveMatch();
     fetchQualis();
     socket.emit('getTimer');
@@ -363,6 +367,8 @@ export default function LegoTimerDisplay() {
       socket.off('qualisUpdate');
       socket.off('matchUpdate');
       socket.off('matchWinnerDeclared');
+      socket.off('connect');
+      socket.off('disconnect');
     };
   }, [fetchActiveMatch, fetchQualis, triggerQualisConfetti]);
 
@@ -400,16 +406,16 @@ export default function LegoTimerDisplay() {
 
   return (
     <>
-    <style>{`@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,600;0,700;0,900;1,700;1,900&display=swap');`}</style>
+    <style>{`@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,700;0,900;1,700;1,900&display=swap');`}</style>
     <div
       ref={containerRef}
       className="h-screen w-screen text-white relative overflow-hidden flex flex-col selection:bg-none"
-      style={{ ...CHROMA_STYLES[chromaMode], fontFamily: "'Barlow Condensed', 'Arial Narrow', Arial, sans-serif" }}
+      style={{ ...CHROMA_STYLES[chromaMode], fontFamily: "'Roboto', Arial, sans-serif" }}
     >
       {/* ── Field selector overlay ──────────────────────────────────────────── */}
       {!selectedField && !qualisData.enabled && (
-        <div className="fixed inset-0 z-[200] bg-slate-950 flex flex-col items-center justify-center p-10">
-          <h2 className="text-4xl font-black uppercase tracking-tighter mb-10 text-blue-500">Seleccionar Cancha</h2>
+        <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center p-10" style={{ background: '#481F73' }}>
+          <h2 className="text-4xl font-black uppercase tracking-tighter mb-10" style={{ color: '#66B4B2' }}>Seleccionar Cancha</h2>
           <div className="grid grid-cols-2 gap-6 max-w-2xl w-full">
             {Array.from({ length: timer.fieldCount || 4 }).map((_, idx) => {
               const f = `cancha${idx + 1}`;
@@ -417,7 +423,10 @@ export default function LegoTimerDisplay() {
                 <button
                   key={f}
                   onClick={() => handleFieldSelect(f)}
-                  className="bg-slate-900 hover:bg-blue-600 border-2 border-slate-800 p-10 rounded-3xl text-2xl font-black uppercase transition-all"
+                  className="p-10 rounded-3xl text-2xl font-black uppercase transition-all"
+                  style={{ background: '#3A2E9C', border: '2px solid #6A86AE', color: '#FEFDFD' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = '#66B4B2')}
+                  onMouseLeave={e => (e.currentTarget.style.background = '#3A2E9C')}
                 >
                   {f.replace('cancha', 'Cancha ')}
                 </button>
@@ -430,8 +439,8 @@ export default function LegoTimerDisplay() {
       {/* ── Decorative blobs (hidden for solid chroma modes) ───────────────── */}
       {!hideBlobs && (
         <div className="absolute inset-0 z-0 pointer-events-none">
-          <div className={`absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full blur-[120px] transition-colors duration-1000 ${isCritical ? 'bg-red-600/15' : 'bg-blue-600/10'}`} />
-          <div className={`absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full blur-[120px] transition-colors duration-1000 ${isCritical ? 'bg-red-900/15' : 'bg-indigo-600/10'}`} />
+          <div className={`absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full blur-[120px] transition-colors duration-1000 ${isCritical ? 'bg-red-600/15' : 'bg-[#3A2E9C]/30'}`} />
+          <div className={`absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full blur-[120px] transition-colors duration-1000 ${isCritical ? 'bg-red-900/15' : 'bg-[#66B4B2]/10'}`} />
         </div>
       )}
 
@@ -443,13 +452,14 @@ export default function LegoTimerDisplay() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 1.1 }}
-            className="absolute inset-0 z-[110] flex flex-col items-center justify-center bg-blue-950/90 backdrop-blur-3xl p-20 text-center"
+            className="absolute inset-0 z-[110] flex flex-col items-center justify-center backdrop-blur-3xl p-20 text-center"
+            style={{ background: 'rgba(58,46,156,0.92)' }}
           >
             <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#ffffff 2px, transparent 2px)', backgroundSize: '60px 60px' }} />
-            <div className="bg-blue-600 p-8 rounded-[40px] mb-12 shadow-2xl shadow-blue-500/20">
+            <div className="p-8 rounded-[40px] mb-12 shadow-2xl" style={{ background: '#66B4B2', boxShadow: '0 0 60px rgba(102,180,178,0.3)' }}>
               <Megaphone className="w-24 h-24 text-white" />
             </div>
-            <h2 className="text-4xl font-black uppercase tracking-[0.4em] text-blue-400 mb-8">Comunicado Oficial</h2>
+            <h2 className="text-4xl font-black uppercase tracking-[0.4em] mb-8" style={{ color: '#66B4B2' }}>Comunicado Oficial</h2>
             <div className="max-w-6xl">
               <p className="text-[6vw] font-black leading-tight text-white uppercase tracking-tighter">
                 {activeAnnouncement}
@@ -462,7 +472,8 @@ export default function LegoTimerDisplay() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 1.1 }}
-            className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-slate-950 p-10"
+            className="absolute inset-0 z-[100] flex flex-col items-center justify-center p-10"
+            style={{ background: '#481F73' }}
           >
              <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#ffffff 2px, transparent 2px)', backgroundSize: '40px 40px' }} />
              
@@ -471,7 +482,7 @@ export default function LegoTimerDisplay() {
              ) : (
                <div className="w-full max-w-[90vw] flex flex-col items-center gap-12">
                   <div className="flex flex-col items-center mb-4">
-                    <div className="bg-blue-600 px-8 py-3 rounded-full text-white font-black text-xl tracking-[0.3em] uppercase mb-4 shadow-2xl shadow-blue-500/40">
+                    <div className="px-8 py-3 rounded-full text-white font-black text-xl tracking-[0.3em] uppercase mb-4 shadow-2xl" style={{ background: '#66B4B2', boxShadow: '0 0 40px rgba(102,180,178,0.4)' }}>
                       QUALIFYING MATCH #{qualisData.currentIndex + 1}
                     </div>
                     <h2 className="text-white/40 text-2xl font-black uppercase tracking-[0.5em]">VS</h2>
@@ -482,49 +493,49 @@ export default function LegoTimerDisplay() {
                     <div className="flex-1 flex flex-col items-end text-right gap-6">
                       <div className={`p-10 rounded-[60px] border-4 transition-all duration-700 w-full relative overflow-hidden ${
                         currentQualisMatch.winner === currentQualisMatch.team1 
-                        ? 'bg-green-600 border-green-400 shadow-[0_0_100px_rgba(34,197,94,0.4)] scale-105' 
+                        ? 'scale-105' 
                         : 'bg-white/5 border-white/10'
-                      }`}>
+                      }`} style={currentQualisMatch.winner === currentQualisMatch.team1 ? { background: '#5AA057', borderColor: '#A2C22F', boxShadow: '0 0 100px rgba(90,160,87,0.4)' } : {}}>
                         <div className="flex justify-between items-center mb-6">
                           <div className="bg-white/10 px-4 py-1 rounded-full text-[12px] font-black tracking-widest uppercase">Team 1</div>
                           {currentQualisMatch.country1 && (
                             <div className="text-white/60 text-lg font-black uppercase tracking-widest">{currentQualisMatch.country1}</div>
                           )}
                         </div>
-                        <div className="text-blue-400 text-3xl font-black mb-2 font-mono">#{currentQualisMatch.team1}</div>
+                        <div className="text-3xl font-black mb-2 font-mono" style={{ color: '#66B4B2' }}>#{currentQualisMatch.team1}</div>
                         <div className="text-5xl md:text-8xl font-black text-white leading-none uppercase tracking-tighter">
                           {currentQualisMatch.name1 || currentQualisMatch.team1}
                         </div>
                       </div>
                       {currentQualisMatch.winner === currentQualisMatch.team1 && (
-                        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-4 text-green-400 font-black text-4xl italic">
+                        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-4 font-black text-4xl italic" style={{ color: '#5AA057' }}>
                           <Trophy size={48} /> GANADOR
                         </motion.div>
                       )}
                     </div>
 
-                    <div className="text-[120px] font-black text-blue-500/20 italic select-none">VS</div>
+                    <div className="text-[120px] font-black italic select-none" style={{ color: 'rgba(106,134,174,0.3)' }}>VS</div>
 
                     {/* Team 2 */}
                     <div className="flex-1 flex flex-col items-start text-left gap-6">
                       <div className={`p-10 rounded-[60px] border-4 transition-all duration-700 w-full relative overflow-hidden ${
                         currentQualisMatch.winner === currentQualisMatch.team2 
-                        ? 'bg-green-600 border-green-400 shadow-[0_0_100px_rgba(34,197,94,0.4)] scale-105' 
+                        ? 'scale-105' 
                         : 'bg-white/5 border-white/10'
-                      }`}>
+                      }`} style={currentQualisMatch.winner === currentQualisMatch.team2 ? { background: '#5AA057', borderColor: '#A2C22F', boxShadow: '0 0 100px rgba(90,160,87,0.4)' } : {}}>
                         <div className="flex justify-between items-center mb-6">
                           {currentQualisMatch.country2 && (
                             <div className="text-white/60 text-lg font-black uppercase tracking-widest">{currentQualisMatch.country2}</div>
                           )}
                           <div className="bg-white/10 px-4 py-1 rounded-full text-[12px] font-black tracking-widest uppercase">Team 2</div>
                         </div>
-                        <div className="text-blue-400 text-3xl font-black mb-2 font-mono">#{currentQualisMatch.team2}</div>
+                        <div className="text-3xl font-black mb-2 font-mono" style={{ color: '#66B4B2' }}>#{currentQualisMatch.team2}</div>
                         <div className="text-5xl md:text-8xl font-black text-white leading-none uppercase tracking-tighter">
                           {currentQualisMatch.name2 || currentQualisMatch.team2}
                         </div>
                       </div>
                       {currentQualisMatch.winner === currentQualisMatch.team2 && (
-                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-4 text-green-400 font-black text-4xl italic">
+                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-4 font-black text-4xl italic" style={{ color: '#5AA057' }}>
                           GANADOR <Trophy size={48} />
                         </motion.div>
                       )}
@@ -539,18 +550,19 @@ export default function LegoTimerDisplay() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 1.05 }}
-            className="absolute inset-0 z-[110] flex flex-col items-center justify-center bg-[#020617] p-10 overflow-hidden"
+            className="absolute inset-0 z-[110] flex flex-col items-center justify-center p-10 overflow-hidden"
+            style={{ background: '#481F73' }}
           >
-            <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#2563eb 2px, transparent 2px)', backgroundSize: '40px 40px' }} />
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[80%] bg-blue-600/5 blur-[120px] rounded-full" />
+            <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#6A86AE 2px, transparent 2px)', backgroundSize: '40px 40px' }} />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[80%] blur-[120px] rounded-full" style={{ background: 'rgba(102,180,178,0.06)' }} />
 
             <div className="relative z-10 w-full max-w-[90vw] flex flex-col items-center">
               <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="flex items-center gap-6 mb-12">
-                <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-blue-500/40">
+                <div className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-2xl" style={{ background: '#66B4B2', boxShadow: '0 0 40px rgba(102,180,178,0.4)' }}>
                   <Shield className="w-8 h-8 text-white" />
                 </div>
                 <h2 className="text-[5vw] font-black uppercase tracking-tighter italic text-white leading-none">
-                  Draft de <span className="text-blue-500">Alianzas</span>
+                  Draft de <span style={{ color: '#66B4B2' }}>Alianzas</span>
                 </h2>
               </motion.div>
 
@@ -561,21 +573,22 @@ export default function LegoTimerDisplay() {
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: idx * 0.1 }}
-                    className="bg-slate-900/40 backdrop-blur-md border border-slate-800 rounded-[40px] p-8 flex flex-col items-center shadow-xl relative overflow-hidden group"
+                    className="backdrop-blur-md rounded-[40px] p-8 flex flex-col items-center shadow-xl relative overflow-hidden group"
+                    style={{ background: 'rgba(58,46,156,0.4)', border: '1px solid rgba(106,134,174,0.3)' }}
                   >
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-indigo-600" />
-                    <div className="w-16 h-16 bg-slate-950 rounded-2xl flex items-center justify-center mb-6 border border-slate-800 shadow-inner">
-                      <span className="text-2xl font-black italic text-blue-500">{alliance.id}</span>
+                    <div className="absolute top-0 left-0 w-full h-1" style={{ background: 'linear-gradient(to right, #66B4B2, #3A2E9C)' }} />
+                    <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-6 border shadow-inner" style={{ background: '#481F73', borderColor: 'rgba(106,134,174,0.4)' }}>
+                      <span className="text-2xl font-black italic" style={{ color: '#66B4B2' }}>{alliance.id}</span>
                     </div>
                     <div className="space-y-4 w-full">
                       {alliance.teamNames.map((name: string, tIdx: number) => (
                         <div key={tIdx} className="text-center">
-                          <div className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Equipo {tIdx + 1}</div>
+                          <div className="text-[10px] font-black uppercase tracking-widest mb-1" style={{ color: '#66B4B2' }}>Equipo {tIdx + 1}</div>
                           <div className="text-xl font-black text-white uppercase tracking-tight leading-tight line-clamp-2">{name}</div>
                           <div className="flex items-center justify-center gap-2 mt-1">
-                            <div className="text-[10px] font-mono font-bold text-slate-500">#{alliance.teams[tIdx]}</div>
+                            <div className="text-[10px] font-mono font-bold" style={{ color: '#6A86AE' }}>#{alliance.teams[tIdx]}</div>
                             {alliance.teamCountries?.[tIdx] && (
-                              <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{alliance.teamCountries[tIdx]}</div>
+                              <div className="text-[10px] font-black uppercase tracking-widest" style={{ color: '#6A86AE' }}>{alliance.teamCountries[tIdx]}</div>
                             )}
                           </div>
                         </div>
@@ -592,7 +605,8 @@ export default function LegoTimerDisplay() {
             initial={{ opacity: 0, y: 100 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -100 }}
-            className="absolute inset-0 z-[110] flex flex-col items-center justify-center bg-slate-950 p-20 text-center"
+            className="absolute inset-0 z-[110] flex flex-col items-center justify-center p-20 text-center"
+            style={{ background: '#481F73' }}
           >
             <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#fbbf24 2px, transparent 2px)', backgroundSize: '50px 50px' }} />
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -607,7 +621,8 @@ export default function LegoTimerDisplay() {
                     y: [`${Math.random() * 100}%`, `${Math.random() * 100}%`],
                   }}
                   transition={{ duration: 2 + Math.random() * 3, repeat: Infinity, delay: Math.random() * 5 }}
-                  className="absolute w-2 h-2 bg-yellow-400 rounded-full blur-[2px]"
+                  className="absolute w-2 h-2 rounded-full blur-[2px]"
+                  style={{ background: '#FDD116' }}
                 />
               ))}
             </div>
@@ -615,13 +630,14 @@ export default function LegoTimerDisplay() {
             <motion.div
               animate={{ rotate: [0, -5, 5, 0] }}
               transition={{ repeat: Infinity, duration: 4 }}
-              className="w-48 h-48 bg-gradient-to-br from-yellow-400 to-amber-600 rounded-[50px] flex items-center justify-center mb-12 shadow-[0_0_80px_rgba(251,191,36,0.3)] border-b-[16px] border-amber-800"
+              className="w-48 h-48 rounded-[50px] flex items-center justify-center mb-12 border-b-[16px]"
+              style={{ background: 'linear-gradient(135deg, #FDD116, #E08022)', borderColor: '#DC933A', boxShadow: '0 0 80px rgba(253,209,22,0.3)' }}
             >
               <Trophy className="w-24 h-24 text-white drop-shadow-lg" />
             </motion.div>
 
-            <h2 className="text-4xl font-black uppercase tracking-[0.5em] text-amber-500 mb-4">{revealedAwardTitle.name}</h2>
-            <div className="text-[2vw] font-bold text-slate-500 uppercase tracking-widest mb-12">Award Category</div>
+            <h2 className="text-4xl font-black uppercase tracking-[0.5em] mb-4" style={{ color: '#E08022' }}>{revealedAwardTitle.name}</h2>
+            <div className="text-[2vw] font-bold uppercase tracking-widest mb-12" style={{ color: '#6A86AE' }}>Award Category</div>
 
             <AnimatePresence mode="wait">
               {revealedAwardTitle.revealedWinner ? (
@@ -629,15 +645,16 @@ export default function LegoTimerDisplay() {
                   key="winner-revealed"
                   initial={{ scale: 0.8, opacity: 0, y: 50 }}
                   animate={{ scale: 1, opacity: 1, y: 0 }}
-                  className="bg-slate-900/80 backdrop-blur-xl p-16 rounded-[80px] border-4 border-amber-500/30 shadow-2xl min-w-[60%] relative overflow-hidden"
+                  className="backdrop-blur-xl p-16 rounded-[80px] border-4 shadow-2xl min-w-[60%] relative overflow-hidden"
+                  style={{ background: 'rgba(58,46,156,0.85)', borderColor: 'rgba(224,128,34,0.4)' }}
                 >
-                  <div className="absolute inset-0 bg-gradient-to-t from-amber-500/10 to-transparent pointer-events-none" />
+                  <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(to top, rgba(224,128,34,0.1), transparent)' }} />
                   <div className="text-[8vw] font-black text-white uppercase tracking-tighter leading-none mb-4 relative z-10">{revealedAwardTitle.teamName || '---'}</div>
-                  <div className="text-[4vw] font-mono font-black text-amber-400 relative z-10">TEAM #{revealedAwardTitle.teamNumber || '0000'}</div>
+                  <div className="text-[4vw] font-mono font-black relative z-10" style={{ color: '#E08022' }}>TEAM #{revealedAwardTitle.teamNumber || '0000'}</div>
                 </motion.div>
               ) : (
                 <motion.div key="winner-hidden" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-[20vh] flex items-center justify-center">
-                  <div className="text-slate-800 text-[10vw] font-black uppercase tracking-[0.2em] italic opacity-20">???</div>
+                  <div className="text-[10vw] font-black uppercase tracking-[0.2em] italic opacity-20" style={{ color: '#3A2E9C' }}>???</div>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -648,16 +665,17 @@ export default function LegoTimerDisplay() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 z-[105] flex flex-col items-center justify-center bg-gradient-to-b from-slate-950 via-blue-950 to-slate-950 p-10 text-center"
+            className="absolute inset-0 z-[105] flex flex-col items-center justify-center p-10 text-center"
+            style={{ background: 'linear-gradient(to bottom, #481F73, #3A2E9C, #481F73)' }}
           >
             <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '30px 30px' }} />
             <motion.div animate={{ y: [0, -20, 0] }} transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }} className="mb-12">
-              <Trophy className="w-32 h-32 text-blue-500/50" />
+              <Trophy className="w-32 h-32" style={{ color: 'rgba(102,180,178,0.5)' }} />
             </motion.div>
             <h1 className="text-[8vw] font-black uppercase tracking-[0.2em] text-white drop-shadow-[0_0_30px_rgba(255,255,255,0.2)]">
-              Closing <span className="text-blue-500">Ceremony</span>
+              Closing <span style={{ color: '#66B4B2' }}>Ceremony</span>
             </h1>
-            <p className="text-2xl font-black uppercase tracking-[0.5em] text-slate-500 mt-4">Awards Presentation</p>
+            <p className="text-2xl font-black uppercase tracking-[0.5em] mt-4" style={{ color: '#6A86AE' }}>Awards Presentation</p>
           </motion.div>
         ) : winner ? (
           <motion.div
@@ -665,7 +683,8 @@ export default function LegoTimerDisplay() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-slate-950 p-10 text-center"
+            className="absolute inset-0 z-[100] flex flex-col items-center justify-center p-10 text-center"
+            style={{ background: '#481F73' }}
           >
             <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#ffffff 2px, transparent 2px)', backgroundSize: '40px 40px' }} />
             <motion.div
@@ -679,14 +698,14 @@ export default function LegoTimerDisplay() {
             <h1 className={`text-[12vw] font-black uppercase tracking-tighter leading-none mb-10 ${winner.alliance === 'A' ? 'text-blue-500' : 'text-red-500'} drop-shadow-[0_0_60px_currentColor]`}>
               Alliance {winner.alliance === 'A' ? 'Alpha' : 'Bravo'}
             </h1>
-            <div className="flex gap-16 items-center justify-center bg-slate-900/80 backdrop-blur-md p-12 rounded-[60px] border-2 border-slate-800 shadow-2xl">
+            <div className="flex gap-16 items-center justify-center backdrop-blur-md p-12 rounded-[60px] border-2 shadow-2xl" style={{ background: 'rgba(58,46,156,0.85)', borderColor: 'rgba(106,134,174,0.3)' }}>
               <div className="text-left space-y-2">
                 <div className="text-[2vw] font-black text-white uppercase tracking-tight">{winner.team1}</div>
-                <div className="text-[2vw] font-black text-slate-400 uppercase tracking-tight">{winner.team2}</div>
+                <div className="text-[2vw] font-black uppercase tracking-tight" style={{ color: '#6A86AE' }}>{winner.team2}</div>
               </div>
-              <div className="w-1 h-24 bg-slate-800 rounded-full" />
+              <div className="w-1 h-24 rounded-full" style={{ background: 'rgba(106,134,174,0.4)' }} />
               <div className="text-center">
-                <div className="text-[8vw] font-black font-mono leading-none text-emerald-400 drop-shadow-[0_0_20px_rgba(52,211,153,0.4)]">{winner.score}</div>
+                <div className="text-[8vw] font-black font-mono leading-none" style={{ color: '#5AA057', textShadow: '0 0 20px rgba(90,160,87,0.4)' }}>{winner.score}</div>
               </div>
             </div>
           </motion.div>
@@ -694,7 +713,7 @@ export default function LegoTimerDisplay() {
           <motion.div key="timer" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full flex flex-col">
 
             {/* ── SCOREBOARD BAR ─────────────────────────────────────────────── */}
-            <div className="relative z-10 shrink-0" style={{ background: '#111111', boxShadow: '0 2px 20px rgba(0,0,0,0.8)', fontFamily: "'Segoe UI', Arial, sans-serif" }}>
+            <div className="relative z-10 shrink-0" style={{ background: '#111111', boxShadow: '0 2px 20px rgba(0,0,0,0.8)' }}>
 
               {/* Main row */}
               <div className="flex flex-row items-stretch" style={{ height: 116 }}>
@@ -751,7 +770,7 @@ export default function LegoTimerDisplay() {
               {/* Match info subtitle row */}
               <div className="flex items-center justify-between px-4" style={{ height: 24, background: '#0a0a0a', borderTop: '1px solid #1e1e1e' }}>
                 <span className="font-semibold uppercase" style={{ fontSize: 10, color: '#c0392b', letterSpacing: '0.2em' }}>Red Alliance</span>
-                <span className="font-semibold text-center" style={{ fontSize: 10, color: '#444', letterSpacing: '0.25em' }}>
+                <span className="font-semibold text-center" style={{ fontSize: 10, color: '#6A86AE', letterSpacing: '0.25em' }}>
                   Open México 2026{activeMatch ? `  ·  Match #${activeMatch.position}  ·  Round ${activeMatch.round}` : '  ·  Arena Standby'}
                   {selectedField && (
                     <span onClick={() => setSelectedField(null)} className="cursor-pointer ml-2" style={{ color: '#3b82f6' }}>
@@ -764,7 +783,17 @@ export default function LegoTimerDisplay() {
             </div>
 
             {/* ── TRANSPARENT CAMERA FEED AREA ───────────────────────────────── */}
-            <div className="flex-1" />
+            <div className="flex-1 relative">
+              {!isConnected && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="absolute top-4 right-4 bg-red-600 text-white px-4 py-1 rounded-full text-xs font-black uppercase tracking-widest shadow-lg z-20"
+                >
+                  Disconnected
+                </motion.div>
+              )}
+            </div>
 
           </motion.div>
         )}
@@ -783,13 +812,13 @@ export default function LegoTimerDisplay() {
 
       <button
         onClick={handleSettingsToggle}
-        className="fixed top-4 right-4 z-[600] w-10 h-10 rounded-full bg-slate-900 border border-slate-700 flex items-center justify-center shadow-lg hover:bg-slate-800 transition-all duration-300"
-        style={{ opacity: showControls || settingsOpen ? 1 : 0, pointerEvents: showControls || settingsOpen ? 'auto' : 'none' }}
+        className="fixed top-4 right-4 z-[600] w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition-all duration-300"
+        style={{ background: '#3A2E9C', border: '1px solid #6A86AE', opacity: showControls || settingsOpen ? 1 : 0, pointerEvents: showControls || settingsOpen ? 'auto' : 'none' }}
         aria-label="OBS overlay settings"
       >
         {settingsOpen
-          ? <X className="w-5 h-5 text-slate-300" />
-          : <Settings className="w-5 h-5 text-slate-300" />
+          ? <X className="w-5 h-5" style={{ color: '#66B4B2' }} />
+          : <Settings className="w-5 h-5" style={{ color: '#66B4B2' }} />
         }
       </button>
     </>

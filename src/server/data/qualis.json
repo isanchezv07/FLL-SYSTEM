@@ -1,5 +1,15 @@
 {
-  "matches": [],
-  "currentIndex": -1,
+  "matches": [
+    {
+      "alliance1": [],
+      "alliance2": [],
+      "winner": null,
+      "allianceNames1": [],
+      "allianceCountries1": [],
+      "allianceNames2": [],
+      "allianceCountries2": []
+    }
+  ],
+  "currentIndex": 0,
   "enabled": false
 }
