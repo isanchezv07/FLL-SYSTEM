@@ -158,13 +158,16 @@ app.post('/api/login', async (req, res) => {
 app.post('/api/brackets/generate', async (req, res) => {
   try {
     const { size, mode = '2vs2', alliances } = req.body;
-    let teams;
+    let teams = [];
     
     if (alliances && alliances.length > 0) {
       teams = alliances.flat().map(t => ({ number: t }));
     } else {
       teams = shuffle(getTeams()).slice(0, size);
     }
+
+    const numTeams = teams.length;
+    if (numTeams === 0) return res.status(400).json({ error: "No teams selected" });
 
     // Reset current state correctly via DB
     await resetMatches();
@@ -176,27 +179,50 @@ app.post('/api/brackets/generate', async (req, res) => {
     Object.keys(timer.fields || {}).forEach(f => fields[f] = null);
     await updateTimer({ fields });
 
-    const bracket = await createBracket({ name: `Tournament ${mode}`, size, mode, status: "active", date: new Date().toISOString() });
-    const rounds = mode === '1vs1' ? Math.log2(size) : Math.log2(size) - 1;
+    const bracket = await createBracket({ name: `Tournament ${mode}`, size: numTeams, mode, status: "active", date: new Date().toISOString() });
+    
+    // Calculate Round 1 matches
+    const teamsPerMatch = mode === '2vs2' ? 4 : 2;
+    const round1MatchesCount = Math.ceil(numTeams / teamsPerMatch);
+    
+    // Calculate total rounds needed
+    let roundsCount = Math.ceil(Math.log2(round1MatchesCount)) + 1;
+    if (round1MatchesCount === 1) roundsCount = 1;
 
-    for (let round = 1; round <= rounds; round++) {
-      const matchesInRound = mode === '1vs1' ? size / Math.pow(2, round) : (size / 4) / Math.pow(2, round - 1);
-      for (let position = 1; position <= matchesInRound; position++) {
+    // Generate matches round by round
+    let currentRoundMatches = round1MatchesCount;
+    for (let round = 1; round <= roundsCount; round++) {
+      for (let position = 1; position <= currentRoundMatches; position++) {
         let teamA1 = "", teamA2 = "", teamB1 = "", teamB2 = "";
+        
         if (round === 1) {
           teamA1 = teams.shift()?.number || "";
           if (mode === '2vs2') teamA2 = teams.shift()?.number || "";
           teamB1 = teams.shift()?.number || "";
           if (mode === '2vs2') teamB2 = teams.shift()?.number || "";
         }
+
         const nextMatchPos = Math.ceil(position / 2);
-        const nextId = round === rounds ? null : `match-${round + 1}-${nextMatchPos}`;
+        const nextId = round === roundsCount ? null : `match-${round + 1}-${nextMatchPos}`;
+        
         await createMatch({
-          id: `match-${round}-${position}`, bracketId: bracket.id, round, position, nextMatchId: nextId,
-          teamA1, teamA2, teamB1, teamB2, scoreA: 0, scoreB: 0, status: "pending",
-          missionsA1: {}, missionsA2: {}, missionsB1: {}, missionsB2: {}
+          id: `match-${round}-${position}`, 
+          bracketId: bracket.id, 
+          round, 
+          position, 
+          nextMatchId: nextId,
+          teamA1, teamA2, teamB1, teamB2, 
+          scoreA: 0, scoreB: 0, 
+          status: "pending"
         });
       }
+      
+      // Next round will have half the matches (rounded up)
+      currentRoundMatches = Math.ceil(currentRoundMatches / 2);
+      if (currentRoundMatches === 0 && round < roundsCount) currentRoundMatches = 1;
+      
+      // Stop if we reached the final round (1 match)
+      if (round > 1 && currentRoundMatches === 1 && round === roundsCount) break;
     }
     
     await broadcastTimerUpdate();
@@ -204,7 +230,10 @@ app.post('/api/brackets/generate', async (req, res) => {
     io.emit('matchesUpdate');
     io.emit('tournamentReset');
     res.json({ success: true });
-  } catch (error) { res.status(500).json({ error: error.message }); }
+  } catch (error) { 
+    console.error("Bracket generation error:", error);
+    res.status(500).json({ error: error.message }); 
+  }
 });
 
 app.post('/api/brackets/reset', async (req, res) => {
@@ -444,7 +473,8 @@ io.on('connection', (socket) => {
     // Si d contiene allianceSelection por error del front, lo ignoramos para que no se meta en timer.json
     const { allianceSelection, ...timerData } = d;
     await updateTimer(timerData);
-    await broadcastTimerUpdate();
+    const current = await getTimer();
+    io.emit('timerUpdate', { ...current, ...timerData });
   });
 
   socket.on('updateAlliances', async (d) => {

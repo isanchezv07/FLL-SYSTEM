@@ -122,14 +122,16 @@ export default function AllianceSelection({ onClose }: { onClose: () => void }) 
   };
 
   const generateBracket = async () => {
-    const requiredAlliances = bracketMode === '1vs1' ? bracketSize / 2 : bracketSize / 4;
+    const teamsPerAlliance = bracketMode === '2vs2' ? 2 : 1;
+    const requiredTeams = bracketSize;
+    const requiredAlliances = Math.ceil(requiredTeams / teamsPerAlliance);
     
     if (alliancesData.alliances.length < requiredAlliances) {
         alert(`Se requieren al menos ${requiredAlliances} alianzas para un bracket de ${bracketSize} equipos.`);
         return;
     }
 
-    const maxTeamsPerAlliance = bracketMode === '2vs2' ? 2 : 1;
+    const maxTeamsPerAlliance = teamsPerAlliance;
     if (alliancesData.alliances.some((a: any) => a.teams.length < maxTeamsPerAlliance)) {
         alert(`Todas las alianzas deben tener ${maxTeamsPerAlliance} equipos.`);
         return;
@@ -204,13 +206,13 @@ export default function AllianceSelection({ onClose }: { onClose: () => void }) 
             </div>
 
             <div className="flex items-center gap-2 px-4 border-x border-slate-200 dark:border-slate-800">
-                <span className="text-[9px] font-bold text-slate-500 uppercase">Top:</span>
+                <span className="text-[9px] font-bold text-slate-500 uppercase">Size (Teams):</span>
                 <select 
                   value={bracketSize} 
                   onChange={(e) => setBracketSize(Number(e.target.value))}
                   className="bg-transparent text-blue-600 font-bold text-sm outline-none"
                 >
-                  {[4, 8, 16, 32].map(n => <option key={n} value={n} className="bg-white dark:bg-slate-900"> {n}</option>)}
+                  {[4, 8, 16, 32, 64, 66, 68].map(n => <option key={n} value={n} className="bg-white dark:bg-slate-900"> {n}</option>)}
                 </select>
             </div>
 

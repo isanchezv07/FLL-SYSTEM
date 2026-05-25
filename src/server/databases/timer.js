@@ -16,6 +16,7 @@ const db = new Low(adapter, {
   timer: {
     timeRemaining: 150,
     isRunning: false,
+    displayMode: 'live',
     fieldCount: 4,
     fields: {
       "cancha1": null,
@@ -34,6 +35,7 @@ export const initTimerDB = async () => {
       timer: {
         timeRemaining: 150,
         isRunning: false,
+        displayMode: 'live',
         fieldCount: 4,
         fields: {
           "cancha1": null,
@@ -51,6 +53,7 @@ export const initTimerDB = async () => {
     }
     // Asegurar que existan las propiedades nuevas si es una base de datos vieja
     if (db.data.timer.fieldCount === undefined) db.data.timer.fieldCount = 4;
+    if (db.data.timer.displayMode === undefined) db.data.timer.displayMode = 'live';
     if (!db.data.timer.fields) {
       db.data.timer.fields = {};
       for (let i = 1; i <= db.data.timer.fieldCount; i++) {
@@ -76,7 +79,7 @@ export const updateTimer = async (timerData) => {
   await db.read();
   
   // Lista blanca de propiedades permitidas para el timer
-  const allowedKeys = ['timeRemaining', 'isRunning', 'fieldCount', 'fields'];
+  const allowedKeys = ['timeRemaining', 'isRunning', 'fieldCount', 'fields', 'displayMode'];
   const cleanIncomingData = {};
   
   allowedKeys.forEach(key => {
@@ -91,6 +94,7 @@ export const updateTimer = async (timerData) => {
     timer: {
       timeRemaining: cleanIncomingData.timeRemaining !== undefined ? cleanIncomingData.timeRemaining : currentTimer.timeRemaining,
       isRunning: cleanIncomingData.isRunning !== undefined ? cleanIncomingData.isRunning : currentTimer.isRunning,
+      displayMode: cleanIncomingData.displayMode !== undefined ? cleanIncomingData.displayMode : currentTimer.displayMode,
       fieldCount: cleanIncomingData.fieldCount !== undefined ? cleanIncomingData.fieldCount : currentTimer.fieldCount,
       fields: cleanIncomingData.fields !== undefined ? cleanIncomingData.fields : currentTimer.fields,
       updatedAt: new Date().toISOString()
@@ -107,6 +111,7 @@ export const resetTimer = async () => {
   db.data.timer = {
     timeRemaining: 150,
     isRunning: false,
+    displayMode: db.data.timer.displayMode || 'live',
     fieldCount: db.data.timer.fieldCount || 4,
     fields: db.data.timer.fields || {},
     updatedAt: new Date().toISOString()

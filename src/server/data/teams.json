@@ -1,69 +1,399 @@
 {
   "teams": [
-    { "id": "t1", "number": "26001", "name": "Mechanic Sparkle", "country": "México" },
-    { "id": "t2", "number": "26034", "name": "Paleo Pangolins", "country": "USA" },
-    { "id": "t3", "number": "26002", "name": "LincesBots", "country": "México" },
-    { "id": "t4", "number": "26035", "name": "FIRST FUJISAN", "country": "Japan" },
-    { "id": "t5", "number": "26003", "name": "OVERTURE PURPLE", "country": "México" },
-    { "id": "t6", "number": "26036", "name": "Firecraft", "country": "Uruguay" },
-    { "id": "t7", "number": "26004", "name": "Filadelfia Black Dragonflies", "country": "México" },
-    { "id": "t8", "number": "26037", "name": "Power Group", "country": "Uruguay" },
-    { "id": "t9", "number": "26005", "name": "BlueBot", "country": "México" },
-    { "id": "t10", "number": "26006", "name": "SPACE BULLS", "country": "México" },
-    { "id": "t11", "number": "26007", "name": "ZENITH", "country": "México" },
-    { "id": "t12", "number": "26041", "name": "Les heptahiéroglyphes", "country": "Canada" },
-    { "id": "t13", "number": "26008", "name": "KLEOX", "country": "México" },
-    { "id": "t14", "number": "26042", "name": "DCADS Robo Cubs", "country": "USA" },
-    { "id": "t15", "number": "26009", "name": "Electric Wasps", "country": "México" },
-    { "id": "t16", "number": "26043", "name": "R^2 (Rsquared)", "country": "Greece" },
-    { "id": "t17", "number": "26010", "name": "Umbrella City", "country": "México" },
-    { "id": "t18", "number": "26044", "name": "TECH IT", "country": "Greece" },
-    { "id": "t19", "number": "26011", "name": "GeneBots", "country": "México" },
-    { "id": "t20", "number": "26045", "name": "Glauberbots", "country": "Germany" },
-    { "id": "t21", "number": "26012", "name": "Eoloteens - Fuerza Eolica del Istmo", "country": "México" },
-    { "id": "t22", "number": "26047", "name": "Jaguaretech Ignite", "country": "Paraguay" },
-    { "id": "t23", "number": "26013", "name": "TecMinators", "country": "México" },
-    { "id": "t24", "number": "26048", "name": "Pirabyte", "country": "Paraguay" },
-    { "id": "t25", "number": "26014", "name": "Super-Legos", "country": "México" },
-    { "id": "t26", "number": "26049", "name": "RIO BOTS", "country": "Brazil" },
-    { "id": "t27", "number": "26015", "name": "ITECZ", "country": "México" },
-    { "id": "t28", "number": "26050", "name": "GIGALEGO", "country": "Brazil" },
-    { "id": "t29", "number": "26016", "name": "Panteras - Veracruz", "country": "México" },
-    { "id": "t30", "number": "26051", "name": "LEGO BROS MG", "country": "Brazil" },
-    { "id": "t31", "number": "26017", "name": "LAGARTIX18", "country": "México" },
-    { "id": "t32", "number": "26052", "name": "HEROES", "country": "Brazil" },
-    { "id": "t33", "number": "26018", "name": "Codigo Fenix", "country": "México" },
-    { "id": "t34", "number": "26054", "name": "Chrono Diggers", "country": "UAE" },
-    { "id": "t35", "number": "26019", "name": "Cyber Kraken", "country": "México" },
-    { "id": "t36", "number": "26055", "name": "Les Brainstormeurs", "country": "France" },
-    { "id": "t37", "number": "26020", "name": "RANGER BOTS", "country": "México" },
-    { "id": "t38", "number": "26056", "name": "Skeleton Fish", "country": "France" },
-    { "id": "t39", "number": "26021", "name": "Los Salvadores de las Raices Perdidas", "country": "México" },
-    { "id": "t40", "number": "26057", "name": "Lego Brothers", "country": "Chile" },
-    { "id": "t41", "number": "26022", "name": "Panteras - SLP", "country": "México" },
-    { "id": "t42", "number": "26058", "name": "PERCEPTRON", "country": "Chile" },
-    { "id": "t43", "number": "26023", "name": "LEGO INVENTORS", "country": "México" },
-    { "id": "t44", "number": "26059", "name": "SBULLONATI", "country": "Italy" },
-    { "id": "t45", "number": "26024", "name": "Jaguares Super Lego", "country": "México" },
-    { "id": "t46", "number": "26060", "name": "Honduras RoboStallions", "country": "Honduras" },
-    { "id": "t47", "number": "26025", "name": "Big-Bang", "country": "México" },
-    { "id": "t48", "number": "26061", "name": "Sharkbyte", "country": "USA" },
-    { "id": "t49", "number": "26026", "name": "YOPEX", "country": "México" },
-    { "id": "t50", "number": "26062", "name": "KAIBOTS", "country": "Colombia" },
-    { "id": "t51", "number": "26027", "name": "QUEENS", "country": "México" },
-    { "id": "t52", "number": "26063", "name": "TEAM BIOSBOT", "country": "Colombia" },
-    { "id": "t53", "number": "26028", "name": "PATRONES TS.7", "country": "México" },
-    { "id": "t54", "number": "26065", "name": "Estanys", "country": "España" },
-    { "id": "t55", "number": "26029", "name": "RROVIPER", "country": "México" },
-    { "id": "t56", "number": "26066", "name": "ROBOPITECUS - Blanca de Castilla ES", "country": "España" },
-    { "id": "t57", "number": "26031", "name": "OCELOTES BOTS", "country": "México" },
-    { "id": "t58", "number": "26067", "name": "La Salle Archeobots", "country": "España" },
-    { "id": "t59", "number": "26072", "name": "MazahuaScience", "country": "México" },
-    { "id": "t60", "number": "26068", "name": "ȘTIM DC", "country": "Romania" },
-    { "id": "t61", "number": "26073", "name": "Mex-Rex", "country": "México" },
-    { "id": "t62", "number": "26069", "name": "Les Daltons", "country": "Marruecos" },
-    { "id": "t63", "number": "26074", "name": "Linces JGM", "country": "México" },
-    { "id": "t64", "number": "26038", "name": "Metra 101", "country": "Nigeria" },
-    { "id": "t65", "number": "26039", "name": "FGC Okigwe", "country": "Nigeria" }
+    {
+      "id": "t1",
+      "number": "26001",
+      "name": "Mechanic Sparkle",
+      "country": "México"
+    },
+    {
+      "id": "t2",
+      "number": "26034",
+      "name": "Paleo Pangolins",
+      "country": "USA"
+    },
+    {
+      "id": "t3",
+      "number": "26002",
+      "name": "LincesBots",
+      "country": "México"
+    },
+    {
+      "id": "t4",
+      "number": "26035",
+      "name": "FIRST FUJISAN",
+      "country": "Japan"
+    },
+    {
+      "id": "t5",
+      "number": "26003",
+      "name": "OVERTURE PURPLE",
+      "country": "México"
+    },
+    {
+      "id": "t6",
+      "number": "26036",
+      "name": "Firecraft",
+      "country": "Uruguay"
+    },
+    {
+      "id": "t7",
+      "number": "26004",
+      "name": "Filadelfia Black Dragonflies",
+      "country": "México"
+    },
+    {
+      "id": "t8",
+      "number": "26037",
+      "name": "Power Group",
+      "country": "Uruguay"
+    },
+    {
+      "id": "t9",
+      "number": "26005",
+      "name": "BlueBot",
+      "country": "México"
+    },
+    {
+      "id": "t10",
+      "number": "26006",
+      "name": "SPACE BULLS",
+      "country": "México"
+    },
+    {
+      "id": "t11",
+      "number": "26007",
+      "name": "ZENITH",
+      "country": "México"
+    },
+    {
+      "id": "t12",
+      "number": "26041",
+      "name": "Les heptahiéroglyphes",
+      "country": "Canada"
+    },
+    {
+      "id": "t13",
+      "number": "26008",
+      "name": "KLEOX",
+      "country": "México"
+    },
+    {
+      "id": "t14",
+      "number": "26042",
+      "name": "DCADS Robo Cubs",
+      "country": "USA"
+    },
+    {
+      "id": "t15",
+      "number": "26009",
+      "name": "Electric Wasps",
+      "country": "México"
+    },
+    {
+      "id": "t16",
+      "number": "26043",
+      "name": "R^2 (Rsquared)",
+      "country": "Greece"
+    },
+    {
+      "id": "t17",
+      "number": "26010",
+      "name": "Umbrella City",
+      "country": "México"
+    },
+    {
+      "id": "t18",
+      "number": "26044",
+      "name": "TECH IT",
+      "country": "Greece"
+    },
+    {
+      "id": "t19",
+      "number": "26011",
+      "name": "GeneBots",
+      "country": "México"
+    },
+    {
+      "id": "t20",
+      "number": "26045",
+      "name": "Glauberbots",
+      "country": "Germany"
+    },
+    {
+      "id": "t21",
+      "number": "26012",
+      "name": "Eoloteens - Fuerza Eolica del Istmo",
+      "country": "México"
+    },
+    {
+      "id": "t22",
+      "number": "26047",
+      "name": "Jaguaretech Ignite",
+      "country": "Paraguay"
+    },
+    {
+      "id": "t23",
+      "number": "26013",
+      "name": "TecMinators",
+      "country": "México"
+    },
+    {
+      "id": "t24",
+      "number": "26048",
+      "name": "Pirabyte",
+      "country": "Paraguay"
+    },
+    {
+      "id": "t25",
+      "number": "26014",
+      "name": "Super-Legos",
+      "country": "México"
+    },
+    {
+      "id": "t26",
+      "number": "26049",
+      "name": "RIO BOTS",
+      "country": "Brazil"
+    },
+    {
+      "id": "t27",
+      "number": "26015",
+      "name": "ITECZ",
+      "country": "México"
+    },
+    {
+      "id": "t28",
+      "number": "26050",
+      "name": "GIGALEGO",
+      "country": "Brazil"
+    },
+    {
+      "id": "t29",
+      "number": "26016",
+      "name": "Panteras - Veracruz",
+      "country": "México"
+    },
+    {
+      "id": "t30",
+      "number": "26051",
+      "name": "LEGO BROS MG",
+      "country": "Brazil"
+    },
+    {
+      "id": "t31",
+      "number": "26017",
+      "name": "LAGARTIX18",
+      "country": "México"
+    },
+    {
+      "id": "t32",
+      "number": "26052",
+      "name": "HEROES",
+      "country": "Brazil"
+    },
+    {
+      "id": "t33",
+      "number": "26018",
+      "name": "Codigo Fenix",
+      "country": "México"
+    },
+    {
+      "id": "t34",
+      "number": "26054",
+      "name": "Chrono Diggers",
+      "country": "UAE"
+    },
+    {
+      "id": "t35",
+      "number": "26019",
+      "name": "Cyber Kraken",
+      "country": "México"
+    },
+    {
+      "id": "t36",
+      "number": "26055",
+      "name": "Les Brainstormeurs",
+      "country": "France"
+    },
+    {
+      "id": "t37",
+      "number": "26020",
+      "name": "RANGER BOTS",
+      "country": "México"
+    },
+    {
+      "id": "t38",
+      "number": "26056",
+      "name": "Skeleton Fish",
+      "country": "France"
+    },
+    {
+      "id": "t39",
+      "number": "26021",
+      "name": "Los Salvadores de las Raices Perdidas",
+      "country": "México"
+    },
+    {
+      "id": "t40",
+      "number": "26057",
+      "name": "Lego Brothers",
+      "country": "Chile"
+    },
+    {
+      "id": "t41",
+      "number": "26022",
+      "name": "Panteras - SLP",
+      "country": "México"
+    },
+    {
+      "id": "t42",
+      "number": "26058",
+      "name": "PERCEPTRON",
+      "country": "Chile"
+    },
+    {
+      "id": "t43",
+      "number": "26023",
+      "name": "LEGO INVENTORS",
+      "country": "México"
+    },
+    {
+      "id": "t44",
+      "number": "26059",
+      "name": "SBULLONATI",
+      "country": "Italy"
+    },
+    {
+      "id": "t45",
+      "number": "26024",
+      "name": "Jaguares Super Lego",
+      "country": "México"
+    },
+    {
+      "id": "t46",
+      "number": "26060",
+      "name": "Honduras RoboStallions",
+      "country": "Honduras"
+    },
+    {
+      "id": "t47",
+      "number": "26025",
+      "name": "Big-Bang",
+      "country": "México"
+    },
+    {
+      "id": "t48",
+      "number": "26061",
+      "name": "Sharkbyte",
+      "country": "USA"
+    },
+    {
+      "id": "t49",
+      "number": "26026",
+      "name": "YOPEX",
+      "country": "México"
+    },
+    {
+      "id": "t50",
+      "number": "26062",
+      "name": "KAIBOTS",
+      "country": "Colombia"
+    },
+    {
+      "id": "t51",
+      "number": "26027",
+      "name": "QUEENS",
+      "country": "México"
+    },
+    {
+      "id": "t52",
+      "number": "26063",
+      "name": "TEAM BIOSBOT",
+      "country": "Colombia"
+    },
+    {
+      "id": "t53",
+      "number": "26028",
+      "name": "PATRONES TS.7",
+      "country": "México"
+    },
+    {
+      "id": "t54",
+      "number": "26065",
+      "name": "Estanys",
+      "country": "España"
+    },
+    {
+      "id": "t55",
+      "number": "26029",
+      "name": "RROVIPER",
+      "country": "México"
+    },
+    {
+      "id": "t56",
+      "number": "26066",
+      "name": "ROBOPITECUS - Blanca de Castilla ES",
+      "country": "España"
+    },
+    {
+      "id": "t57",
+      "number": "26031",
+      "name": "OCELOTES BOTS",
+      "country": "México"
+    },
+    {
+      "id": "t58",
+      "number": "26067",
+      "name": "La Salle Archeobots",
+      "country": "España"
+    },
+    {
+      "id": "t59",
+      "number": "26072",
+      "name": "MazahuaScience",
+      "country": "México"
+    },
+    {
+      "id": "t60",
+      "number": "26068",
+      "name": "ȘTIM DC",
+      "country": "Romania"
+    },
+    {
+      "id": "t61",
+      "number": "26073",
+      "name": "Mex-Rex",
+      "country": "México"
+    },
+    {
+      "id": "t62",
+      "number": "26069",
+      "name": "Les Daltons",
+      "country": "Marruecos"
+    },
+    {
+      "id": "t63",
+      "number": "26074",
+      "name": "Linces JGM",
+      "country": "México"
+    },
+    {
+      "id": "t64",
+      "number": "26038",
+      "name": "Metra 101",
+      "country": "Nigeria"
+    },
+    {
+      "id": "t65",
+      "number": "26039",
+      "name": "FGC Okigwe",
+      "country": "Nigeria"
+    },
+    {
+      "id": "1779680315396",
+      "number": "00000",
+      "name": "TEST TEAM"
+    }
   ]
 }

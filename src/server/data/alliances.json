@@ -5,11 +5,71 @@
       "id": 1,
       "teams": [
         "26001",
-        "26002"
+        "26034"
       ],
       "teamNames": [
         "Mechanic Sparkle",
-        "LincesBots"
+        "Paleo Pangolins"
+      ],
+      "teamCountries": [
+        "México",
+        "USA"
+      ]
+    },
+    {
+      "id": 2,
+      "teams": [
+        "26002",
+        "26035"
+      ],
+      "teamNames": [
+        "LincesBots",
+        "FIRST FUJISAN"
+      ],
+      "teamCountries": [
+        "México",
+        "Japan"
+      ]
+    },
+    {
+      "id": 3,
+      "teams": [
+        "26003",
+        "26036"
+      ],
+      "teamNames": [
+        "OVERTURE PURPLE",
+        "Firecraft"
+      ],
+      "teamCountries": [
+        "México",
+        "Uruguay"
+      ]
+    },
+    {
+      "id": 4,
+      "teams": [
+        "26004",
+        "26037"
+      ],
+      "teamNames": [
+        "Filadelfia Black Dragonflies",
+        "Power Group"
+      ],
+      "teamCountries": [
+        "México",
+        "Uruguay"
+      ]
+    },
+    {
+      "id": 5,
+      "teams": [
+        "26005",
+        "26006"
+      ],
+      "teamNames": [
+        "BlueBot",
+        "SPACE BULLS"
       ],
       "teamCountries": [
         "México",
@@ -17,20 +77,425 @@
       ]
     },
     {
-      "id": 2,
+      "id": 6,
       "teams": [
-        "26035",
-        "26034"
+        "26007",
+        "26041"
       ],
       "teamNames": [
-        "FIRST FUJISAN",
-        "Paleo Pangolins"
+        "ZENITH",
+        "Les heptahiéroglyphes"
       ],
       "teamCountries": [
-        "Japan",
+        "México",
+        "Canada"
+      ]
+    },
+    {
+      "id": 7,
+      "teams": [
+        "26008",
+        "26042"
+      ],
+      "teamNames": [
+        "KLEOX",
+        "DCADS Robo Cubs"
+      ],
+      "teamCountries": [
+        "México",
         "USA"
+      ]
+    },
+    {
+      "id": 8,
+      "teams": [
+        "26009",
+        "26043"
+      ],
+      "teamNames": [
+        "Electric Wasps",
+        "R^2 (Rsquared)"
+      ],
+      "teamCountries": [
+        "México",
+        "Greece"
+      ]
+    },
+    {
+      "id": 9,
+      "teams": [
+        "26010",
+        "26044"
+      ],
+      "teamNames": [
+        "Umbrella City",
+        "TECH IT"
+      ],
+      "teamCountries": [
+        "México",
+        "Greece"
+      ]
+    },
+    {
+      "id": 10,
+      "teams": [
+        "26011",
+        "26045"
+      ],
+      "teamNames": [
+        "GeneBots",
+        "Glauberbots"
+      ],
+      "teamCountries": [
+        "México",
+        "Germany"
+      ]
+    },
+    {
+      "id": 11,
+      "teams": [
+        "26012",
+        "26047"
+      ],
+      "teamNames": [
+        "Eoloteens - Fuerza Eolica del Istmo",
+        "Jaguaretech Ignite"
+      ],
+      "teamCountries": [
+        "México",
+        "Paraguay"
+      ]
+    },
+    {
+      "id": 12,
+      "teams": [
+        "26013",
+        "26048"
+      ],
+      "teamNames": [
+        "TecMinators",
+        "Pirabyte"
+      ],
+      "teamCountries": [
+        "México",
+        "Paraguay"
+      ]
+    },
+    {
+      "id": 13,
+      "teams": [
+        "26014",
+        "26049"
+      ],
+      "teamNames": [
+        "Super-Legos",
+        "RIO BOTS"
+      ],
+      "teamCountries": [
+        "México",
+        "Brazil"
+      ]
+    },
+    {
+      "id": 14,
+      "teams": [
+        "26015",
+        "26050"
+      ],
+      "teamNames": [
+        "ITECZ",
+        "GIGALEGO"
+      ],
+      "teamCountries": [
+        "México",
+        "Brazil"
+      ]
+    },
+    {
+      "id": 15,
+      "teams": [
+        "26016",
+        "26051"
+      ],
+      "teamNames": [
+        "Panteras - Veracruz",
+        "LEGO BROS MG"
+      ],
+      "teamCountries": [
+        "México",
+        "Brazil"
+      ]
+    },
+    {
+      "id": 16,
+      "teams": [
+        "26017",
+        "26052"
+      ],
+      "teamNames": [
+        "LAGARTIX18",
+        "HEROES"
+      ],
+      "teamCountries": [
+        "México",
+        "Brazil"
+      ]
+    },
+    {
+      "id": 17,
+      "teams": [
+        "26018",
+        "26054"
+      ],
+      "teamNames": [
+        "Codigo Fenix",
+        "Chrono Diggers"
+      ],
+      "teamCountries": [
+        "México",
+        "UAE"
+      ]
+    },
+    {
+      "id": 18,
+      "teams": [
+        "26019",
+        "26055"
+      ],
+      "teamNames": [
+        "Cyber Kraken",
+        "Les Brainstormeurs"
+      ],
+      "teamCountries": [
+        "México",
+        "France"
+      ]
+    },
+    {
+      "id": 19,
+      "teams": [
+        "26020",
+        "26056"
+      ],
+      "teamNames": [
+        "RANGER BOTS",
+        "Skeleton Fish"
+      ],
+      "teamCountries": [
+        "México",
+        "France"
+      ]
+    },
+    {
+      "id": 20,
+      "teams": [
+        "26021",
+        "26057"
+      ],
+      "teamNames": [
+        "Los Salvadores de las Raices Perdidas",
+        "Lego Brothers"
+      ],
+      "teamCountries": [
+        "México",
+        "Chile"
+      ]
+    },
+    {
+      "id": 21,
+      "teams": [
+        "26022",
+        "26058"
+      ],
+      "teamNames": [
+        "Panteras - SLP",
+        "PERCEPTRON"
+      ],
+      "teamCountries": [
+        "México",
+        "Chile"
+      ]
+    },
+    {
+      "id": 22,
+      "teams": [
+        "26023",
+        "26059"
+      ],
+      "teamNames": [
+        "LEGO INVENTORS",
+        "SBULLONATI"
+      ],
+      "teamCountries": [
+        "México",
+        "Italy"
+      ]
+    },
+    {
+      "id": 23,
+      "teams": [
+        "26024",
+        "26060"
+      ],
+      "teamNames": [
+        "Jaguares Super Lego",
+        "Honduras RoboStallions"
+      ],
+      "teamCountries": [
+        "México",
+        "Honduras"
+      ]
+    },
+    {
+      "id": 24,
+      "teams": [
+        "26025",
+        "26061"
+      ],
+      "teamNames": [
+        "Big-Bang",
+        "Sharkbyte"
+      ],
+      "teamCountries": [
+        "México",
+        "USA"
+      ]
+    },
+    {
+      "id": 25,
+      "teams": [
+        "26026",
+        "26062"
+      ],
+      "teamNames": [
+        "YOPEX",
+        "KAIBOTS"
+      ],
+      "teamCountries": [
+        "México",
+        "Colombia"
+      ]
+    },
+    {
+      "id": 26,
+      "teams": [
+        "26027",
+        "26063"
+      ],
+      "teamNames": [
+        "QUEENS",
+        "TEAM BIOSBOT"
+      ],
+      "teamCountries": [
+        "México",
+        "Colombia"
+      ]
+    },
+    {
+      "id": 27,
+      "teams": [
+        "26028",
+        "26065"
+      ],
+      "teamNames": [
+        "PATRONES TS.7",
+        "Estanys"
+      ],
+      "teamCountries": [
+        "México",
+        "España"
+      ]
+    },
+    {
+      "id": 28,
+      "teams": [
+        "26029",
+        "26066"
+      ],
+      "teamNames": [
+        "RROVIPER",
+        "ROBOPITECUS - Blanca de Castilla ES"
+      ],
+      "teamCountries": [
+        "México",
+        "España"
+      ]
+    },
+    {
+      "id": 29,
+      "teams": [
+        "26031",
+        "26067"
+      ],
+      "teamNames": [
+        "OCELOTES BOTS",
+        "La Salle Archeobots"
+      ],
+      "teamCountries": [
+        "México",
+        "España"
+      ]
+    },
+    {
+      "id": 30,
+      "teams": [
+        "26072",
+        "26068"
+      ],
+      "teamNames": [
+        "MazahuaScience",
+        "ȘTIM DC"
+      ],
+      "teamCountries": [
+        "México",
+        "Romania"
+      ]
+    },
+    {
+      "id": 31,
+      "teams": [
+        "26073",
+        "26069"
+      ],
+      "teamNames": [
+        "Mex-Rex",
+        "Les Daltons"
+      ],
+      "teamCountries": [
+        "México",
+        "Marruecos"
+      ]
+    },
+    {
+      "id": 32,
+      "teams": [
+        "26074",
+        "26038"
+      ],
+      "teamNames": [
+        "Linces JGM",
+        "Metra 101"
+      ],
+      "teamCountries": [
+        "México",
+        "Nigeria"
+      ]
+    },
+    {
+      "id": 33,
+      "teams": [
+        "26039",
+        "00000"
+      ],
+      "teamNames": [
+        "FGC Okigwe",
+        "TEST TEAM"
+      ],
+      "teamCountries": [
+        "Nigeria",
+        "Unknown"
       ]
     }
   ],
-  "updatedAt": "2026-05-22T22:21:12.505Z"
+  "updatedAt": "2026-05-25T04:15:20.480Z"
 }

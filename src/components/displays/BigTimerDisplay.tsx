@@ -6,6 +6,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { socket } from '@/lib/socket';
 import confetti from 'canvas-confetti';
 import { Trophy, Megaphone, Shield, Settings, X } from 'lucide-react';
+import MissionScoreBreakdown from './MissionScoreBreakdown';
+import BracketDisplay from './BracketDisplay';
 
 // ─── OBS Chroma-key background modes ────────────────────────────────────────
 type ChromaMode = 'transparent' | 'green' | 'magenta' | 'none';
@@ -30,6 +32,7 @@ interface TimerState {
   timeRemaining: number;
   isRunning: boolean;
   fieldCount: number;
+  displayMode?: 'live' | 'bracket';
   fields?: Record<string, string | null>;
 }
 
@@ -195,9 +198,6 @@ export default function BigTimerDisplay() {
     }
     const savedChroma = localStorage.getItem('chromaMode') as ChromaMode | null;
     if (savedChroma && savedChroma in CHROMA_STYLES) setChromaMode(savedChroma);
-
-    victoryAudio.current = new Audio('/sounds/end_match(7).wav');
-    awardRevealAudio.current = new Audio('/sounds/start_bell(5).wav');
   }, []);
 
   const handleChromaChange = useCallback((m: ChromaMode) => {
@@ -662,6 +662,16 @@ export default function BigTimerDisplay() {
             </h1>
             <p className="text-2xl font-black uppercase tracking-[0.5em] text-slate-500 mt-4">Awards Presentation</p>
           </motion.div>
+        ) : timer.displayMode === 'bracket' ? (
+          <motion.div
+            key="bracket"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-[100]"
+          >
+            <BracketDisplay />
+          </motion.div>
         ) : winner ? (
           <motion.div 
             key="winner"
@@ -671,16 +681,16 @@ export default function BigTimerDisplay() {
             className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-slate-950 p-10 text-center"
           >
             <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#ffffff 2px, transparent 2px)', backgroundSize: '40px 40px' }} />
-            <motion.div initial={{ scale: 0, rotate: -20 }} animate={{ scale: 1, rotate: 0 }} transition={{ type: 'spring', damping: 12 }} className={`w-40 h-40 rounded-[48px] flex items-center justify-center mb-10 border-b-[12px] shadow-[0_20px_50px_rgba(0,0,0,0.5)] ${winner.alliance === 'A' ? 'bg-blue-600 border-blue-800' : 'bg-red-600 border-red-800'}`}>
+            <motion.div initial={{ scale: 0, rotate: -20 }} animate={{ scale: 1, rotate: 0 }} transition={{ type: 'spring', damping: 12 }} className={`w-40 h-40 rounded-[48px] flex items-center justify-center mb-10 border-b-[12px] shadow-[0_20px_50px_rgba(0,0,0,0.5)] ${winner.alliance === 'A' ? 'bg-[#c0392b] border-[#a03024]' : 'bg-[#1565c0] border-[#11529c]'}`}>
               <Trophy className="text-yellow-400 w-20 h-20 drop-shadow-[0_0_15px_rgba(250,204,21,0.5)]" />
             </motion.div>
-            <h1 className={`text-[12vw] font-black uppercase tracking-tighter leading-none mb-10 ${winner.alliance === 'A' ? 'text-blue-500' : 'text-red-500'} drop-shadow-[0_0_60px_currentColor]`}>
-              Alliance {winner.alliance === 'A' ? 'Alpha' : 'Bravo'}
+            <h1 className={`text-[12vw] font-black uppercase tracking-tighter leading-none mb-10 ${winner.alliance === 'A' ? 'text-red-500' : 'text-blue-500'} drop-shadow-[0_0_60px_currentColor]`}>
+              {winner.alliance === 'A' ? 'Red Alliance' : 'Blue Alliance'}
             </h1>
             <div className="flex gap-16 items-center justify-center bg-slate-900/80 backdrop-blur-md p-12 rounded-[60px] border-2 border-slate-800 shadow-2xl">
               <div className="text-left space-y-2">
                 <div className="text-[2vw] font-black text-white uppercase tracking-tight">{winner.team1}</div>
-                <div className="text-[2vw] font-black text-slate-400 uppercase tracking-tight">{winner.team2}</div>
+                {winner.team2 && <div className="text-[2vw] font-black text-slate-400 uppercase tracking-tight">{winner.team2}</div>}
               </div>
               <div className="w-1 h-24 bg-slate-800 rounded-full" />
               <div className="text-center">
@@ -716,8 +726,6 @@ export default function BigTimerDisplay() {
                     <AnimatePresence mode="wait">
                       <motion.div
                         key={timer.timeRemaining}
-                        initial={{ opacity: 0, y: 5 }}
-                        animate={{ opacity: 1, y: 0 }}
                         className="font-bold tabular-nums leading-none text-center"
                         style={{
                           fontSize: 74,
@@ -761,49 +769,9 @@ export default function BigTimerDisplay() {
               </div>
             </div>
 
-            {/* ── BIG TIMER AREA ─────────────────────────────────────────────── */}
-            <div className="flex-1 flex flex-col items-center justify-center">
-               <motion.div 
-                 animate={isCritical ? { scale: [1, 1.03, 1] } : {}} 
-                 transition={{ repeat: Infinity, duration: 1 }}
-                 className="relative"
-               >
-                 <div className="bg-slate-900/40 backdrop-blur-md p-6 rounded-[80px] border border-slate-700/50 shadow-2xl relative z-10">
-                   <div className="bg-slate-950 px-20 py-12 lg:px-32 lg:py-20 rounded-[70px] border-2 border-slate-800 text-center shadow-inner min-w-[60vw]">
-                     <AnimatePresence mode="wait">
-                       <motion.div 
-                         key={timer.timeRemaining} 
-                         initial={{ opacity: 0, scale: 0.9 }} 
-                         animate={{ opacity: 1, scale: 1 }} 
-                         className={`text-[40vh] leading-[0.7] font-black tabular-nums tracking-tighter ${
-                           timer.timeRemaining <= 10 ? 'text-red-500' : 
-                           timer.timeRemaining <= 30 ? 'text-orange-500' : 
-                           'text-white'
-                         }`}
-                         style={{ textShadow: isCritical ? '0 0 60px rgba(239, 68, 68, 0.4)' : 'none' }}
-                       >
-                         {formatTime(timer.timeRemaining)}
-                       </motion.div>
-                     </AnimatePresence>
-                     
-                     {/* Match context helper label under big timer */}
-                     <div className="mt-8 text-slate-600 font-black uppercase tracking-[0.4em] text-xl">
-                       {activeMatch ? `Match #${activeMatch.position} · Round ${activeMatch.round}` : 'Standby'}
-                     </div>
-                   </div>
-                 </div>
-                 
-                 {/* Connection status indicator */}
-                 {!isConnected && (
-                   <motion.div 
-                     initial={{ opacity: 0 }} 
-                     animate={{ opacity: 1 }} 
-                     className="absolute -top-4 -right-4 bg-red-600 text-white px-4 py-1 rounded-full text-xs font-black uppercase tracking-widest z-20 shadow-lg"
-                   >
-                     Disconnected
-                   </motion.div>
-                 )}
-               </motion.div>
+            {/* ── MISSION BREAKDOWN AREA ─────────────────────────────────────────── */}
+            <div className="flex-1 overflow-hidden">
+               <MissionScoreBreakdown match={activeMatch} />
             </div>
 
           </motion.div>
@@ -820,18 +788,6 @@ export default function BigTimerDisplay() {
           />
         )}
       </AnimatePresence>
-
-      <button
-        onClick={handleSettingsToggle}
-        className="fixed top-4 right-4 z-[600] w-10 h-10 rounded-full bg-slate-900 border border-slate-700 flex items-center justify-center shadow-lg hover:bg-slate-800 transition-all duration-300"
-        style={{ opacity: showControls || settingsOpen ? 1 : 0, pointerEvents: showControls || settingsOpen ? 'auto' : 'none' }}
-        aria-label="OBS overlay settings"
-      >
-        {settingsOpen
-          ? <X className="w-5 h-5 text-slate-300" />
-          : <Settings className="w-5 h-5 text-slate-300" />
-        }
-      </button>
     </>
   );
 }

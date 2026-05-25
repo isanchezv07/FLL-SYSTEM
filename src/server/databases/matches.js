@@ -43,6 +43,31 @@ export const initMatchesDB = async () => {
   // Si el archivo está vacío o no existe
   db.data ||= defaultData;
 
+  // Limpieza de campos redundantes en partidos existentes
+  if (db.data.matches && Array.isArray(db.data.matches)) {
+    db.data.matches = db.data.matches.map(m => {
+      // Extraemos solo lo que queremos conservar
+      const { 
+        id, bracketId, round, position, 
+        teamA1, teamA2, teamB1, teamB2, 
+        scoreA, scoreB, status, nextMatchId, 
+        missionsA1, missionsA2, missionsB1, missionsB2, 
+        date 
+      } = m;
+      
+      return {
+        id, bracketId: bracketId || "", round: round || 1, position: position || 1,
+        teamA1: teamA1 || "", teamA2: teamA2 || "", 
+        teamB1: teamB1 || "", teamB2: teamB2 || "",
+        scoreA: scoreA || 0, scoreB: scoreB || 0,
+        status: status || "pending", nextMatchId: nextMatchId || null,
+        missionsA1: missionsA1 || {}, missionsA2: missionsA2 || {},
+        missionsB1: missionsB1 || {}, missionsB2: missionsB2 || {},
+        date: date || new Date().toISOString()
+      };
+    });
+  }
+
   await db.write(); // 🔥 Esto crea el archivo automáticamente
 };
 
@@ -60,38 +85,21 @@ export const createMatch = async (matchData) => {
 
   const newMatch = {
     id: Date.now().toString(),
-    round: "",
-    // Misiones por equipo (se llena progresivamente desde el frontend)
-    missionsA: {},
-    missionsB: {},
-    missions: {
-      inspection: "",
-      m01: { soil: 0, brushFree: 0 },
-      m02: { topsoil: 0 },
-      m03_04: { cart: 0, oppCart: 0, artifact: 0, supports: 0 },
-      m05: { floor: 0 },
-      m06: { ore: 0 },
-      m07: { mill: 0 },
-      m08: { pieces: 0 },
-      m09: { roof: 0, wares: 0 },
-      m10: { scale: 0, pan: 0 },
-      m11: { artifacts: 0, flag: 0 },
-      m12: { sand: 0, ship: 0 },
-      m13: { statue: 0 },
-      m14: {
-        brush: 0,
-        topsoil: 0,
-        artifact: 0,
-        oppCart: 0,
-        oreArtifact: 0,
-        mill: 0,
-        pan: 0
-      },
-      m15: { flags: 0 }
-    },
-    precision: 0,
-    total: 0,
-    notes: "",
+    bracketId: "",
+    round: 1,
+    position: 1,
+    teamA1: "",
+    teamA2: "",
+    teamB1: "",
+    teamB2: "",
+    scoreA: 0,
+    scoreB: 0,
+    status: "pending",
+    nextMatchId: null,
+    missionsA1: {},
+    missionsA2: {},
+    missionsB1: {},
+    missionsB2: {},
     date: new Date().toISOString(),
     ...matchData
   };

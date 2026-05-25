@@ -45,6 +45,7 @@ interface Match {
 interface TimerState {
   fields: Record<string, string | null>;
   fieldCount: number;
+  displayMode?: 'live' | 'bracket';
 }
 
 export default function MatchesSection() {
@@ -382,6 +383,21 @@ export default function MatchesSection() {
 
           <div className="flex items-center gap-4 text-[10px] font-bold uppercase tracking-widest text-slate-500 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-4 py-2 rounded-lg shadow-sm transition-colors">
               <div className="flex items-center gap-2">
+                <span>Display:</span>
+                <button 
+                  onClick={() => {
+                    const nextMode = timerState.displayMode === 'bracket' ? 'live' : 'bracket';
+                    socket.emit('updateTimer', { displayMode: nextMode });
+                    // Local fallback to update UI immediately in case of slow broadcast
+                    setTimerState(prev => ({ ...prev, displayMode: nextMode }));
+                  }}
+                  className={`px-3 py-1 rounded transition-all font-bold ${timerState.displayMode === 'bracket' ? 'bg-blue-600 text-white shadow-lg' : 'text-blue-600 dark:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 border border-blue-600/20'}`}
+                >
+                  {timerState.displayMode === 'bracket' ? 'Showing Bracket' : 'Show Bracket'}
+                </button>
+              </div>
+              <div className="w-[1px] h-3 bg-slate-200 dark:bg-slate-800" />
+              <div className="flex items-center gap-2">
                 <span>Fields:</span>
                 <select value={timerState.fieldCount} onChange={(e) => updateFieldCount(Number(e.target.value))} className="bg-transparent text-blue-600 dark:text-blue-400 outline-none">
                   {[1, 2, 3, 4, 5, 6].map(n => <option key={n} value={n} className="bg-white dark:bg-slate-900">{n}</option>)}
@@ -436,17 +452,17 @@ export default function MatchesSection() {
                     <div className="p-3 space-y-2">
                         <div className="flex justify-between items-center">
                             <div className="flex items-center gap-2">
-                                <div className="w-1.5 h-6 bg-blue-600 rounded-full" />
+                                <div className="w-1.5 h-6 bg-[#c0392b] rounded-full" />
                                 <span className="text-xs font-bold truncate max-w-[120px] text-slate-800 dark:text-slate-200">{match.teamA1 || 'TBD'} {match.teamA2 && `+ ${match.teamA2}`}</span>
                             </div>
-                            <span className={`font-mono font-bold text-lg ${match.status === 'finished' && match.scoreA > match.scoreB ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-600'}`}>{match.scoreA}</span>
+                            <span className={`font-mono font-bold text-lg ${match.status === 'finished' && match.scoreA > match.scoreB ? 'text-red-600 dark:text-red-400' : 'text-slate-400 dark:text-slate-600'}`}>{match.scoreA}</span>
                         </div>
                         <div className="flex justify-between items-center">
                             <div className="flex items-center gap-2">
-                                <div className="w-1.5 h-6 bg-red-600 rounded-full" />
+                                <div className="w-1.5 h-6 bg-[#1565c0] rounded-full" />
                                 <span className="text-xs font-bold truncate max-w-[120px] text-slate-800 dark:text-slate-200">{match.teamB1 || 'TBD'} {match.teamB2 && `+ ${match.teamB2}`}</span>
                             </div>
-                            <span className={`font-mono font-bold text-lg ${match.status === 'finished' && match.scoreB > match.scoreA ? 'text-red-600 dark:text-red-500' : 'text-slate-400 dark:text-slate-600'}`}>{match.scoreB}</span>
+                            <span className={`font-mono font-bold text-lg ${match.status === 'finished' && match.scoreB > match.scoreA ? 'text-blue-600 dark:text-blue-500' : 'text-slate-400 dark:text-slate-600'}`}>{match.scoreB}</span>
                         </div>
                     </div>
 
@@ -493,12 +509,12 @@ export default function MatchesSection() {
             {/* Score Summary Banner */}
             <div className="bg-slate-800 dark:bg-black text-white px-10 py-8 flex justify-center items-center gap-20 shadow-inner transition-colors">
                 <div className="text-center">
-                    <div className="text-blue-400 text-[10px] font-bold uppercase tracking-widest mb-2">Blue Alliance</div>
+                    <div className="text-red-500 text-[10px] font-bold uppercase tracking-widest mb-2">Red Alliance</div>
                     <div className="text-7xl font-mono font-bold leading-none">{editingMatch.scoreA}</div>
                 </div>
                 <div className="text-4xl font-black text-slate-600 dark:text-slate-800 italic">VS</div>
                 <div className="text-center">
-                    <div className="text-red-500 text-[10px] font-bold uppercase tracking-widest mb-2">Red Alliance</div>
+                    <div className="text-blue-400 text-[10px] font-bold uppercase tracking-widest mb-2">Blue Alliance</div>
                     <div className="text-7xl font-mono font-bold leading-none">{editingMatch.scoreB}</div>
                 </div>
             </div>
@@ -506,18 +522,6 @@ export default function MatchesSection() {
             {/* Scoring Area */}
             <div className="flex-1 overflow-y-auto p-8 bg-slate-50 dark:bg-slate-950 transition-colors">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* BLUE SIDE */}
-                <div className="space-y-6">
-                    <div className="flex items-center gap-3 border-b-2 border-blue-600 pb-2">
-                        <div className="w-4 h-4 bg-blue-600 rounded" />
-                        <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 uppercase tracking-tight">Blue Alliance Details</h3>
-                    </div>
-                    <div className="grid grid-cols-1 gap-6">
-                        <DetailedTeamBox team="A1" name={editingMatch.teamA1} matchId={editingMatch.id} matches={matches} onUpdate={updateMatchMissions} color="blue" />
-                        <DetailedTeamBox team="A2" name={editingMatch.teamA2} matchId={editingMatch.id} matches={matches} onUpdate={updateMatchMissions} color="blue" />
-                    </div>
-                </div>
-                
                 {/* RED SIDE */}
                 <div className="space-y-6">
                     <div className="flex items-center gap-3 border-b-2 border-red-600 pb-2">
@@ -525,8 +529,20 @@ export default function MatchesSection() {
                         <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 uppercase tracking-tight">Red Alliance Details</h3>
                     </div>
                     <div className="grid grid-cols-1 gap-6">
-                        <DetailedTeamBox team="B1" name={editingMatch.teamB1} matchId={editingMatch.id} matches={matches} onUpdate={updateMatchMissions} color="red" />
-                        <DetailedTeamBox team="B2" name={editingMatch.teamB2} matchId={editingMatch.id} matches={matches} onUpdate={updateMatchMissions} color="red" />
+                        <DetailedTeamBox team="A1" name={editingMatch.teamA1} matchId={editingMatch.id} matches={matches} onUpdate={updateMatchMissions} color="red" />
+                        <DetailedTeamBox team="A2" name={editingMatch.teamA2} matchId={editingMatch.id} matches={matches} onUpdate={updateMatchMissions} color="red" />
+                    </div>
+                </div>
+                
+                {/* BLUE SIDE */}
+                <div className="space-y-6">
+                    <div className="flex items-center gap-3 border-b-2 border-blue-600 pb-2">
+                        <div className="w-4 h-4 bg-blue-600 rounded" />
+                        <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 uppercase tracking-tight">Blue Alliance Details</h3>
+                    </div>
+                    <div className="grid grid-cols-1 gap-6">
+                        <DetailedTeamBox team="B1" name={editingMatch.teamB1} matchId={editingMatch.id} matches={matches} onUpdate={updateMatchMissions} color="blue" />
+                        <DetailedTeamBox team="B2" name={editingMatch.teamB2} matchId={editingMatch.id} matches={matches} onUpdate={updateMatchMissions} color="blue" />
                     </div>
                 </div>
               </div>

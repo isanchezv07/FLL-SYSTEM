@@ -2,6 +2,7 @@
   "timer": {
     "timeRemaining": 150,
     "isRunning": false,
+    "displayMode": "live",
     "fieldCount": 6,
     "fields": {
       "cancha1": null,
@@ -9,10 +10,8 @@
       "cancha3": null,
       "cancha4": null,
       "cancha5": null,
-      "cancha6": null,
-      "cancha7": null,
-      "cancha8": null
+      "cancha6": null
     },
-    "updatedAt": "2026-05-22T22:21:11.078Z"
+    "updatedAt": "2026-05-25T04:15:25.603Z"
   }
 }

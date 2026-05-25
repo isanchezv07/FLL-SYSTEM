@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { socket } from '@/lib/socket';
 import confetti from 'canvas-confetti';
 import { Trophy, Megaphone, Shield, Settings, X } from 'lucide-react';
+import BracketDisplay from './BracketDisplay';
 
 // ─── OBS Chroma-key background modes ────────────────────────────────────────
 type ChromaMode = 'transparent' | 'green' | 'magenta' | 'none';
@@ -30,6 +31,7 @@ interface TimerState {
   timeRemaining: number;
   isRunning: boolean;
   fieldCount: number;
+  displayMode?: 'live' | 'bracket';
   fields?: Record<string, string | null>;
 }
 
@@ -185,8 +187,6 @@ export default function LegoTimerDisplay() {
       setSelectedField(savedField);
       selectedFieldRef.current = savedField;
     }
-    victoryAudio.current = new Audio('/sounds/end_match(7).wav');
-    awardRevealAudio.current = new Audio('/sounds/start_bell(5).wav');
   }, []);
 
   const handleChromaChange = useCallback((m: ChromaMode) => {
@@ -677,6 +677,16 @@ export default function LegoTimerDisplay() {
             </h1>
             <p className="text-2xl font-black uppercase tracking-[0.5em] mt-4" style={{ color: '#6A86AE' }}>Awards Presentation</p>
           </motion.div>
+        ) : timer.displayMode === 'bracket' ? (
+          <motion.div
+            key="bracket"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-[100]"
+          >
+            <BracketDisplay />
+          </motion.div>
         ) : winner ? (
           <motion.div
             key="winner"
@@ -691,12 +701,12 @@ export default function LegoTimerDisplay() {
               initial={{ scale: 0, rotate: -20 }}
               animate={{ scale: 1, rotate: 0 }}
               transition={{ type: 'spring', damping: 12 }}
-              className={`w-40 h-40 rounded-[48px] flex items-center justify-center mb-10 border-b-[12px] shadow-[0_20px_50px_rgba(0,0,0,0.5)] ${winner.alliance === 'A' ? 'bg-blue-600 border-blue-800' : 'bg-red-600 border-red-800'}`}
+              className={`w-40 h-40 rounded-[48px] flex items-center justify-center mb-10 border-b-[12px] shadow-[0_20px_50px_rgba(0,0,0,0.5)] ${winner.alliance === 'A' ? 'bg-[#c0392b] border-[#a03024]' : 'bg-[#1565c0] border-[#11529c]'}`}
             >
               <Trophy className="text-yellow-400 w-20 h-20 drop-shadow-[0_0_15px_rgba(250,204,21,0.5)]" />
             </motion.div>
-            <h1 className={`text-[12vw] font-black uppercase tracking-tighter leading-none mb-10 ${winner.alliance === 'A' ? 'text-blue-500' : 'text-red-500'} drop-shadow-[0_0_60px_currentColor]`}>
-              Alliance {winner.alliance === 'A' ? 'Alpha' : 'Bravo'}
+            <h1 className={`text-[12vw] font-black uppercase tracking-tighter leading-none mb-10 ${winner.alliance === 'A' ? 'text-red-500' : 'text-blue-500'} drop-shadow-[0_0_60px_currentColor]`}>
+              {winner.alliance === 'A' ? 'Red Alliance' : 'Blue Alliance'}
             </h1>
             <div className="flex gap-16 items-center justify-center backdrop-blur-md p-12 rounded-[60px] border-2 shadow-2xl" style={{ background: 'rgba(58,46,156,0.85)', borderColor: 'rgba(106,134,174,0.3)' }}>
               <div className="text-left space-y-2">
@@ -737,8 +747,6 @@ export default function LegoTimerDisplay() {
                     <AnimatePresence mode="wait">
                       <motion.div
                         key={timer.timeRemaining}
-                        initial={{ opacity: 0, y: 5 }}
-                        animate={{ opacity: 1, y: 0 }}
                         className="font-bold tabular-nums leading-none text-center"
                         style={{
                           fontSize: 74,
