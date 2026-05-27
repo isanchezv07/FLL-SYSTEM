@@ -5,10 +5,10 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { socket } from '@/lib/socket';
 import confetti from 'canvas-confetti';
-import { Trophy, Megaphone, Shield, Settings, X, MonitorUp, MonitorDown } from 'lucide-react';
+import { Trophy, Megaphone, Shield, Settings, X, MonitorUp, MonitorDown, ZoomIn, ZoomOut, Maximize } from 'lucide-react';
 import ScoreboardBar from './ScoreboardBar';
 import WinnerReveal from './WinnerReveal';
-import BracketDisplay from './BracketDisplay';
+import BracketDisplayLive from './BracketDisplayLive';
 import SponsorsDisplay from './SponsorsDisplay';
 
 // ─── OBS Chroma-key background modes ────────────────────────────────────────
@@ -40,19 +40,300 @@ interface WinnerInfo {
   score: number;
 }
 
+
+// ─── AllFieldsBar ─────────────────────────────────────────────────────────────
+// Shows a compact scoreboard row for every field simultaneously.
+// Each field independently fetches its assigned match from timer.fields.
+function AllFieldsBar({
+  timer,
+  teams,
+  layoutPosition,
+  isCritical,
+  onFieldClick,
+}: {
+  timer: any;
+  teams: any[];
+  layoutPosition: 'top' | 'bottom';
+  isCritical: boolean;
+  onFieldClick: () => void;
+}) {
+  const fieldCount = timer.fieldCount || 4;
+  const fieldKeys = Array.from({ length: fieldCount }, (_, i) => `cancha${i + 1}`);
+  const [fieldMatches, setFieldMatches] = useState<Record<string, any>>({});
+
+  // Fetch every field's match whenever timer.fields changes
+  useEffect(() => {
+    const fields: Record<string, string | null> = timer.fields || {};
+    const fetchers = fieldKeys.map(async (key) => {
+      const matchId = fields[key];
+      if (!matchId) return { key, match: null };
+      try {
+        const res = await fetch(`/api/matches/${matchId}`);
+        if (res.ok) return { key, match: await res.json() };
+      } catch {}
+      return { key, match: null };
+    });
+    Promise.all(fetchers).then((results) => {
+      const map: Record<string, any> = {};
+      results.forEach(({ key, match }) => { map[key] = match; });
+      setFieldMatches(map);
+    });
+  }, [timer.fields, fieldCount]);
+
+  // Re-fetch on socket match updates
+  useEffect(() => {
+    const refetch = () => {
+      const fields: Record<string, string | null> = timer.fields || {};
+      const fetchers = fieldKeys.map(async (key) => {
+        const matchId = fields[key];
+        if (!matchId) return { key, match: null };
+        try {
+          const res = await fetch(`/api/matches/${matchId}`);
+          if (res.ok) return { key, match: await res.json() };
+        } catch {}
+        return { key, match: null };
+      });
+      Promise.all(fetchers).then((results) => {
+        const map: Record<string, any> = {};
+        results.forEach(({ key, match }) => { map[key] = match; });
+        setFieldMatches(map);
+      });
+    };
+    socket.on('matchesUpdate', refetch);
+    socket.on('matchUpdate', refetch);
+    return () => { socket.off('matchesUpdate', refetch); socket.off('matchUpdate', refetch); };
+  }, [timer.fields, fieldCount]);
+
+  const getTeamLabel = (number: any) => {
+    if (!number || number === 'TBD' || number === '—') return number || 'TBD';
+    const team = teams.find((t: any) => t.number === number.toString());
+    return team ? `${team.number} · ${team.name}` : `Team ${number}`;
+  };
+
+  const borderColor = isCritical ? 'rgba(220,38,38,0.7)' : 'rgba(102,180,178,0.35)';
+  const bgColor     = isCritical ? 'rgba(80,10,10,0.93)'  : 'rgba(30,20,70,0.93)';
+
+  return (
+    <div
+      className={`shrink-0 w-full flex ${layoutPosition === 'bottom' ? 'flex-col' : 'flex-col'}`}
+      style={{
+        background: bgColor,
+        backdropFilter: 'blur(16px)',
+        borderBottom: layoutPosition === 'top'    ? `2px solid ${borderColor}` : undefined,
+        borderTop:    layoutPosition === 'bottom' ? `2px solid ${borderColor}` : undefined,
+        boxShadow: layoutPosition === 'top'
+          ? '0 4px 32px rgba(0,0,0,0.5)'
+          : '0 -4px 32px rgba(0,0,0,0.5)',
+      }}
+    >
+      {/* Header row */}
+      <div
+        className="flex items-center justify-between px-6 py-2 cursor-pointer select-none"
+        style={{ borderBottom: '1px solid rgba(106,134,174,0.2)' }}
+        onClick={onFieldClick}
+      >
+        <div className="flex items-center gap-3">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#66B4B2" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+            <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+          </svg>
+          <span className="text-[10px] font-black uppercase tracking-[0.3em]" style={{ color: '#66B4B2' }}>
+            Todas las Canchas
+          </span>
+        </div>
+
+      </div>
+
+      {/* One row per field */}
+      <div className={`grid gap-px`} style={{ gridTemplateColumns: `repeat(${fieldCount}, 1fr)`, background: 'rgba(106,134,174,0.15)' }}>
+        {fieldKeys.map((key) => {
+          const match = fieldMatches[key];
+          const label = key.replace('cancha', 'C');
+          const inProgress = match?.status === 'in_progress';
+          const finished   = match?.status === 'finished';
+          const winnerSide = finished
+            ? (match.scoreA > match.scoreB ? 'A' : match.scoreB > match.scoreA ? 'B' : null)
+            : null;
+
+          return (
+            <div
+              key={key}
+              className="flex flex-col px-4 py-3 relative"
+              style={{
+                background: inProgress ? 'rgba(102,180,178,0.08)' : 'rgba(30,20,70,0.0)',
+                borderTop: inProgress ? '1px solid rgba(102,180,178,0.4)' : '1px solid transparent',
+              }}
+            >
+              {/* Field label + status */}
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: inProgress ? '#66B4B2' : '#6A86AE' }}>
+                  {label}
+                </span>
+                {inProgress && (
+                  <span className="text-[8px] font-black uppercase tracking-widest animate-pulse" style={{ color: '#66B4B2' }}>● LIVE</span>
+                )}
+                {finished && (
+                  <span className="text-[8px] font-black uppercase tracking-widest" style={{ color: '#5AA057' }}>✓ FIN</span>
+                )}
+              </div>
+
+              {match ? (
+                <>
+                  {/* Alliance A */}
+                  <div className={`flex items-center justify-between gap-2 mb-1 rounded px-2 py-1 ${winnerSide === 'A' ? 'bg-green-900/30' : ''}`}>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <div className="w-1 h-4 rounded-full shrink-0 bg-blue-500" />
+                      <span className="text-[10px] font-bold text-white/80 truncate leading-none">{getTeamLabel(match.teamA1)}</span>
+                    </div>
+                    <span className={`text-sm font-black font-mono shrink-0 ${winnerSide === 'A' ? 'text-[#66B4B2]' : 'text-[#6A86AE]'}`}>
+                      {finished ? match.scoreA : '—'}
+                    </span>
+                  </div>
+                  {/* Alliance B */}
+                  <div className={`flex items-center justify-between gap-2 rounded px-2 py-1 ${winnerSide === 'B' ? 'bg-green-900/30' : ''}`}>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <div className="w-1 h-4 rounded-full shrink-0 bg-red-500" />
+                      <span className="text-[10px] font-bold text-white/80 truncate leading-none">{getTeamLabel(match.teamB1)}</span>
+                    </div>
+                    <span className={`text-sm font-black font-mono shrink-0 ${winnerSide === 'B' ? 'text-[#66B4B2]' : 'text-[#6A86AE]'}`}>
+                      {finished ? match.scoreB : '—'}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-center justify-center py-3">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-white/20">Sin partido</span>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─── Alliance card (single row) ──────────────────────────────────────────────
+function AllianceCard({ alliance }: { alliance: any }) {
+  return (
+    <div
+      className="rounded-2xl relative overflow-hidden shrink-0"
+      style={{ background: 'rgba(58,46,156,0.5)', border: '1px solid rgba(106,134,174,0.3)' }}
+    >
+      <div className="absolute left-0 top-0 bottom-0 w-1" style={{ background: 'linear-gradient(to bottom, #66B4B2, #3A2E9C)' }} />
+      <div className="flex items-center gap-4 px-5 py-4">
+        {/* Alliance ID badge */}
+        <div
+          className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border"
+          style={{ background: '#481F73', borderColor: 'rgba(106,134,174,0.4)' }}
+        >
+          <span className="text-base font-black italic" style={{ color: '#66B4B2' }}>{alliance.id}</span>
+        </div>
+        {/* Teams list */}
+        <div className="flex-1 min-w-0 flex flex-col gap-1">
+          {alliance.teamNames.map((name: string, tIdx: number) => (
+            <div key={tIdx} className="flex items-center gap-2 min-w-0">
+              <span className="text-[10px] font-black uppercase tracking-widest shrink-0" style={{ color: '#66B4B2' }}>E{tIdx + 1}</span>
+              <span className="text-sm font-black text-white uppercase tracking-tight truncate">{name}</span>
+              <span className="text-[10px] font-mono shrink-0" style={{ color: '#6A86AE' }}>#{alliance.teams[tIdx]}</span>
+              {alliance.teamCountries?.[tIdx] && (
+                <span className="text-[10px] font-black uppercase tracking-widest shrink-0" style={{ color: '#6A86AE' }}>{alliance.teamCountries[tIdx]}</span>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Alliance scroll list — loops when content is taller than container ───────
+function AllianceScrollList({ alliances }: { alliances: any[] }) {
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const innerRef    = useRef<HTMLDivElement>(null);
+  const [shouldScroll, setShouldScroll] = useState(false);
+  const [contentH, setContentH] = useState(0);
+
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    const inner    = innerRef.current;
+    if (!viewport || !inner) return;
+
+    const measure = () => {
+      // When doubled for looping, inner.scrollHeight is 2× the real content height
+      const realH = shouldScroll ? inner.scrollHeight / 2 : inner.scrollHeight;
+      const vh = viewport.clientHeight;
+      setShouldScroll(realH > vh);
+      setContentH(realH);
+    };
+
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(viewport);
+    ro.observe(inner);
+    return () => ro.disconnect();
+  }, [alliances, shouldScroll]);
+
+  // 60px/s scroll speed
+  const duration = contentH > 0 ? contentH / 60 : 10;
+
+  return (
+    <div
+      ref={viewportRef}
+      className="relative z-10 flex-1 overflow-hidden px-6 py-5"
+      style={{
+        maskImage: shouldScroll
+          ? 'linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%)'
+          : undefined,
+        WebkitMaskImage: shouldScroll
+          ? 'linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%)'
+          : undefined,
+      }}
+    >
+      <style>{`
+        @keyframes alliance-scroll {
+          0%   { transform: translateY(0); }
+          100% { transform: translateY(-50%); }
+        }
+        .alliance-scroll-inner {
+          animation: alliance-scroll ${duration}s linear infinite;
+        }
+      `}</style>
+
+      <div
+        ref={innerRef}
+        className={`flex flex-col gap-3 ${shouldScroll ? 'alliance-scroll-inner' : ''}`}
+      >
+        {alliances.map((alliance: any, idx: number) => (
+          <AllianceCard key={`a-${idx}`} alliance={alliance} />
+        ))}
+        {shouldScroll && alliances.map((alliance: any, idx: number) => (
+          <AllianceCard key={`b-${idx}`} alliance={alliance} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── OS-style Settings Window ────────────────────────────────────────────────
 function SettingsWindow({
   mode,
   layoutPosition,
+  bracketZoom,
   onChange,
   onPositionChange,
+  onBracketZoomChange,
   onClose,
+  onSwitchField,
 }: {
   mode: ChromaMode;
   layoutPosition: 'top' | 'bottom';
+  bracketZoom: number;
   onChange: (m: ChromaMode) => void;
   onPositionChange: (p: 'top' | 'bottom') => void;
+  onBracketZoomChange: (z: number) => void;
   onClose: () => void;
+  onSwitchField?: () => void;
 }) {
   const options: { value: ChromaMode; label: string; description: string; preview: React.ReactNode }[] = [
     {
@@ -167,6 +448,63 @@ function SettingsWindow({
               Bottom
             </button>
           </div>
+
+          {/* ── Bracket Zoom ───────────────────────────────────────────────── */}
+          <div style={{ marginTop: 24, borderTop: '1px solid rgba(106,134,174,0.2)', paddingTop: 20 }}>
+            <p style={{ fontSize: 10, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.3em', color: '#6A86AE', marginBottom: 16 }}>Bracket Zoom</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <button
+                onClick={() => onBracketZoomChange(Math.max(0.2, parseFloat((bracketZoom - 0.1).toFixed(1))))}
+                style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(58,46,156,0.6)', border: '1px solid #6A86AE', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FEFDFD' }}
+              >
+                <ZoomOut style={{ width: 16, height: 16 }} />
+              </button>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <input
+                  type="range"
+                  min={0.2} max={1.5} step={0.05}
+                  value={bracketZoom}
+                  onChange={e => onBracketZoomChange(parseFloat(e.target.value))}
+                  style={{ flex: 1, accentColor: '#66B4B2' }}
+                />
+                <span style={{ fontSize: 12, fontWeight: 700, color: '#66B4B2', minWidth: 36, textAlign: 'right' }}>
+                  {Math.round(bracketZoom * 100)}%
+                </span>
+              </div>
+              <button
+                onClick={() => onBracketZoomChange(Math.min(1.5, parseFloat((bracketZoom + 0.1).toFixed(1))))}
+                style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(58,46,156,0.6)', border: '1px solid #6A86AE', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FEFDFD' }}
+              >
+                <ZoomIn style={{ width: 16, height: 16 }} />
+              </button>
+              <button
+                onClick={() => onBracketZoomChange(0.8)}
+                style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(58,46,156,0.6)', border: '1px solid #6A86AE', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FEFDFD' }}
+                title="Reset zoom"
+              >
+                <Maximize style={{ width: 14, height: 14 }} />
+              </button>
+            </div>
+          </div>
+          {onSwitchField && (
+            <div style={{ marginTop: 24, borderTop: '1px solid rgba(106,134,174,0.2)', paddingTop: 20 }}>
+              <p style={{ fontSize: 10, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.3em', color: '#6A86AE', marginBottom: 12 }}>Campo</p>
+              <button
+                onClick={() => { onSwitchField(); onClose(); }}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px',
+                  borderRadius: 12, border: '1px solid #6A86AE',
+                  background: 'rgba(58,46,156,0.4)', cursor: 'pointer',
+                  color: '#FEFDFD', fontWeight: 700, fontSize: 14,
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 18 9 12 15 6"/>
+                </svg>
+                Cambiar de Cancha
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -191,6 +529,7 @@ export default function LegoTimerDisplay() {
 
   // ── OBS chroma state ─────────────────────────────────────────────────────
   const [chromaMode, setChromaMode] = useState<ChromaMode>('none');
+  const [bracketZoom, setBracketZoom] = useState(0.8);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [showControls, setShowControls] = useState(false);
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -214,6 +553,9 @@ export default function LegoTimerDisplay() {
     fetchTeams();
     const saved = localStorage.getItem('chromaMode') as ChromaMode | null;
     if (saved && saved in CHROMA_STYLES) setChromaMode(saved);
+
+    const savedZoom = localStorage.getItem('bracketZoom');
+    if (savedZoom) setBracketZoom(parseFloat(savedZoom));
 
     const savedPos = localStorage.getItem('layoutPosition') as 'top' | 'bottom' | null;
     if (savedPos) setLayoutPosition(savedPos);
@@ -251,6 +593,11 @@ export default function LegoTimerDisplay() {
   const handlePositionChange = useCallback((p: 'top' | 'bottom') => {
     setLayoutPosition(p);
     localStorage.setItem('layoutPosition', p);
+  }, []);
+
+  const handleBracketZoomChange = useCallback((z: number) => {
+    setBracketZoom(z);
+    localStorage.setItem('bracketZoom', String(z));
   }, []);
 
   const handleSettingsToggle = useCallback(() => setSettingsOpen((v) => !v), []);
@@ -477,6 +824,18 @@ export default function LegoTimerDisplay() {
         <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center p-10" style={{ background: '#481F73' }}>
           <h2 className="text-4xl font-black uppercase tracking-tighter mb-10" style={{ color: '#66B4B2' }}>Seleccionar Cancha</h2>
           <div className="grid grid-cols-2 gap-6 max-w-2xl w-full">
+            {/* Generic "all fields" option */}
+            <button
+              key="all"
+              onClick={() => handleFieldSelect('all')}
+              className="col-span-2 p-8 rounded-3xl text-2xl font-black uppercase transition-all flex items-center justify-center gap-4"
+              style={{ background: 'rgba(102,180,178,0.15)', border: '2px solid #66B4B2', color: '#66B4B2' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#66B4B2'; (e.currentTarget as HTMLButtonElement).style.color = '#fff'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(102,180,178,0.15)'; (e.currentTarget as HTMLButtonElement).style.color = '#66B4B2'; }}
+            >
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+              Todas las Canchas
+            </button>
             {Array.from({ length: timer.fieldCount || 4 }).map((_, idx) => {
               const f = `cancha${idx + 1}`;
               return (
@@ -509,19 +868,19 @@ export default function LegoTimerDisplay() {
         {activeAnnouncement ? (
           <motion.div
             key="announcement"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 1.1 }}
-            className="absolute inset-0 z-[110] flex flex-col items-center justify-center backdrop-blur-3xl p-20 text-center"
-            style={{ background: 'rgba(58,46,156,0.92)' }}
+            initial={{ opacity: 0, y: -80 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -80 }}
+            className="absolute top-0 left-0 right-0 z-[110] flex items-center gap-8 px-10 py-6 backdrop-blur-xl"
+            style={{ background: 'rgba(58,46,156,0.93)', borderBottom: '2px solid rgba(102,180,178,0.4)', boxShadow: '0 8px 40px rgba(0,0,0,0.5)' }}
           >
-            <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#ffffff 2px, transparent 2px)', backgroundSize: '60px 60px' }} />
-            <div className="p-8 rounded-[40px] mb-12 shadow-2xl" style={{ background: '#66B4B2', boxShadow: '0 0 60px rgba(102,180,178,0.3)' }}>
-              <Megaphone className="w-24 h-24 text-white" />
+            <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#ffffff 2px, transparent 2px)', backgroundSize: '40px 40px' }} />
+            <div className="shrink-0 p-4 rounded-2xl shadow-xl relative z-10" style={{ background: '#66B4B2', boxShadow: '0 0 30px rgba(102,180,178,0.4)' }}>
+              <Megaphone className="w-10 h-10 text-white" />
             </div>
-            <h2 className="text-4xl font-black uppercase tracking-[0.4em] mb-8" style={{ color: '#66B4B2' }}>Comunicado Oficial</h2>
-            <div className="max-w-6xl">
-              <p className="text-[6vw] font-black leading-tight text-white uppercase tracking-tighter">
+            <div className="relative z-10 flex items-baseline gap-6 min-w-0">
+              <span className="shrink-0 text-xs font-black uppercase tracking-[0.3em]" style={{ color: '#66B4B2' }}>Comunicado</span>
+              <p className="text-2xl font-black leading-tight text-white uppercase tracking-tight truncate">
                 {activeAnnouncement}
               </p>
             </div>
@@ -607,117 +966,87 @@ export default function LegoTimerDisplay() {
         ) : alliances?.active ? (
           <motion.div
             key="alliance-selection"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 1.05 }}
-            className="absolute inset-0 z-[110] flex flex-col items-center justify-center p-10 overflow-hidden"
-            style={{ background: '#481F73' }}
+            initial={{ opacity: 0, x: 80 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 80 }}
+            className="absolute top-0 right-0 bottom-0 z-[110] flex flex-col overflow-hidden"
+            style={{ width: '50%', background: 'rgba(72,31,115,0.96)', backdropFilter: 'blur(16px)', borderLeft: '2px solid rgba(102,180,178,0.25)', boxShadow: '-16px 0 60px rgba(0,0,0,0.5)' }}
           >
             <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#6A86AE 2px, transparent 2px)', backgroundSize: '40px 40px' }} />
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[80%] blur-[120px] rounded-full" style={{ background: 'rgba(102,180,178,0.06)' }} />
 
-            <div className="relative z-10 w-full max-w-[90vw] flex flex-col items-center">
-              <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="flex items-center gap-6 mb-12">
-                <div className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-2xl" style={{ background: '#66B4B2', boxShadow: '0 0 40px rgba(102,180,178,0.4)' }}>
-                  <Shield className="w-8 h-8 text-white" />
-                </div>
-                <h2 className="text-[5vw] font-black uppercase tracking-tighter italic text-white leading-none">
-                  Draft de <span style={{ color: '#66B4B2' }}>Alianzas</span>
-                </h2>
-              </motion.div>
-
-              <div className="grid grid-cols-4 gap-6 w-full">
-                {alliances.alliances.map((alliance: any, idx: number) => (
-                  <motion.div
-                    key={alliance.id}
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: idx * 0.1 }}
-                    className="backdrop-blur-md rounded-[40px] p-8 flex flex-col items-center shadow-xl relative overflow-hidden group"
-                    style={{ background: 'rgba(58,46,156,0.4)', border: '1px solid rgba(106,134,174,0.3)' }}
-                  >
-                    <div className="absolute top-0 left-0 w-full h-1" style={{ background: 'linear-gradient(to right, #66B4B2, #3A2E9C)' }} />
-                    <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-6 border shadow-inner" style={{ background: '#481F73', borderColor: 'rgba(106,134,174,0.4)' }}>
-                      <span className="text-2xl font-black italic" style={{ color: '#66B4B2' }}>{alliance.id}</span>
-                    </div>
-                    <div className="space-y-4 w-full">
-                      {alliance.teamNames.map((name: string, tIdx: number) => (
-                        <div key={tIdx} className="text-center">
-                          <div className="text-[10px] font-black uppercase tracking-widest mb-1" style={{ color: '#66B4B2' }}>Equipo {tIdx + 1}</div>
-                          <div className="text-xl font-black text-white uppercase tracking-tight leading-tight line-clamp-2">{name}</div>
-                          <div className="flex items-center justify-center gap-2 mt-1">
-                            <div className="text-[10px] font-mono font-bold" style={{ color: '#6A86AE' }}>#{alliance.teams[tIdx]}</div>
-                            {alliance.teamCountries?.[tIdx] && (
-                              <div className="text-[10px] font-black uppercase tracking-widest" style={{ color: '#6A86AE' }}>{alliance.teamCountries[tIdx]}</div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </motion.div>
-                ))}
+            {/* Header */}
+            <motion.div initial={{ y: -10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="relative z-10 flex items-center gap-4 px-8 py-5 shrink-0" style={{ borderBottom: '1px solid rgba(106,134,174,0.25)' }}>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-xl shrink-0" style={{ background: '#66B4B2', boxShadow: '0 0 24px rgba(102,180,178,0.5)' }}>
+                <Shield className="w-5 h-5 text-white" />
               </div>
-            </div>
+              <h2 className="text-xl font-black uppercase tracking-tighter italic text-white leading-none">
+                Draft de <span style={{ color: '#66B4B2' }}>Alianzas</span>
+              </h2>
+            </motion.div>
+
+            {/* Alliance list — auto-scrolling loop when content overflows */}
+            <AllianceScrollList alliances={alliances.alliances} />
           </motion.div>
         ) : revealedAwardTitle ? (
           <motion.div
             key="award"
-            initial={{ opacity: 0, y: 100 }}
+            initial={{ opacity: 0, y: 80 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -100 }}
-            className="absolute inset-0 z-[110] flex flex-col items-center justify-center p-20 text-center"
-            style={{ background: '#481F73' }}
+            exit={{ opacity: 0, y: 80 }}
+            className="absolute bottom-0 left-0 right-0 z-[110] flex items-center gap-8 px-10 py-6 overflow-hidden"
+            style={{ background: 'rgba(40,20,70,0.96)', backdropFilter: 'blur(16px)', borderTop: '2px solid rgba(224,128,34,0.5)', boxShadow: '0 -8px 60px rgba(224,128,34,0.15)' }}
           >
-            <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#fbbf24 2px, transparent 2px)', backgroundSize: '50px 50px' }} />
+            {/* Dot texture */}
+            <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#fbbf24 2px, transparent 2px)', backgroundSize: '40px 40px' }} />
+            {/* Sparkle particles confined to banner */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
-              {[...Array(20)].map((_, i) => (
+              {[...Array(8)].map((_, i) => (
                 <motion.div
                   key={i}
                   initial={{ opacity: 0, scale: 0 }}
-                  animate={{
-                    opacity: [0, 1, 0],
-                    scale: [0, 1, 0],
-                    x: [`${Math.random() * 100}%`, `${Math.random() * 100}%`],
-                    y: [`${Math.random() * 100}%`, `${Math.random() * 100}%`],
-                  }}
-                  transition={{ duration: 2 + Math.random() * 3, repeat: Infinity, delay: Math.random() * 5 }}
-                  className="absolute w-2 h-2 rounded-full blur-[2px]"
+                  animate={{ opacity: [0, 1, 0], scale: [0, 1, 0], x: [`${Math.random() * 100}%`, `${Math.random() * 100}%`], y: [`${Math.random() * 100}%`, `${Math.random() * 100}%`] }}
+                  transition={{ duration: 2 + Math.random() * 3, repeat: Infinity, delay: Math.random() * 4 }}
+                  className="absolute w-1.5 h-1.5 rounded-full blur-[1px]"
                   style={{ background: '#FDD116' }}
                 />
               ))}
             </div>
 
+            {/* Trophy icon */}
             <motion.div
               animate={{ rotate: [0, -5, 5, 0] }}
               transition={{ repeat: Infinity, duration: 4 }}
-              className="w-48 h-48 rounded-[50px] flex items-center justify-center mb-12 border-b-[16px]"
-              style={{ background: 'linear-gradient(135deg, #FDD116, #E08022)', borderColor: '#DC933A', boxShadow: '0 0 80px rgba(253,209,22,0.3)' }}
+              className="shrink-0 w-16 h-16 rounded-2xl flex items-center justify-center relative z-10 border-b-4"
+              style={{ background: 'linear-gradient(135deg, #FDD116, #E08022)', borderColor: '#DC933A', boxShadow: '0 0 30px rgba(253,209,22,0.4)' }}
             >
-              <Trophy className="w-24 h-24 text-white drop-shadow-lg" />
+              <Trophy className="w-8 h-8 text-white drop-shadow-lg" />
             </motion.div>
 
-            <h2 className="text-4xl font-black uppercase tracking-[0.5em] mb-4" style={{ color: '#E08022' }}>{revealedAwardTitle.name}</h2>
-            <div className="text-[2vw] font-bold uppercase tracking-widest mb-12" style={{ color: '#6A86AE' }}>Award Category</div>
+            {/* Award name + category */}
+            <div className="relative z-10 flex flex-col shrink-0">
+              <div className="text-xs font-black uppercase tracking-[0.3em]" style={{ color: '#6A86AE' }}>Award Category</div>
+              <div className="text-2xl font-black uppercase tracking-tight" style={{ color: '#E08022' }}>{revealedAwardTitle.name}</div>
+            </div>
 
-            <AnimatePresence mode="wait">
-              {revealedAwardTitle.revealedWinner ? (
-                <motion.div
-                  key="winner-revealed"
-                  initial={{ scale: 0.8, opacity: 0, y: 50 }}
-                  animate={{ scale: 1, opacity: 1, y: 0 }}
-                  className="backdrop-blur-xl p-16 rounded-[80px] border-4 shadow-2xl min-w-[60%] relative overflow-hidden"
-                  style={{ background: 'rgba(58,46,156,0.85)', borderColor: 'rgba(224,128,34,0.4)' }}
-                >
-                  <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(to top, rgba(224,128,34,0.1), transparent)' }} />
-                  <div className="text-[8vw] font-black text-white uppercase tracking-tighter leading-none mb-4 relative z-10">{revealedAwardTitle.teamName || '---'}</div>
-                  <div className="text-[4vw] font-mono font-black relative z-10" style={{ color: '#E08022' }}>TEAM #{revealedAwardTitle.teamNumber || '0000'}</div>
-                </motion.div>
-              ) : (
-                <motion.div key="winner-hidden" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-[20vh] flex items-center justify-center">
-                  <div className="text-[10vw] font-black uppercase tracking-[0.2em] italic opacity-20" style={{ color: '#3A2E9C' }}>???</div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {/* Divider */}
+            <div className="shrink-0 w-px self-stretch mx-2 relative z-10" style={{ background: 'rgba(106,134,174,0.4)' }} />
+
+            {/* Winner slot */}
+            <div className="relative z-10 flex-1 min-w-0">
+              <AnimatePresence mode="wait">
+                {revealedAwardTitle.revealedWinner ? (
+                  <motion.div key="winner-revealed" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="flex items-baseline gap-4 min-w-0">
+                    <div className="text-3xl font-black text-white uppercase tracking-tight truncate">{revealedAwardTitle.teamName || '---'}</div>
+                    <div className="text-lg font-mono font-black shrink-0" style={{ color: '#E08022' }}>#{revealedAwardTitle.teamNumber || '0000'}</div>
+                  </motion.div>
+                ) : (
+                  <motion.div key="winner-hidden" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-3">
+                    <div className="text-4xl font-black uppercase tracking-[0.3em] italic" style={{ color: 'rgba(58,46,156,0.6)' }}>???</div>
+                    <div className="text-xs font-black uppercase tracking-widest" style={{ color: '#6A86AE' }}>Por revelar</div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </motion.div>
         ) : isCeremonyMode ? (
           <motion.div
@@ -745,7 +1074,7 @@ export default function LegoTimerDisplay() {
             exit={{ opacity: 0 }}
             className="absolute inset-0 z-[100]"
           >
-            <BracketDisplay />
+            <BracketDisplayLive zoom={bracketZoom} />
           </motion.div>
         ) : timer.displayMode === 'sponsors' ? (
           <motion.div
@@ -762,16 +1091,27 @@ export default function LegoTimerDisplay() {
         ) : (
           <motion.div key="timer" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className={`h-full flex ${layoutPosition === 'bottom' ? 'flex-col-reverse' : 'flex-col'}`}>
 
-            {/* ── SCOREBOARD BAR ─────────────────────────────────────────────── */}
-            <ScoreboardBar
-              activeMatch={activeMatch}
-              timer={timer}
-              teams={teams}
-              layoutPosition={layoutPosition}
-              selectedField={selectedField}
-              isCritical={isCritical}
-              onFieldClick={() => setSelectedField(null)}
-            />
+            {selectedField === 'all' ? (
+              /* ── ALL-FIELDS MULTI-SCOREBOARD ─────────────────────────────── */
+              <AllFieldsBar
+                timer={timer}
+                teams={teams}
+                layoutPosition={layoutPosition}
+                isCritical={isCritical}
+                onFieldClick={() => setSelectedField(null)}
+              />
+            ) : (
+              /* ── SINGLE FIELD SCOREBOARD BAR ─────────────────────────────── */
+              <ScoreboardBar
+                activeMatch={activeMatch}
+                timer={timer}
+                teams={teams}
+                layoutPosition={layoutPosition}
+                selectedField={selectedField}
+                isCritical={isCritical}
+                onFieldClick={() => setSelectedField(null)}
+              />
+            )}
 
             {/* ── TRANSPARENT CAMERA FEED AREA ───────────────────────────────── */}
             <div className="flex-1 relative">
@@ -796,9 +1136,12 @@ export default function LegoTimerDisplay() {
           <SettingsWindow
             mode={chromaMode}
             layoutPosition={layoutPosition}
+            bracketZoom={bracketZoom}
             onChange={handleChromaChange}
             onPositionChange={handlePositionChange}
+            onBracketZoomChange={handleBracketZoomChange}
             onClose={handleSettingsToggle}
+            onSwitchField={() => setSelectedField(null)}
           />
         )}
       </AnimatePresence>
