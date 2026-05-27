@@ -151,20 +151,32 @@ Recomendado para torneos reales. Asegura que el sistema sea estable y no dependa
 
 ## 🌐 9. Acceso Remoto y LocalTunnel
 
-Si necesitas que alguien fuera de tu red Wi-Fi (por ejemplo, un juez remoto o público en internet) vea el marcador, puedes usar **LocalTunnel**.
+El sistema incluye una integración automática con **LocalTunnel** para exponer el scoreboard a internet sin configuraciones complejas.
 
-### Comando:
-```bash
-npx localtunnel --port 4321
+### Uso Automático:
+Al ejecutar `npm start`, el sistema iniciará automáticamente el túnel y mostrará la URL pública en la consola:
+```text
+- Public Tunnel: https://fll-score-2026.loca.lt
+```
+
+### Configuración de Subdominio:
+Puedes solicitar un subdominio específico (sujeto a disponibilidad) configurando la variable `TUNNEL_SUBDOMAIN` en tu archivo `.env`:
+```env
+TUNNEL_SUBDOMAIN=tu-nombre-de-evento
 ```
 
 ### ¿Para qué sirve?
-Este comando expone tu servidor local al internet público de forma segura y temporal.
+Este servicio expone tu servidor local al internet público de forma segura y temporal.
 1. **Túnel Seguro:** Crea una conexión entre el servidor de LocalTunnel y tu puerto `4321`.
-2. **URL Pública:** Te entregará una dirección web (ej: `https://fll-score-2026.loca.lt`) que cualquiera puede abrir en su navegador.
-3. **Sin Configuración de Router:** No necesitas abrir puertos en tu modem (Port Forwarding), lo cual es ideal para redes de hoteles o centros de convenciones donde no tienes acceso al router.
+2. **URL Pública:** Entrega una dirección web que cualquiera puede abrir en su navegador.
+3. **Sin Configuración de Router:** No necesitas abrir puertos en tu modem (Port Forwarding), ideal para redes restringidas.
 
-> **Importante:** LocalTunnel es solo para el Scoreboard visual. Los jueces deben estar preferiblemente en la misma red local para garantizar la mínima latencia posible en la carga de puntos.
+### Robustez:
+La lógica del túnel ha sido mejorada para:
+- **Auto-reinicio:** Si la conexión se pierde, el sistema intentará reconectarse automáticamente con un retraso exponencial.
+- **Persistencia:** Mantiene el túnel activo durante toda la sesión del servidor.
+
+> **Importante:** LocalTunnel es ideal para el Scoreboard visual. Los jueces y administradores deben estar preferiblemente en la misma red local para garantizar la mínima latencia y máxima confiabilidad en la carga de puntos.
 
 ---
 Desarrollado con estándares de ingeniería de software para garantizar un torneo justo y emocionante. 🤖🏆

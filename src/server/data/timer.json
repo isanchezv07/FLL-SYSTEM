@@ -2,7 +2,7 @@
   "timer": {
     "timeRemaining": 150,
     "isRunning": false,
-    "displayMode": "bracket",
+    "displayMode": "sound",
     "layoutPosition": "top",
     "fieldCount": 6,
     "fields": {
@@ -13,6 +13,6 @@
       "cancha5": null,
       "cancha6": null
     },
-    "updatedAt": "2026-05-27T08:26:02.086Z"
+    "updatedAt": "2026-05-27T22:55:48.179Z"
   }
 }

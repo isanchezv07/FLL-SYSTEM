@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { socket } from "@/lib/socket";
 import MatchTimer from "@/components/game/MatchTimer";
-import { Monitor, ChevronRight, Hash, Users, Map as MapIcon, RotateCcw } from "lucide-react";
+import { Monitor, ChevronRight, Hash, Users, Map as MapIcon, RotateCcw, ShieldCheck, CheckCircle2 } from "lucide-react";
 
 const mapMarkers = [
   { id: "1", top: "40%", left: "5%", title: "Misión 01: Surface Brushing" },
@@ -27,6 +27,7 @@ export default function InteractiveMap() {
   const [selectedMatchId, setSelectedMatchId] = useState("");
   const [selectedTeam, setSelectedTeam] = useState("");
   const [isConfigured, setIsConfigured] = useState(false);
+  const [isInspectionOk, setIsInspectionOk] = useState(false);
 
   useEffect(() => {
     fetchMatches();
@@ -37,22 +38,36 @@ export default function InteractiveMap() {
       setSelectedTeam(storedTeam);
       setIsConfigured(true);
     }
-    socket.on("matchesUpdate", fetchMatches);
-    socket.on("timerUpdate", (data) => setTimerState(data));
-    socket.on("tournamentReset", () => {
+
+    const onTimerUpdate = (data: any) => setTimerState(data);
+    const onTournamentReset = () => {
       localStorage.removeItem("activeMatchId");
       localStorage.removeItem("activeTeam");
       setSelectedMatchId("");
       setSelectedTeam("");
       setIsConfigured(false);
-    });
+    };
+
+    socket.on("matchesUpdate", fetchMatches);
+    socket.on("timerUpdate", onTimerUpdate);
+    socket.on("tournamentReset", onTournamentReset);
+    
     socket.emit("getTimer");
+
     return () => { 
       socket.off("matchesUpdate", fetchMatches); 
-      socket.off("timerUpdate");
-      socket.off("tournamentReset");
+      socket.off("timerUpdate", onTimerUpdate);
+      socket.off("tournamentReset", onTournamentReset);
     };
   }, []);
+
+  useEffect(() => {
+    if (selectedMatchId && selectedTeam) {
+      const match = matches.find(m => m.id === selectedMatchId);
+      const teamMissions = match?.[`missions${selectedTeam}`];
+      setIsInspectionOk(teamMissions?.inspection === "yes" || teamMissions?.inspection === true);
+    }
+  }, [matches, selectedMatchId, selectedTeam]);
 
   const fetchMatches = async () => {
     try {
@@ -67,6 +82,24 @@ export default function InteractiveMap() {
       localStorage.setItem("activeMatchId", selectedMatchId);
       localStorage.setItem("activeTeam", selectedTeam);
       setIsConfigured(true);
+    }
+  };
+
+  const toggleInspection = async () => {
+    if (!selectedMatchId || !selectedTeam) return;
+    const nextVal = !isInspectionOk;
+    setIsInspectionOk(nextVal);
+    
+    try {
+      await fetch(`/api/matches/${selectedMatchId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          [`missions${selectedTeam}`]: { inspection: nextVal ? "yes" : false }
+        }),
+      });
+    } catch (e) {
+      fetchMatches();
     }
   };
 
@@ -214,12 +247,27 @@ export default function InteractiveMap() {
             <div className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-0.5">Equipo Activo</div>
             <div className="text-sm font-black text-gray-800 uppercase tracking-tight truncate">{currentMatch?.[`team${selectedTeam}`] || '—'}</div>
           </div>
-          <button 
-            onClick={() => setIsConfigured(false)}
-            className="flex items-center gap-2 text-[9px] font-black bg-white hover:bg-gray-50 text-gray-400 hover:text-[#CE1126] px-5 py-3 rounded-[18px] uppercase tracking-[0.15em] transition-all border border-gray-200 active:scale-95 shadow-sm"
-          >
-            <RotateCcw className="w-3 h-3" /> Cambiar
-          </button>
+          
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={toggleInspection}
+              className={`flex items-center gap-3 px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all active:scale-95 shadow-md border ${
+                isInspectionOk 
+                ? 'bg-[#006847] border-[#006847] text-white' 
+                : 'bg-white border-gray-200 text-gray-400 hover:border-[#006847] hover:text-[#006847]'
+              }`}
+            >
+              <ShieldCheck className={`w-4 h-4 ${isInspectionOk ? 'animate-bounce' : ''}`} />
+              {isInspectionOk ? 'Inspección OK' : 'Inspección'}
+            </button>
+
+            <button 
+              onClick={() => setIsConfigured(false)}
+              className="flex items-center gap-2 text-[9px] font-black bg-white hover:bg-gray-50 text-gray-400 hover:text-[#CE1126] px-5 py-3 rounded-[18px] uppercase tracking-[0.15em] transition-all border border-gray-200 active:scale-95 shadow-sm"
+            >
+              <RotateCcw className="w-3 h-3" /> Cambiar
+            </button>
+          </div>
         </div>
       </div>
 

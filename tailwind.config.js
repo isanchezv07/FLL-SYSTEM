@@ -9,9 +9,16 @@ export default {
           '0%': { transform: 'translateY(0%)' },
           '100%': { transform: 'translateY(-100%)' },
         },
+        scan: {
+          '0%': { transform: 'translateY(-100%)', opacity: 0 },
+          '50%': { opacity: 0.5 },
+          '100%': { transform: 'translateY(200%)', opacity: 0 },
+        }
       },
       animation: {
         'scroll-up': 'scrollUp 60s linear infinite',
+        'scan': 'scan 3s linear infinite',
+        'spin-slow': 'spin 8s linear infinite',
       },
     },
   },

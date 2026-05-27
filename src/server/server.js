@@ -498,8 +498,14 @@ const startServerTimer = () => {
 };
 
 // Estado de volumen global
-let globalVolume = 0;
-let isCaptureActive = false;
+let teamVolumes = {
+  blue: 0,
+  red: 0
+};
+let teamCaptureStatus = {
+  blue: false,
+  red: false
+};
 
 if (process.env.NODE_ENV !== 'test') {
 io.on('connection', (socket) => {
@@ -508,8 +514,8 @@ io.on('connection', (socket) => {
   startServerTimer();
 
   // Enviar estado inicial al cliente que se acaba de conectar
-  socket.emit('volume_update', globalVolume);
-  socket.emit('display_status_update', isCaptureActive ? 'LIVE' : 'READY');
+  socket.emit('volume_update_dual', teamVolumes);
+  socket.emit('display_status_update_dual', teamCaptureStatus);
   
   // ... resto de manejadores
   socket.on('getTimer', async () => {
@@ -593,15 +599,30 @@ io.on('connection', (socket) => {
   });
 
   // Recibir volumen desde un cliente (SoundSource) y retransmitirlo a todos
-  socket.on('sound_volume', (volume) => {
-    globalVolume = volume;
-    io.emit('volume_update', globalVolume);
+  socket.on('sound_volume', (data) => {
+    // data puede ser un número (legacy) o un objeto { team, volume }
+    if (typeof data === 'number') {
+      teamVolumes.blue = data; // fallback a azul
+    } else if (data && data.team) {
+      teamVolumes[data.team] = data.volume;
+    }
+    io.emit('volume_update_dual', teamVolumes);
   });
 
   // Notificar a todos cuando alguien empieza o detiene la captura
-  socket.on('capture_state', (isActive) => {
-    isCaptureActive = isActive;
-    io.emit('display_status_update', isActive ? 'LIVE' : 'READY');
+  socket.on('capture_state', (data) => {
+    // data puede ser booleano (legacy) o un objeto { team, isActive }
+    if (typeof data === 'boolean') {
+      teamCaptureStatus.blue = data;
+    } else if (data && data.team) {
+      teamCaptureStatus[data.team] = data.isActive;
+    }
+    io.emit('display_status_update_dual', teamCaptureStatus);
+  });
+
+  socket.on('reset_peaks', () => {
+    console.log('[SOCKET] Comando recibido: reset_peaks');
+    io.emit('reset_peaks');
   });
 });
 }

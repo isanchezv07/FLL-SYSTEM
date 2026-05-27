@@ -30,18 +30,24 @@ export default function AllianceSelection({ onClose }: { onClose: () => void }) 
   useEffect(() => {
     fetchTeams();
     fetchRanking();
-    socket.on('timerUpdate', (data) => {
+
+    const onTimerUpdate = (data: any) => {
       setTimerState(data);
-    });
-    socket.on('alliancesUpdate', (data) => {
+    };
+    const onAlliancesUpdate = (data: any) => {
       if (data) {
         setAlliancesData(data);
       }
-    });
+    };
+
+    socket.on('timerUpdate', onTimerUpdate);
+    socket.on('alliancesUpdate', onAlliancesUpdate);
+    
     socket.emit('getAlliances');
+
     return () => {
-      socket.off('timerUpdate');
-      socket.off('alliancesUpdate');
+      socket.off('timerUpdate', onTimerUpdate);
+      socket.off('alliancesUpdate', onAlliancesUpdate);
     };
   }, []);
 

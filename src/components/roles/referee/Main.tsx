@@ -73,15 +73,17 @@ export default function HeadLegoTimer() {
   };
 
   useEffect(() => {
-    socket.on('timerUpdate', (timerData: TimerUpdate) => {
+    const onTimerUpdate = (timerData: TimerUpdate) => {
       setTimeRemaining(timerData.timeRemaining);
       setIsRunning(timerData.isRunning);
-    });
+    };
+
+    socket.on('timerUpdate', onTimerUpdate);
 
     socket.emit('getTimer');
     
     return () => {
-      socket.off('timerUpdate');
+      socket.off('timerUpdate', onTimerUpdate);
     };
   }, []);
 

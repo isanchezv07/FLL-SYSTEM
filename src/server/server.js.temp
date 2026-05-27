@@ -1,0 +1,27 @@
+  // Notificar a todos cuando alguien empieza o detiene la captura
+  socket.on('capture_state', (data) => {
+    // data puede ser booleano (legacy) o un objeto { team, isActive }
+    if (typeof data === 'boolean') {
+      teamCaptureStatus.blue = data;
+    } else if (data && data.team) {
+      teamCaptureStatus[data.team] = data.isActive;
+    }
+    io.emit('display_status_update_dual', teamCaptureStatus);
+  });
+
+  socket.on('reset_peaks', () => {
+    console.log('[SOCKET] Comando recibido: reset_peaks');
+    io.emit('reset_peaks');
+  });
+});
+}
+
+const startServer = async () => {
+  await initMatchesDB(); 
+  await initBracketsDB(); 
+  await initTimerDB(); 
+  await initAwardsDB(); 
+  await initAlliancesDB();
+  await initQualisDB();
+  httpServer.listen(3000, '0.0.0.0', () => console.log(`LEGO Engine Online on port 3000`));
+};

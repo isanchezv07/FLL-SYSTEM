@@ -128,14 +128,13 @@ function AllianceColumn({ missions, color }: {
   missions: MissionInfo[], 
   color: 'blue' | 'red',
 }) {
-  const visibleMissions = missions.filter(m => m.isStarted);
   const completedCount = missions.filter(m => m.isCompleted).length;
   const progress = (completedCount / missions.length) * 100;
   
   return (
     <div className="flex-1 flex flex-col relative mission-grid p-4">
       {/* HUD Header */}
-      <div className="mb-8 relative px-2">
+      <div className="mb-6 relative px-2">
         <div className="flex justify-between items-end mb-2">
            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Alliance Progress</span>
            <span className={`text-sm font-black font-mono ${color === 'blue' ? 'text-blue-600' : 'text-red-600'}`}>{Math.round(progress)}%</span>
@@ -151,72 +150,70 @@ function AllianceColumn({ missions, color }: {
       </div>
       
       {/* Dynamic Missions Grid */}
-      <div className="flex-1 overflow-y-auto pr-4 custom-scrollbar grid grid-cols-3 gap-6 content-start pb-10">
+      <div className="flex-1 overflow-y-auto pr-4 custom-scrollbar grid grid-cols-3 gap-4 content-start pb-10">
         <AnimatePresence mode="popLayout">
-          {visibleMissions.map((m) => (
+          {missions.map((m) => (
             <motion.div 
               key={m.id}
               layout
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 400 }}
-              className={`relative flex flex-col items-center justify-between p-6 rounded-[40px] border transition-all duration-500 ${
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ 
+                scale: 1, 
+                opacity: m.isStarted ? 1 : 0.4,
+                y: 0 
+              }}
+              className={`relative flex flex-col items-center justify-between p-4 rounded-[30px] border transition-all duration-500 ${
                 m.isCompleted 
-                  ? 'bg-white border-emerald-200 shadow-[0_20px_40px_rgba(16,185,129,0.1)]' 
-                  : 'bg-white border-slate-100 shadow-[0_10px_30px_rgba(0,0,0,0.03)]'
+                  ? 'bg-white border-emerald-200 shadow-[0_15px_30px_rgba(16,185,129,0.1)]' 
+                  : m.isStarted
+                  ? 'bg-white border-blue-100 shadow-[0_10px_20px_rgba(59,130,246,0.05)]'
+                  : 'bg-slate-50/50 border-slate-100 opacity-40 grayscale'
               }`}
             >
               {/* Mission ID Badge */}
-              <div className={`absolute -top-3 -left-3 w-10 h-10 rounded-2xl flex items-center justify-center text-sm font-black shadow-lg border-2 ${
+              <div className={`absolute -top-2 -left-2 w-8 h-8 rounded-xl flex items-center justify-center text-[10px] font-black shadow-md border-2 ${
                 m.isCompleted 
                   ? 'bg-emerald-500 border-emerald-400 text-white' 
-                  : 'bg-slate-800 border-slate-700 text-white'
+                  : m.isStarted
+                  ? 'bg-blue-600 border-blue-500 text-white'
+                  : 'bg-slate-300 border-slate-200 text-white'
               }`}>
                 {m.id.padStart(2, '0')}
               </div>
 
-              <div className="flex-1 flex flex-col items-center justify-center text-center mt-2">
-                <div className={`text-[11px] font-black uppercase tracking-wider leading-tight mb-2 ${m.isCompleted ? 'text-slate-800' : 'text-slate-500'}`}>
+              <div className="flex-1 flex flex-col items-center justify-center text-center mt-1">
+                <div className={`text-[9px] font-black uppercase tracking-wider leading-tight mb-1 ${m.isCompleted ? 'text-slate-800' : 'text-slate-500'}`}>
                   {m.title}
                 </div>
                 
-                <div className={`text-3xl font-black font-mono tracking-tighter ${m.isCompleted ? 'text-emerald-500' : 'text-slate-300'}`}>
-                  {m.isCompleted ? `+${m.points}` : `+${m.points}`}
+                <div className={`text-2xl font-black font-mono tracking-tighter ${m.isCompleted ? 'text-emerald-500' : m.isStarted ? 'text-blue-600' : 'text-slate-300'}`}>
+                  {m.points > 0 ? `+${m.points}` : '0'}
                 </div>
               </div>
 
               {/* Bottom Status Tag */}
-              <div className={`mt-4 px-4 py-1 rounded-full text-[8px] font-black uppercase tracking-[0.2em] border ${
+              <div className={`mt-2 px-3 py-0.5 rounded-full text-[7px] font-black uppercase tracking-[0.2em] border ${
                 m.isCompleted 
                   ? 'bg-emerald-50 border-emerald-100 text-emerald-600' 
-                  : 'bg-slate-50 border-slate-100 text-slate-400'
+                  : m.isStarted
+                  ? 'bg-blue-50 border-blue-100 text-blue-600'
+                  : 'bg-slate-100 border-slate-200 text-slate-400'
               }`}>
-                {m.isCompleted ? 'Perfect' : 'In Progress'}
+                {m.isCompleted ? 'Perfect' : m.isStarted ? 'In Progress' : 'Pending'}
               </div>
 
               {/* Decorative Completed Check */}
               {m.isCompleted && (
                 <motion.div 
                   initial={{ scale: 0 }} animate={{ scale: 1 }}
-                  className="absolute -top-2 -right-2 bg-emerald-500 text-white w-6 h-6 rounded-full flex items-center justify-center shadow-lg border-2 border-white"
+                  className="absolute -top-2 -right-2 bg-emerald-500 text-white w-5 h-5 rounded-full flex items-center justify-center shadow-lg border-2 border-white"
                 >
-                  <CheckCircle2 size={12} strokeWidth={4} />
+                  <CheckCircle2 size={10} strokeWidth={4} />
                 </motion.div>
               )}
             </motion.div>
           ))}
         </AnimatePresence>
-
-        {visibleMissions.length === 0 && (
-          <div className="col-span-3 mt-10 flex flex-col items-center justify-center p-12 border-4 border-dashed border-slate-100 rounded-[60px] bg-slate-50/50">
-             <div className="w-20 h-20 rounded-full bg-white shadow-xl border border-slate-100 flex items-center justify-center mb-6">
-                <Zap className="text-slate-200" size={32} />
-             </div>
-             <h3 className="text-slate-300 font-black text-xl uppercase tracking-[0.3em]">Wait for Action</h3>
-             <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-2 opacity-50">Referee is preparing the score</p>
-          </div>
-        )}
       </div>
 
       <style jsx>{`

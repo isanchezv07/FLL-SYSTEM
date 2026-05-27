@@ -1,3 +1,80 @@
 {
-  "matches": []
+  "matches": [
+    {
+      "id": "match-1-1",
+      "bracketId": "1779897333963",
+      "round": 1,
+      "position": 1,
+      "teamA1": "26001",
+      "teamA2": "26034",
+      "teamB1": "26002",
+      "teamB2": "26035",
+      "scoreA": 40,
+      "scoreB": 50,
+      "status": "finished",
+      "nextMatchId": "match-2-1",
+      "missionsA1": {
+        "m01_soil": 4,
+        "m01_brush": false
+      },
+      "missionsA2": {},
+      "missionsB1": {
+        "m05_floor": "yes",
+        "m06_ore": 2
+      },
+      "missionsB2": {},
+      "date": "2026-05-27T15:55:33.964Z"
+    },
+    {
+      "id": "match-1-2",
+      "bracketId": "1779897333963",
+      "round": 1,
+      "position": 2,
+      "teamA1": "26003",
+      "teamA2": "26036",
+      "teamB1": "26004",
+      "teamB2": "26037",
+      "scoreA": 110,
+      "scoreB": 0,
+      "status": "finished",
+      "nextMatchId": "match-2-1",
+      "missionsA1": {
+        "m03_minecart": false,
+        "m03_bonus": false,
+        "m04_artifact": false,
+        "m04_support": false,
+        "m05_floor": "yes",
+        "precision_tokens": 6,
+        "m10_tipped": "yes",
+        "m10_pan": "yes"
+      },
+      "missionsA2": {},
+      "missionsB1": {},
+      "missionsB2": {},
+      "date": "2026-05-27T15:55:33.965Z"
+    },
+    {
+      "id": "match-2-1",
+      "bracketId": "1779897333963",
+      "round": 2,
+      "position": 1,
+      "teamA1": "26002",
+      "teamA2": "26035",
+      "teamB1": "26003",
+      "teamB2": "26036",
+      "scoreA": 0,
+      "scoreB": 0,
+      "status": "in_progress",
+      "nextMatchId": null,
+      "missionsA1": {
+        "inspection": false
+      },
+      "missionsA2": {
+        "inspection": false
+      },
+      "missionsB1": {},
+      "missionsB2": {},
+      "date": "2026-05-27T15:55:33.965Z"
+    }
+  ]
 }

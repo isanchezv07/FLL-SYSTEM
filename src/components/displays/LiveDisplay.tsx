@@ -686,15 +686,15 @@ export default function LegoTimerDisplay() {
   };
 
   useEffect(() => {
-    socket.on('timerUpdate', (data) => {
+    const onTimerUpdate = (data: any) => {
       setTimer(data);
       timerFieldsRef.current = data.fields || {};
-    });
-    socket.on('alliancesUpdate', (data) => setAlliances(data));
-    socket.on('matchesUpdate', () => fetchActiveMatch());
-    socket.on('teamsUpdate', () => fetchTeams());
-    socket.on('awardsUpdate', (data) => setAwardsData(data));
-    socket.on('qualisUpdate', (data) => {
+    };
+    const onAlliancesUpdate = (data: any) => setAlliances(data);
+    const onMatchesUpdate = () => fetchActiveMatch();
+    const onTeamsUpdate = () => fetchTeams();
+    const onAwardsUpdate = (data: any) => setAwardsData(data);
+    const onQualisUpdate = (data: any) => {
       const prev = qualisDataRef.current;
       const currentMatch = data.matches[data.currentIndex];
       const prevMatch = prev.matches[prev.currentIndex];
@@ -715,9 +715,9 @@ export default function LegoTimerDisplay() {
       
       qualisDataRef.current = data;
       setQualisData(data);
-    });
+    };
 
-    socket.on('matchUpdate', (updatedMatch: any) => {
+    const onMatchUpdate = (updatedMatch: any) => {
       if (activeMatchRef.current?.id === updatedMatch.id) {
         setActiveMatch((prev: any) => {
           const newState = { ...prev, ...updatedMatch };
@@ -725,9 +725,9 @@ export default function LegoTimerDisplay() {
           return newState;
         });
       }
-    });
+    };
 
-    socket.on('matchWinnerDeclared', (data: WinnerInfo) => {
+    const onMatchWinnerDeclared = (data: WinnerInfo) => {
       const currentActive = activeMatchRef.current;
       if (currentActive?.teamA1 === data.team1 || currentActive?.teamB1 === data.team1) {
         confetti.reset();
@@ -755,10 +755,21 @@ export default function LegoTimerDisplay() {
           });
         }, 500);
       }
-    });
+    };
 
-    socket.on("connect", () => setIsConnected(true));
-    socket.on("disconnect", () => setIsConnected(false));
+    const onConnect = () => setIsConnected(true);
+    const onDisconnect = () => setIsConnected(false);
+
+    socket.on('timerUpdate', onTimerUpdate);
+    socket.on('alliancesUpdate', onAlliancesUpdate);
+    socket.on('matchesUpdate', onMatchesUpdate);
+    socket.on('teamsUpdate', onTeamsUpdate);
+    socket.on('awardsUpdate', onAwardsUpdate);
+    socket.on('qualisUpdate', onQualisUpdate);
+    socket.on('matchUpdate', onMatchUpdate);
+    socket.on('matchWinnerDeclared', onMatchWinnerDeclared);
+    socket.on("connect", onConnect);
+    socket.on("disconnect", onDisconnect);
 
     fetchActiveMatch();
     fetchQualis();
@@ -767,17 +778,19 @@ export default function LegoTimerDisplay() {
     socket.emit('getQualis');
 
     return () => {
-      socket.off('timerUpdate');
-      socket.off('alliancesUpdate');
-      socket.off('matchesUpdate');
-      socket.off('awardsUpdate');
-      socket.off('qualisUpdate');
-      socket.off('matchUpdate');
-      socket.off('matchWinnerDeclared');
-      socket.off('connect');
-      socket.off('disconnect');
+      socket.off('timerUpdate', onTimerUpdate);
+      socket.off('alliancesUpdate', onAlliancesUpdate);
+      socket.off('matchesUpdate', onMatchesUpdate);
+      socket.off('teamsUpdate', onTeamsUpdate);
+      socket.off('awardsUpdate', onAwardsUpdate);
+      socket.off('qualisUpdate', onQualisUpdate);
+      socket.off('matchUpdate', onMatchUpdate);
+      socket.off('matchWinnerDeclared', onMatchWinnerDeclared);
+      socket.off('connect', onConnect);
+      socket.off('disconnect', onDisconnect);
     };
   }, [fetchActiveMatch, fetchQualis, triggerQualisConfetti]);
+
 
   useEffect(() => {
     const revealedAward = awardsData?.awards?.find((a: any) => a.revealedWinner);

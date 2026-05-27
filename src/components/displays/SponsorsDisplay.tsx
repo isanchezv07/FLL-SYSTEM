@@ -96,7 +96,7 @@ export default function SponsorsDisplay() {
           </div>
 
           {/* 3. Sección de la Imagen del Carrusel: Siempre hace fade out/in */}
-          <div className={`flex-1 flex items-center justify-center w-full z-10 transition-all duration-1000 ${isLast ? 'max-h-[60vh] -translate-y-24' : 'max-h-[45vh] translate-y-10'}`}>
+          <div className={`flex-1 flex items-center justify-center w-full z-10 transition-all duration-1000 ${isLast ? 'max-h-[60vh] -translate-y-6' : 'max-h-[45vh] translate-y-10'}`}>
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentIndex}

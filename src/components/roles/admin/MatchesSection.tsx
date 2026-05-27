@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { socket } from '@/lib/socket';
-import { Trophy, Zap, Hash, Layers, RefreshCw, X, ChevronRight, Settings2, Target, Info, Play, Pause, RotateCcw, ChevronLeft, Users, Shield, Image } from 'lucide-react';
+import { Trophy, Zap, Hash, Layers, RefreshCw, X, ChevronRight, Settings2, Target, Info, Play, Pause, RotateCcw, ChevronLeft, Users, Shield, Image, Volume2 } from 'lucide-react';
 import { missionBounds, missionValueFromMissionsFlat, missionValueToPatch } from '@/lib/fllMissionMapping';
 import AllianceSelection from './AllianceSelection';
 
@@ -45,7 +45,7 @@ interface Match {
 interface TimerState {
   fields: Record<string, string | null>;
   fieldCount: number;
-  displayMode?: 'live' | 'bracket' | 'sponsors';
+  displayMode?: 'live' | 'bracket' | 'sponsors' | 'sound';
   layoutPosition?: 'top' | 'bottom';
 }
 
@@ -101,17 +101,22 @@ export default function MatchesSection() {
     fetchMatches();
     fetchAlliances();
     const handler = () => fetchMatches();
-    socket.on('matchesUpdate', handler);
-    socket.on('alliancesUpdate', (data) => {
+    const onAlliancesUpdate = (data: any) => {
       if (data && data.alliances) setAlliances(data.alliances);
-    });
-    socket.on('timerUpdate', (data) => setTimerState(data));
+    };
+    const onTimerUpdate = (data: any) => setTimerState(data);
+
+    socket.on('matchesUpdate', handler);
+    socket.on('alliancesUpdate', onAlliancesUpdate);
+    socket.on('timerUpdate', onTimerUpdate);
+    
     socket.emit('getTimer');
     socket.emit('getAlliances');
+
     return () => { 
       socket.off('matchesUpdate', handler); 
-      socket.off('alliancesUpdate');
-      socket.off('timerUpdate');
+      socket.off('alliancesUpdate', onAlliancesUpdate);
+      socket.off('timerUpdate', onTimerUpdate);
     };
   }, []);
 
@@ -406,6 +411,17 @@ export default function MatchesSection() {
                 >
                   <Image className="w-3 h-3" />
                   {timerState.displayMode === 'sponsors' ? 'Showing Sponsors' : 'Show Sponsors'}
+                </button>
+                <button 
+                  onClick={() => {
+                    const nextMode = timerState.displayMode === 'sound' ? 'live' : 'sound';
+                    socket.emit('updateTimer', { displayMode: nextMode });
+                    setTimerState(prev => ({ ...prev, displayMode: nextMode }));
+                  }}
+                  className={`flex items-center gap-2 px-3 py-1 rounded transition-all font-bold ${timerState.displayMode === 'sound' ? 'bg-amber-600 text-white shadow-lg' : 'text-amber-600 dark:text-amber-400 hover:bg-slate-100 dark:hover:bg-slate-800 border border-amber-600/20'}`}
+                >
+                  <Volume2 className="w-3 h-3" />
+                  {timerState.displayMode === 'sound' ? 'Showing Sound' : 'Show Sound'}
                 </button>
               </div>
               <div className="w-[1px] h-3 bg-slate-200 dark:bg-slate-800" />
@@ -768,6 +784,8 @@ function DetailedTeamBox({ team, name, matchId, matches, onUpdate, color }: any)
   const accentColor = color === 'blue' ? '#0066B3' : '#ED1C24';
   const shadowColor = color === 'blue' ? 'rgba(0,102,179,0.2)' : 'rgba(237,28,36,0.2)';
 
+  const isInspectionOk = missions.inspection === 'yes' || missions.inspection === true;
+
   return (
     <div className="bg-white dark:bg-slate-900 border border-white dark:border-slate-800 rounded-[48px] p-8 space-y-8 relative overflow-hidden group shadow-xl shadow-gray-200/50 dark:shadow-none transition-all hover:shadow-2xl hover:scale-[1.02]">
       <div className="absolute top-0 left-0 w-full h-1.5" style={{ backgroundColor: accentColor, opacity: 0.3 }} />
@@ -777,6 +795,35 @@ function DetailedTeamBox({ team, name, matchId, matches, onUpdate, color }: any)
           <h4 className="text-2xl font-black uppercase tracking-tighter italic text-gray-900 dark:text-white leading-none">{name}</h4>
         </div>
       </div>
+
+      <div className="relative z-10">
+        <button
+          onClick={async () => {
+            const nextVal = !isInspectionOk;
+            try {
+              await fetch(`/api/matches/${matchId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ [`missions${team}`]: { inspection: nextVal ? 'yes' : false } })
+              });
+            } catch (e) { }
+          }}
+          className={`w-full p-4 rounded-2xl border transition-all flex items-center justify-between group/insp ${
+            isInspectionOk 
+            ? 'bg-[#006847]/10 border-[#006847]/30 text-[#006847]' 
+            : 'bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-400'
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            <ShieldCheck className={`w-5 h-5 ${isInspectionOk ? 'text-[#006847]' : 'text-slate-300'}`} />
+            <span className="text-xs font-black uppercase tracking-widest">Equipment Inspection</span>
+          </div>
+          <div className={`w-10 h-6 rounded-full relative transition-all ${isInspectionOk ? 'bg-[#006847]' : 'bg-slate-200 dark:bg-slate-800'}`}>
+            <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${isInspectionOk ? 'left-5' : 'left-1'}`} />
+          </div>
+        </button>
+      </div>
+
       <div className="space-y-3 relative z-10">
         <div className="grid grid-cols-1 gap-3">
           {missionList.map(mId => {

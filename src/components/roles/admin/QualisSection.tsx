@@ -30,15 +30,20 @@ export default function QualisSection() {
 
   useEffect(() => {
     fetchQualis();
-    socket.on('qualisUpdate', (data: QualisData) => {
+    const onQualisUpdate = (data: QualisData) => {
       setQualisData(data);
-    });
-    socket.on('timerUpdate', (data) => setTimerState(data));
+    };
+    const onTimerUpdate = (data: any) => setTimerState(data);
+
+    socket.on('qualisUpdate', onQualisUpdate);
+    socket.on('timerUpdate', onTimerUpdate);
+    
     socket.emit('getQualis');
     socket.emit('getTimer');
+
     return () => {
-      socket.off('qualisUpdate');
-      socket.off('timerUpdate');
+      socket.off('qualisUpdate', onQualisUpdate);
+      socket.off('timerUpdate', onTimerUpdate);
     };
   }, []);
 

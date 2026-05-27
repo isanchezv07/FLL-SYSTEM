@@ -1,4 +1,4 @@
-import { io } from 'socket.io-client';
+import { io, Socket } from 'socket.io-client';
 
 const isBrowser = typeof window !== 'undefined';
 
@@ -7,40 +7,67 @@ export type DummySocket = {
   off: (...args: any[]) => void;
   emit: (...args: any[]) => void;
   connected: boolean;
+  id?: string;
 };
 
-export const socket: DummySocket | ReturnType<typeof io> = isBrowser
-  ? io({
-      // FORZAMOS solo websocket. Esto evita el "xhr poll error" 
-      // porque deja de hacer peticiones HTTP constantes.
-      transports: ['websocket'], 
-      upgrade: false,
-      reconnection: true,
-      reconnectionAttempts: Infinity,
-      reconnectionDelay: 500, // Reintentar más rápido
-      reconnectionDelayMax: 2000,
-      timeout: 10000,
-      path: '/socket.io/',
-    })
-  : {
+// Extender el objeto window para almacenar la instancia del socket
+declare global {
+  interface Window {
+    _fll_socket_instance?: Socket;
+  }
+}
+
+const createSocket = (): DummySocket | Socket => {
+  if (!isBrowser) {
+    return {
       on: () => {},
       off: () => {},
       emit: () => {},
       connected: false,
     };
+  }
 
-if (isBrowser) {
-  (socket as ReturnType<typeof io>).on('connect', () => {
-    console.log('✅ SOCKET CONECTADO: ' + (socket as any).id);
+  // Si ya existe una instancia en window, la reutilizamos
+  if (window._fll_socket_instance) {
+    return window._fll_socket_instance;
+  }
+
+  console.log('🔌 Iniciando nueva conexión de socket...');
+  
+  const instance = io({
+    // Permitimos polling y websocket para máxima compatibilidad
+    transports: ['polling', 'websocket'], 
+    upgrade: true,
+    reconnection: true,
+    reconnectionAttempts: Infinity,
+    reconnectionDelay: 1000,
+    reconnectionDelayMax: 5000,
+    timeout: 20000,
+    path: '/socket.io/',
+    // Aseguramos que solo haya una conexión activa por cliente
+    rememberUpgrade: true,
   });
 
-  (socket as ReturnType<typeof io>).on('connect_error', (err) => {
-    console.error('❌ FALLO DE CONEXIÓN: ' + err.message);
-    // Si falla websocket, intentamos habilitar polling como último recurso después de 5 segundos
-    if (err.message === 'xhr poll error' || err.message === 'websocket error') {
-       setTimeout(() => {
-         (socket as any).io.opts.transports = ['polling', 'websocket'];
-       }, 5000);
-    }
+  instance.on('connect', () => {
+    console.log('✅ SOCKET CONECTADO: ' + instance.id);
   });
-}
+
+  instance.on('disconnect', (reason) => {
+    console.log('ℹ️ SOCKET DESCONECTADO: ' + reason);
+  });
+
+  instance.on('connect_error', (err) => {
+    console.error('❌ FALLO DE CONEXIÓN SOCKET: ' + err.message);
+  });
+
+  instance.on('reconnect_attempt', (attempt) => {
+    console.log('🔄 Reintentando conexión socket (intento ' + attempt + ')...');
+  });
+
+  // Guardamos la instancia en window para futuras importaciones
+  window._fll_socket_instance = instance;
+  
+  return instance;
+};
+
+export const socket = createSocket();
