@@ -1,5 +1,5 @@
 {
-  "active": false,
+  "active": true,
   "alliances": [
     {
       "id": 1,
@@ -497,5 +497,5 @@
       ]
     }
   ],
-  "updatedAt": "2026-05-27T04:05:13.409Z"
+  "updatedAt": "2026-05-27T08:26:02.220Z"
 }

@@ -16,7 +16,7 @@ import SponsorsDisplay from './SponsorsDisplay';
 type ChromaMode = 'transparent' | 'green' | 'magenta' | 'none';
 
 const CHROMA_STYLES: Record<ChromaMode, React.CSSProperties> = {
-  none:        { background: '#f8fafc' },
+  none:        { background: '#481F73' },
   transparent: { background: 'transparent' },
   green:       { background: '#00ff00' },
   magenta:     { background: '#ff00ff' },
@@ -41,6 +41,98 @@ interface WinnerInfo {
   score: number;
 }
 
+// ─── Alliance grid with loop-scroll when alliances overflow ─────────────────
+function BigAllianceGrid({ alliances }: { alliances: any[] }) {
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const innerRef    = useRef<HTMLDivElement>(null);
+  const [shouldScroll, setShouldScroll] = useState(false);
+  const [contentH, setContentH]         = useState(0);
+
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    const inner    = innerRef.current;
+    if (!viewport || !inner) return;
+
+    const measure = () => {
+      const realH = shouldScroll ? inner.scrollHeight / 2 : inner.scrollHeight;
+      setShouldScroll(realH > viewport.clientHeight);
+      setContentH(realH);
+    };
+
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(viewport);
+    ro.observe(inner);
+    return () => ro.disconnect();
+  }, [alliances, shouldScroll]);
+
+  // 80px/s — a bit faster than LiveDisplay since cards are larger
+  const duration = contentH > 0 ? contentH / 80 : 10;
+
+  const renderCards = (prefix: string) =>
+    alliances.map((alliance: any, idx: number) => (
+      <motion.div
+        key={`${prefix}-${idx}`}
+        initial={prefix === 'a' ? { opacity: 0, y: 30 } : false}
+        animate={prefix === 'a' ? { opacity: 1, y: 0 } : undefined}
+        transition={prefix === 'a' ? { delay: idx * 0.1 } : undefined}
+        className="bg-[#2d1855]/40 backdrop-blur-md border border-[#6A86AE]/30 rounded-[40px] p-8 flex flex-col items-center shadow-xl relative overflow-hidden"
+      >
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#3A2E9C] to-[#481F73]" />
+        <div className="w-16 h-16 bg-[#1a0b35] rounded-2xl flex items-center justify-center mb-6 border border-[#6A86AE]/30 shadow-inner">
+          <span className="text-2xl font-black italic text-[#66B4B2]">{alliance.id}</span>
+        </div>
+        <div className="space-y-4 w-full">
+          {alliance.teamNames.map((name: string, tIdx: number) => (
+            <div key={tIdx} className="text-center">
+              <div className="text-[10px] font-black text-[#66B4B2] uppercase tracking-widest mb-1">Equipo {tIdx + 1}</div>
+              <div className="text-xl font-black text-white uppercase tracking-tight leading-tight line-clamp-2">{name}</div>
+              <div className="flex items-center justify-center gap-2 mt-1">
+                <div className="text-[10px] font-mono font-bold text-[#6A86AE]">#{alliance.teams[tIdx]}</div>
+                {alliance.teamCountries?.[tIdx] && (
+                  <div className="text-[10px] font-black text-[#6A86AE] uppercase tracking-widest">{alliance.teamCountries[tIdx]}</div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </motion.div>
+    ));
+
+  return (
+    <div
+      ref={viewportRef}
+      className="relative z-10 flex-1 overflow-hidden w-full"
+      style={{
+        maskImage: shouldScroll
+          ? 'linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%)'
+          : undefined,
+        WebkitMaskImage: shouldScroll
+          ? 'linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%)'
+          : undefined,
+      }}
+    >
+      <style>{`
+        @keyframes big-alliance-scroll {
+          0%   { transform: translateY(0); }
+          100% { transform: translateY(-50%); }
+        }
+        .big-alliance-scroll-inner {
+          animation: big-alliance-scroll ${duration}s linear infinite;
+        }
+      `}</style>
+
+      <div
+        ref={innerRef}
+        className={`grid grid-cols-4 gap-6 w-full py-4 ${shouldScroll ? 'big-alliance-scroll-inner' : ''}`}
+      >
+        {renderCards('a')}
+        {shouldScroll && renderCards('b')}
+      </div>
+    </div>
+  );
+}
+
 // ─── OS-style Settings Window ────────────────────────────────────────────────
 function SettingsWindow({
   mode,
@@ -60,14 +152,14 @@ function SettingsWindow({
       value: 'none',
       label: 'None',
       description: 'Solid dark background',
-      preview: <div className="w-full h-full rounded bg-[#020617] border border-slate-700" />,
+      preview: <div className="w-full h-full rounded bg-[#1a0b35] border border-[#6A86AE]/40" />,
     },
     {
       value: 'transparent',
       label: 'Transparent',
       description: 'True alpha — use Browser Source',
       preview: (
-        <div className="w-full h-full rounded border border-slate-600 overflow-hidden" style={{
+        <div className="w-full h-full rounded border border-[#6A86AE]/50 overflow-hidden" style={{
           backgroundImage: 'linear-gradient(45deg, #555 25%, transparent 25%), linear-gradient(-45deg, #555 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #555 75%), linear-gradient(-45deg, transparent 75%, #555 75%)',
           backgroundSize: '8px 8px',
           backgroundPosition: '0 0, 0 4px, 4px -4px, -4px 0px',
@@ -99,26 +191,26 @@ function SettingsWindow({
 
       {/* window */}
       <div
-        style={{ position: 'relative', width: 420, background: '#0f172a', border: '1px solid #334155', borderRadius: 16, boxShadow: '0 32px 80px rgba(0,0,0,0.8)', overflow: 'hidden' }}
+        style={{ position: 'relative', width: 420, background: '#481F73', border: '1px solid #6A86AE', borderRadius: 16, boxShadow: '0 32px 80px rgba(0,0,0,0.8)', overflow: 'hidden' }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* title bar */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 20px', background: '#1e293b', borderBottom: '1px solid #334155' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 20px', background: '#3A2E9C', borderBottom: '1px solid #6A86AE' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Settings style={{ width: 16, height: 16, color: '#94a3b8' }} />
-            <span style={{ fontSize: 12, fontWeight: 900, color: '#e2e8f0', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Overlay Settings</span>
+            <Settings style={{ width: 16, height: 16, color: '#6A86AE' }} />
+            <span style={{ fontSize: 12, fontWeight: 900, color: '#FEFDFD', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Overlay Settings</span>
           </div>
           <button
             onClick={onClose}
-            style={{ width: 24, height: 24, borderRadius: '50%', background: '#334155', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            style={{ width: 24, height: 24, borderRadius: '50%', background: '#6A86AE', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >
-            <X style={{ width: 12, height: 12, color: '#94a3b8' }} />
+            <X style={{ width: 12, height: 12, color: '#6A86AE' }} />
           </button>
         </div>
 
         {/* content */}
         <div style={{ padding: 20 }}>
-          <p style={{ fontSize: 10, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.3em', color: '#64748b', marginBottom: 16 }}>Background Mode</p>
+          <p style={{ fontSize: 10, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.3em', color: '#6A86AE', marginBottom: 16 }}>Background Mode</p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 24 }}>
             {options.map((opt) => (
               <button
@@ -126,30 +218,30 @@ function SettingsWindow({
                 onClick={() => onChange(opt.value)}
                 style={{
                   display: 'flex', flexDirection: 'column', gap: 8, padding: 12,
-                  borderRadius: 12, border: `1px solid ${mode === opt.value ? '#3b82f6' : '#334155'}`,
-                  background: mode === opt.value ? 'rgba(59,130,246,0.1)' : 'rgba(30,41,59,0.5)',
+                  borderRadius: 12, border: `1px solid ${mode === opt.value ? '#66B4B2' : '#6A86AE'}`,
+                  background: mode === opt.value ? 'rgba(102,180,178,0.15)' : 'rgba(58,46,156,0.4)',
                   cursor: 'pointer', textAlign: 'left',
-                  outline: mode === opt.value ? '1px solid rgba(59,130,246,0.5)' : 'none',
+                  outline: mode === opt.value ? '1px solid rgba(102,180,178,0.5)' : 'none',
                 }}
               >
                 <div style={{ height: 48, width: '100%' }}>{opt.preview}</div>
                 <div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: mode === opt.value ? '#60a5fa' : '#e2e8f0' }}>{opt.label}</div>
-                  <div style={{ fontSize: 10, color: '#64748b', marginTop: 2 }}>{opt.description}</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: mode === opt.value ? '#66B4B2' : '#FEFDFD' }}>{opt.label}</div>
+                  <div style={{ fontSize: 10, color: '#6A86AE', marginTop: 2 }}>{opt.description}</div>
                 </div>
               </button>
             ))}
           </div>
 
-          <p style={{ fontSize: 10, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.3em', color: '#64748b', marginBottom: 16 }}>Layout Position</p>
+          <p style={{ fontSize: 10, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.3em', color: '#6A86AE', marginBottom: 16 }}>Layout Position</p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <button
               onClick={() => onPositionChange('top')}
               style={{
                 display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px',
-                borderRadius: 12, border: `1px solid ${layoutPosition === 'top' ? '#3b82f6' : '#334155'}`,
-                background: layoutPosition === 'top' ? 'rgba(59,130,246,0.1)' : 'rgba(30,41,59,0.5)',
-                cursor: 'pointer', color: layoutPosition === 'top' ? '#60a5fa' : '#e2e8f0', fontWeight: 700
+                borderRadius: 12, border: `1px solid ${layoutPosition === 'top' ? '#66B4B2' : '#6A86AE'}`,
+                background: layoutPosition === 'top' ? 'rgba(102,180,178,0.15)' : 'rgba(58,46,156,0.4)',
+                cursor: 'pointer', color: layoutPosition === 'top' ? '#66B4B2' : '#FEFDFD', fontWeight: 700
               }}
             >
               <MonitorUp style={{ width: 18, height: 18 }} />
@@ -159,9 +251,9 @@ function SettingsWindow({
               onClick={() => onPositionChange('bottom')}
               style={{
                 display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px',
-                borderRadius: 12, border: `1px solid ${layoutPosition === 'bottom' ? '#3b82f6' : '#334155'}`,
-                background: layoutPosition === 'bottom' ? 'rgba(59,130,246,0.1)' : 'rgba(30,41,59,0.5)',
-                cursor: 'pointer', color: layoutPosition === 'bottom' ? '#60a5fa' : '#e2e8f0', fontWeight: 700
+                borderRadius: 12, border: `1px solid ${layoutPosition === 'bottom' ? '#66B4B2' : '#6A86AE'}`,
+                background: layoutPosition === 'bottom' ? 'rgba(102,180,178,0.15)' : 'rgba(58,46,156,0.4)',
+                cursor: 'pointer', color: layoutPosition === 'bottom' ? '#66B4B2' : '#FEFDFD', fontWeight: 700
               }}
             >
               <MonitorDown style={{ width: 18, height: 18 }} />
@@ -473,8 +565,8 @@ export default function BigTimerDisplay() {
     >
       
       {!selectedField && !qualisData.enabled && (
-        <div className="fixed inset-0 z-[200] bg-slate-950 flex flex-col items-center justify-center p-10">
-          <h2 className="text-4xl font-black uppercase tracking-tighter mb-10 text-blue-500">Seleccionar Cancha</h2>
+        <div className="fixed inset-0 z-[200] bg-[#1a0b35] flex flex-col items-center justify-center p-10">
+          <h2 className="text-4xl font-black uppercase tracking-tighter mb-10 text-[#66B4B2]">Seleccionar Cancha</h2>
           <div className="grid grid-cols-2 gap-6 max-w-2xl w-full">
             {Array.from({ length: timer.fieldCount || 4 }).map((_, idx) => {
               const f = `cancha${idx + 1}`;
@@ -482,7 +574,7 @@ export default function BigTimerDisplay() {
                 <button 
                   key={f}
                   onClick={() => handleFieldSelect(f)}
-                  className="bg-slate-900 hover:bg-blue-600 border-2 border-slate-800 p-10 rounded-3xl text-2xl font-black uppercase transition-all"
+                  className="bg-[#2d1855] hover:bg-[#3A2E9C] border-2 border-[#6A86AE]/30 p-10 rounded-3xl text-2xl font-black uppercase transition-all"
                 >
                   {f.replace('cancha', 'Cancha ')}
                 </button>
@@ -494,8 +586,8 @@ export default function BigTimerDisplay() {
 
       {!hideBlobs && (
         <div className="absolute inset-0 z-0 pointer-events-none">
-          <div className={`absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full blur-[120px] transition-colors duration-1000 ${isCritical ? 'bg-red-600/15' : 'bg-blue-600/10'}`} />
-          <div className={`absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full blur-[120px] transition-colors duration-1000 ${isCritical ? 'bg-red-900/15' : 'bg-indigo-600/10'}`} />
+          <div className={`absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full blur-[120px] transition-colors duration-1000 ${isCritical ? 'bg-red-600/15' : 'bg-[#66B4B2]/10'}`} />
+          <div className={`absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full blur-[120px] transition-colors duration-1000 ${isCritical ? 'bg-red-900/15' : 'bg-[#481F73]/20'}`} />
         </div>
       )}
 
@@ -506,13 +598,13 @@ export default function BigTimerDisplay() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 1.1 }}
-            className="absolute inset-0 z-[110] flex flex-col items-center justify-center bg-blue-950/90 backdrop-blur-3xl p-20 text-center"
+            className="absolute inset-0 z-[110] flex flex-col items-center justify-center bg-[#2d1855]/90 backdrop-blur-3xl p-20 text-center"
           >
              <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#ffffff 2px, transparent 2px)', backgroundSize: '60px 60px' }} />
-             <div className="bg-blue-600 p-8 rounded-[40px] mb-12 shadow-2xl shadow-blue-500/20">
+             <div className="bg-[#3A2E9C] p-8 rounded-[40px] mb-12 shadow-2xl shadow-[#66B4B2]/20">
                <Megaphone className="w-24 h-24 text-white" />
              </div>
-             <h2 className="text-4xl font-black uppercase tracking-[0.4em] text-blue-400 mb-8">Comunicado Oficial</h2>
+             <h2 className="text-4xl font-black uppercase tracking-[0.4em] text-[#66B4B2] mb-8">Comunicado Oficial</h2>
              <div className="max-w-6xl">
                <p className="text-[6vw] font-black leading-tight text-white uppercase tracking-tighter">
                  {activeAnnouncement}
@@ -525,7 +617,7 @@ export default function BigTimerDisplay() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 1.1 }}
-            className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-slate-950 p-10"
+            className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-[#1a0b35] p-10"
           >
              <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#ffffff 2px, transparent 2px)', backgroundSize: '40px 40px' }} />
              
@@ -534,7 +626,7 @@ export default function BigTimerDisplay() {
              ) : (
                <div className="w-full max-w-[90vw] flex flex-col items-center gap-12">
                   <div className="flex flex-col items-center mb-4">
-                    <div className="bg-blue-600 px-8 py-3 rounded-full text-white font-black text-xl tracking-[0.3em] uppercase mb-4 shadow-2xl shadow-blue-500/40">
+                    <div className="bg-[#3A2E9C] px-8 py-3 rounded-full text-white font-black text-xl tracking-[0.3em] uppercase mb-4 shadow-2xl shadow-[#66B4B2]/40">
                       QUALIFYING MATCH #{qualisData.currentIndex + 1}
                     </div>
                     <h2 className="text-white/40 text-2xl font-black uppercase tracking-[0.5em]">VS</h2>
@@ -554,7 +646,7 @@ export default function BigTimerDisplay() {
                             <div className="text-white/60 text-lg font-black uppercase tracking-widest">{currentQualisMatch.country1}</div>
                           )}
                         </div>
-                        <div className="text-blue-400 text-3xl font-black mb-2 font-mono">#{currentQualisMatch.team1}</div>
+                        <div className="text-[#66B4B2] text-3xl font-black mb-2 font-mono">#{currentQualisMatch.team1}</div>
                         <div className="text-5xl md:text-8xl font-black text-white leading-none uppercase tracking-tighter">
                           {currentQualisMatch.name1 || currentQualisMatch.team1}
                         </div>
@@ -566,7 +658,7 @@ export default function BigTimerDisplay() {
                       )}
                     </div>
 
-                    <div className="text-[120px] font-black text-blue-500/20 italic select-none">VS</div>
+                    <div className="text-[120px] font-black text-[#66B4B2]/20 italic select-none">VS</div>
 
                     {/* Team 2 */}
                     <div className="flex-1 flex flex-col items-start text-left gap-6">
@@ -581,7 +673,7 @@ export default function BigTimerDisplay() {
                           )}
                           <div className="bg-white/10 px-4 py-1 rounded-full text-[12px] font-black tracking-widest uppercase">Team 2</div>
                         </div>
-                        <div className="text-blue-400 text-3xl font-black mb-2 font-mono">#{currentQualisMatch.team2}</div>
+                        <div className="text-[#66B4B2] text-3xl font-black mb-2 font-mono">#{currentQualisMatch.team2}</div>
                         <div className="text-5xl md:text-8xl font-black text-white leading-none uppercase tracking-tighter">
                           {currentQualisMatch.name2 || currentQualisMatch.team2}
                         </div>
@@ -602,52 +694,23 @@ export default function BigTimerDisplay() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 1.05 }}
-            className="absolute inset-0 z-[110] flex flex-col items-center justify-center bg-[#020617] p-10 overflow-hidden"
+            className="absolute inset-0 z-[110] flex flex-col bg-[#1a0b35] p-10 overflow-hidden"
           >
-            <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#2563eb 2px, transparent 2px)', backgroundSize: '40px 40px' }} />
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[80%] bg-blue-600/5 blur-[120px] rounded-full" />
+            <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#66B4B2 2px, transparent 2px)', backgroundSize: '40px 40px' }} />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[80%] bg-[#66B4B2]/5 blur-[120px] rounded-full" />
 
-            <div className="relative z-10 w-full max-w-[90vw] flex flex-col items-center">
-              <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="flex items-center gap-6 mb-12">
-                <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-blue-500/40">
-                  <Shield className="w-8 h-8 text-white" />
-                </div>
-                <h2 className="text-[5vw] font-black uppercase tracking-tighter italic text-white leading-none">
-                  Draft de <span className="text-blue-500">Alianzas</span>
-                </h2>
-              </motion.div>
-
-              <div className="grid grid-cols-4 gap-6 w-full">
-                {alliances.alliances.map((alliance: any, idx: number) => (
-                  <motion.div
-                    key={alliance.id}
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: idx * 0.1 }}
-                    className="bg-slate-900/40 backdrop-blur-md border border-slate-800 rounded-[40px] p-8 flex flex-col items-center shadow-xl relative overflow-hidden group"
-                  >
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-indigo-600" />
-                    <div className="w-16 h-16 bg-slate-950 rounded-2xl flex items-center justify-center mb-6 border border-slate-800 shadow-inner">
-                      <span className="text-2xl font-black italic text-blue-500">{alliance.id}</span>
-                    </div>
-                    <div className="space-y-4 w-full">
-                      {alliance.teamNames.map((name: string, tIdx: number) => (
-                        <div key={tIdx} className="text-center">
-                          <div className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Equipo {tIdx + 1}</div>
-                          <div className="text-xl font-black text-white uppercase tracking-tight leading-tight line-clamp-2">{name}</div>
-                          <div className="flex items-center justify-center gap-2 mt-1">
-                            <div className="text-[10px] font-mono font-bold text-slate-500">#{alliance.teams[tIdx]}</div>
-                            {alliance.teamCountries?.[tIdx] && (
-                              <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{alliance.teamCountries[tIdx]}</div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </motion.div>
-                ))}
+            {/* Header — pinned, never cropped */}
+            <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="relative z-10 flex items-center gap-6 mb-8 shrink-0">
+              <div className="w-16 h-16 bg-[#3A2E9C] rounded-2xl flex items-center justify-center shadow-2xl shadow-[#66B4B2]/40">
+                <Shield className="w-8 h-8 text-white" />
               </div>
-            </div>
+              <h2 className="text-[5vw] font-black uppercase tracking-tighter italic text-white leading-none">
+                Draft de <span className="text-[#66B4B2]">Alianzas</span>
+              </h2>
+            </motion.div>
+
+            {/* Scrolling grid */}
+            <BigAllianceGrid alliances={alliances.alliances} />
           </motion.div>
         ) : revealedAwardTitle ? (
           <motion.div
@@ -655,7 +718,7 @@ export default function BigTimerDisplay() {
             initial={{ opacity: 0, y: 100 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -100 }}
-            className="absolute inset-0 z-[110] flex flex-col items-center justify-center bg-slate-950 p-20 text-center"
+            className="absolute inset-0 z-[110] flex flex-col items-center justify-center bg-[#1a0b35] p-20 text-center"
           >
             <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#fbbf24 2px, transparent 2px)', backgroundSize: '50px 50px' }} />
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -684,7 +747,7 @@ export default function BigTimerDisplay() {
             </motion.div>
 
             <h2 className="text-4xl font-black uppercase tracking-[0.5em] text-amber-500 mb-4">{revealedAwardTitle.name}</h2>
-            <div className="text-[2vw] font-bold text-slate-500 uppercase tracking-widest mb-12">Award Category</div>
+            <div className="text-[2vw] font-bold text-[#6A86AE] uppercase tracking-widest mb-12">Award Category</div>
 
             <AnimatePresence mode="wait">
               {revealedAwardTitle.revealedWinner ? (
@@ -692,7 +755,7 @@ export default function BigTimerDisplay() {
                   key="winner-revealed"
                   initial={{ scale: 0.8, opacity: 0, y: 50 }}
                   animate={{ scale: 1, opacity: 1, y: 0 }}
-                  className="bg-slate-900/80 backdrop-blur-xl p-16 rounded-[80px] border-4 border-amber-500/30 shadow-2xl min-w-[60%] relative overflow-hidden"
+                  className="bg-[#2d1855]/80 backdrop-blur-xl p-16 rounded-[80px] border-4 border-amber-500/30 shadow-2xl min-w-[60%] relative overflow-hidden"
                 >
                   <div className="absolute inset-0 bg-gradient-to-t from-amber-500/10 to-transparent pointer-events-none" />
                   <div className="text-[8vw] font-black text-white uppercase tracking-tighter leading-none mb-4 relative z-10">{revealedAwardTitle.teamName || '---'}</div>
@@ -700,7 +763,7 @@ export default function BigTimerDisplay() {
                 </motion.div>
               ) : (
                 <motion.div key="winner-hidden" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-[20vh] flex items-center justify-center">
-                  <div className="text-slate-800 text-[10vw] font-black uppercase tracking-[0.2em] italic opacity-20">???</div>
+                  <div className="text-[#2d1855] text-[10vw] font-black uppercase tracking-[0.2em] italic opacity-20">???</div>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -711,16 +774,16 @@ export default function BigTimerDisplay() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 z-[105] flex flex-col items-center justify-center bg-gradient-to-b from-slate-950 via-blue-950 to-slate-950 p-10 text-center"
+            className="absolute inset-0 z-[105] flex flex-col items-center justify-center bg-gradient-to-b from-[#1a0b35] via-[#2d1855] to-[#1a0b35] p-10 text-center"
           >
             <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '30px 30px' }} />
             <motion.div animate={{ y: [0, -20, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }} className="mb-12">
-              <Trophy className="w-32 h-32 text-blue-500/50" />
+              <Trophy className="w-32 h-32 text-[#66B4B2]/50" />
             </motion.div>
             <h1 className="text-[8vw] font-black uppercase tracking-[0.2em] text-white drop-shadow-[0_0_30px_rgba(255,255,255,0.2)]">
-              Closing <span className="text-blue-500">Ceremony</span>
+              Closing <span className="text-[#66B4B2]">Ceremony</span>
             </h1>
-            <p className="text-2xl font-black uppercase tracking-[0.5em] text-slate-500 mt-4">Awards Presentation</p>
+            <p className="text-2xl font-black uppercase tracking-[0.5em] text-[#6A86AE] mt-4">Awards Presentation</p>
           </motion.div>
         ) : timer.displayMode === 'bracket' ? (
           <motion.div
@@ -784,16 +847,16 @@ export default function BigTimerDisplay() {
         onClick={handleSettingsToggle}
         className="fixed top-4 right-4 z-[600] w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition-all duration-300"
         style={{ 
-          background: '#1e293b', 
-          border: '1px solid #334155', 
+          background: '#3A2E9C', 
+          border: '1px solid #6A86AE', 
           opacity: showControls || settingsOpen ? 1 : 0, 
           pointerEvents: showControls || settingsOpen ? 'auto' : 'none' 
         }}
         aria-label="Display settings"
       >
         {settingsOpen
-          ? <X className="w-5 h-5 text-slate-400" />
-          : <Settings className="w-5 h-5 text-slate-400" />
+          ? <X className="w-5 h-5 text-[#6A86AE]" />
+          : <Settings className="w-5 h-5 text-[#6A86AE]" />
         }
       </button>
       </>

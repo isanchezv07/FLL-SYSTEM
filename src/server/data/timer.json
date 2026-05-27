@@ -2,17 +2,17 @@
   "timer": {
     "timeRemaining": 150,
     "isRunning": false,
-    "displayMode": "live",
+    "displayMode": "bracket",
     "layoutPosition": "top",
     "fieldCount": 6,
     "fields": {
-      "cancha1": "match-1-1",
+      "cancha1": null,
       "cancha2": null,
       "cancha3": null,
       "cancha4": null,
       "cancha5": null,
       "cancha6": null
     },
-    "updatedAt": "2026-05-27T04:40:10.495Z"
+    "updatedAt": "2026-05-27T08:26:02.086Z"
   }
 }
