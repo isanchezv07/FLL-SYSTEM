@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Users, Trash2, Plus, Monitor, Layers, Shield, X, Search, ChevronRight } from 'lucide-react';
+import { Users, Trash2, Plus, Monitor, Layers, Shield, X, Search, ChevronRight, Trophy } from 'lucide-react';
 import { socket } from '@/lib/socket';
 
 interface Team {
@@ -24,9 +24,12 @@ export default function AllianceSelection({ onClose }: { onClose: () => void }) 
   const [bracketSize, setBracketSize] = useState(8);
   const [bracketMode, setBracketMode] = useState<'1vs1' | '2vs2'>('2vs2');
   const [searchTerm, setSearchTerm] = useState('');
+  const [ranking, setRanking] = useState<any[]>([]);
+  const [sidebarTab, setSidebarTab] = useState<'all' | 'ranking'>('all');
 
   useEffect(() => {
     fetchTeams();
+    fetchRanking();
     socket.on('timerUpdate', (data) => {
       setTimerState(data);
     });
@@ -41,6 +44,47 @@ export default function AllianceSelection({ onClose }: { onClose: () => void }) 
       socket.off('alliancesUpdate');
     };
   }, []);
+
+  const fetchRanking = async () => {
+    try {
+      const res = await fetch('/api/ranking');
+      const data = await res.json();
+      setRanking(data);
+    } catch (e) {
+      console.error('Error fetching ranking:', e);
+    }
+  };
+
+  const handleSizeChange = (newSize: number) => {
+    setBracketSize(newSize);
+    // REMOVED: No more automatic overwriting on size change.
+    // The user must explicitly choose to auto-fill or draft manually.
+  };
+
+  const autoFillFromRanking = () => {
+    if (ranking.length === 0) {
+      alert('No ranking data available yet.');
+      return;
+    }
+
+    if (!confirm(`This will OVERWRITE your current drafting with the TOP ${bracketSize} teams from the ranking. Continue?`)) return;
+
+    const topTeams = ranking.slice(0, bracketSize).map(r => r.team);
+    const teamsPerAlliance = bracketMode === '2vs2' ? 2 : 1;
+    const newAlliances: Alliance[] = [];
+    
+    for (let i = 0; i < topTeams.length; i += teamsPerAlliance) {
+      const allianceTeams = topTeams.slice(i, i + teamsPerAlliance);
+      if (allianceTeams.length === 0) break;
+      newAlliances.push({
+        id: (i / teamsPerAlliance) + 1,
+        teams: allianceTeams
+      });
+    }
+
+    setAlliancesData((prev: any) => ({ ...prev, alliances: newAlliances }));
+    saveAlliances(newAlliances);
+  };
 
   const fetchTeams = async () => {
     try {
@@ -140,7 +184,9 @@ export default function AllianceSelection({ onClose }: { onClose: () => void }) 
     if (!confirm('¿Generar bracket con estas alianzas? Se borrarán los datos actuales.')) return;
 
     try {
-      const alliancesForBackend = alliancesData.alliances.map((a: any) => a.teams);
+      const alliancesForBackend = alliancesData.alliances
+        .slice(0, Math.ceil(bracketSize / teamsPerAlliance))
+        .map((a: any) => a.teams);
       await fetch('/api/brackets/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -209,11 +255,18 @@ export default function AllianceSelection({ onClose }: { onClose: () => void }) 
                 <span className="text-[9px] font-bold text-slate-500 uppercase">Size (Teams):</span>
                 <select 
                   value={bracketSize} 
-                  onChange={(e) => setBracketSize(Number(e.target.value))}
+                  onChange={(e) => handleSizeChange(Number(e.target.value))}
                   className="bg-transparent text-blue-600 font-bold text-sm outline-none"
                 >
                   {[4, 8, 16, 32, 64, 66, 68].map(n => <option key={n} value={n} className="bg-white dark:bg-slate-900"> {n}</option>)}
                 </select>
+                <button 
+                  onClick={autoFillFromRanking}
+                  className="ml-2 p-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded shadow-sm transition-all active:scale-95"
+                  title="Auto-fill top teams from ranking"
+                >
+                  <Trophy className="w-3 h-3" />
+                </button>
             </div>
 
             <button 
@@ -233,7 +286,22 @@ export default function AllianceSelection({ onClose }: { onClose: () => void }) 
         <div className="flex-1 overflow-hidden flex">
           {/* Teams List (Left Sidebar) */}
           <div className="w-80 border-r border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 transition-colors flex flex-col">
-            <div className="p-6 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 transition-colors">
+            <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex gap-2">
+                <button 
+                  onClick={() => setSidebarTab('all')}
+                  className={`flex-1 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${sidebarTab === 'all' ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-600'}`}
+                >
+                  All Units
+                </button>
+                <button 
+                  onClick={() => { setSidebarTab('ranking'); fetchRanking(); }}
+                  className={`flex-1 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${sidebarTab === 'ranking' ? 'bg-amber-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-600'}`}
+                >
+                  By Rank
+                </button>
+            </div>
+
+            <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 transition-colors">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input 
@@ -249,22 +317,28 @@ export default function AllianceSelection({ onClose }: { onClose: () => void }) 
               {loading ? (
                 <div className="text-center py-20 text-[10px] font-bold text-slate-400 uppercase tracking-widest animate-pulse">Syncing...</div>
               ) : (
-                teams
-                  .filter(t => 
-                    t.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                    t.number.toString().includes(searchTerm)
+                (sidebarTab === 'all' ? teams : ranking.map(r => ({ ...teams.find(t => t.number === r.team), rank: ranking.indexOf(r) + 1, score: r.total })))
+                  .filter((t: any) => 
+                    t && (
+                      t.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                      t.number?.toString().includes(searchTerm)
+                    )
                   )
-                  .map(team => {
+                  .map((team: any) => {
                   const isAssigned = alliancesData.alliances.some((a: any) => a.teams.includes(team.number));
                   return (
                     <div 
-                      key={team.id}
+                      key={team.id || team.number}
                       className={`p-4 rounded-lg border transition-all ${isAssigned ? 'opacity-20 grayscale pointer-events-none bg-slate-100 dark:bg-slate-800' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-blue-400 dark:hover:border-blue-900 hover:shadow-sm'}`}
                     >
                       <div className="flex justify-between items-center">
                         <div className="flex flex-col">
-                          <span className="text-blue-600 dark:text-blue-400 font-mono font-bold text-[10px]">#{team.number}</span>
+                          <div className="flex items-center gap-2">
+                             <span className="text-blue-600 dark:text-blue-400 font-mono font-bold text-[10px]">#{team.number}</span>
+                             {team.rank && <span className="text-[9px] font-black px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-500 rounded uppercase">Rank {team.rank}</span>}
+                          </div>
                           <span className="text-[11px] font-bold uppercase text-slate-700 dark:text-slate-200 leading-tight truncate max-w-[120px]">{team.name}</span>
+                          {team.score !== undefined && <span className="text-[9px] font-bold text-slate-400 mt-1">{team.score} PTS</span>}
                         </div>
                         {!isAssigned && (
                           <div className="flex flex-wrap justify-end gap-1 max-w-[80px]">

@@ -17,6 +17,7 @@ const db = new Low(adapter, {
     timeRemaining: 150,
     isRunning: false,
     displayMode: 'live',
+    layoutPosition: 'top',
     fieldCount: 4,
     fields: {
       "cancha1": null,
@@ -36,6 +37,7 @@ export const initTimerDB = async () => {
         timeRemaining: 150,
         isRunning: false,
         displayMode: 'live',
+        layoutPosition: 'top',
         fieldCount: 4,
         fields: {
           "cancha1": null,
@@ -54,6 +56,7 @@ export const initTimerDB = async () => {
     // Asegurar que existan las propiedades nuevas si es una base de datos vieja
     if (db.data.timer.fieldCount === undefined) db.data.timer.fieldCount = 4;
     if (db.data.timer.displayMode === undefined) db.data.timer.displayMode = 'live';
+    if (db.data.timer.layoutPosition === undefined) db.data.timer.layoutPosition = 'top';
     if (!db.data.timer.fields) {
       db.data.timer.fields = {};
       for (let i = 1; i <= db.data.timer.fieldCount; i++) {
@@ -79,7 +82,7 @@ export const updateTimer = async (timerData) => {
   await db.read();
   
   // Lista blanca de propiedades permitidas para el timer
-  const allowedKeys = ['timeRemaining', 'isRunning', 'fieldCount', 'fields', 'displayMode'];
+  const allowedKeys = ['timeRemaining', 'isRunning', 'fieldCount', 'fields', 'displayMode', 'layoutPosition'];
   const cleanIncomingData = {};
   
   allowedKeys.forEach(key => {
@@ -95,6 +98,7 @@ export const updateTimer = async (timerData) => {
       timeRemaining: cleanIncomingData.timeRemaining !== undefined ? cleanIncomingData.timeRemaining : currentTimer.timeRemaining,
       isRunning: cleanIncomingData.isRunning !== undefined ? cleanIncomingData.isRunning : currentTimer.isRunning,
       displayMode: cleanIncomingData.displayMode !== undefined ? cleanIncomingData.displayMode : currentTimer.displayMode,
+      layoutPosition: cleanIncomingData.layoutPosition !== undefined ? cleanIncomingData.layoutPosition : currentTimer.layoutPosition,
       fieldCount: cleanIncomingData.fieldCount !== undefined ? cleanIncomingData.fieldCount : currentTimer.fieldCount,
       fields: cleanIncomingData.fields !== undefined ? cleanIncomingData.fields : currentTimer.fields,
       updatedAt: new Date().toISOString()
@@ -112,6 +116,7 @@ export const resetTimer = async () => {
     timeRemaining: 150,
     isRunning: false,
     displayMode: db.data.timer.displayMode || 'live',
+    layoutPosition: db.data.timer.layoutPosition || 'top',
     fieldCount: db.data.timer.fieldCount || 4,
     fields: db.data.timer.fields || {},
     updatedAt: new Date().toISOString()

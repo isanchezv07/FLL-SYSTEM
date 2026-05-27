@@ -159,12 +159,22 @@ app.post('/api/brackets/generate', async (req, res) => {
   try {
     const { size, mode = '2vs2', alliances } = req.body;
     let teams = [];
+    const targetSize = parseInt(size) || 8;
     
     if (alliances && alliances.length > 0) {
+      // Si vienen alianzas, las aplanamos y las limitamos estrictamente al targetSize
       teams = alliances.flat().map(t => ({ number: t }));
     } else {
-      teams = shuffle(getTeams()).slice(0, size);
+      const ranking = await calculateRanking();
+      if (ranking.length > 0) {
+        teams = ranking.map(r => ({ number: r.team }));
+      } else {
+        teams = shuffle(getTeams()).map(t => ({ number: t.number }));
+      }
     }
+
+    // LIMITACIÓN CRÍTICA: Solo tomamos los equipos necesarios para el bracket solicitado
+    teams = teams.slice(0, targetSize);
 
     const numTeams = teams.length;
     if (numTeams === 0) return res.status(400).json({ error: "No teams selected" });
@@ -217,12 +227,11 @@ app.post('/api/brackets/generate', async (req, res) => {
         });
       }
       
+      // Stop if we reached the final round
+      if (currentRoundMatches === 1) break;
+
       // Next round will have half the matches (rounded up)
       currentRoundMatches = Math.ceil(currentRoundMatches / 2);
-      if (currentRoundMatches === 0 && round < roundsCount) currentRoundMatches = 1;
-      
-      // Stop if we reached the final round (1 match)
-      if (round > 1 && currentRoundMatches === 1 && round === roundsCount) break;
     }
     
     await broadcastTimerUpdate();
@@ -294,6 +303,43 @@ app.put('/api/matches/:id', async (req, res) => {
   } catch (error) { 
     console.error(error);
     res.status(500).json({ error: error.message }); 
+  }
+});
+
+const calculateRanking = async () => {
+  const matches = await getMatches();
+  const scoresMap = {};
+
+  const addScore = (team, score) => {
+    if (!team) return;
+    if (!scoresMap[team]) scoresMap[team] = { total: 0, count: 0 };
+    scoresMap[team].total += (score || 0);
+    scoresMap[team].count += 1;
+  };
+
+  matches.forEach(match => {
+    addScore(match.teamA1, match.scoreA / (match.teamA2 ? 2 : 1));
+    addScore(match.teamA2, match.scoreA / 2);
+    addScore(match.teamB1, match.scoreB / (match.teamB2 ? 2 : 1));
+    addScore(match.teamB2, match.scoreB / 2);
+  });
+
+  return Object.entries(scoresMap)
+    .map(([team, data]) => ({ 
+      team, 
+      total: Math.round(data.total), 
+      count: data.count,
+      avg: data.count > 0 ? data.total / data.count : 0 
+    }))
+    .sort((a, b) => b.total - a.total || b.avg - a.avg);
+};
+
+app.get('/api/ranking', async (req, res) => {
+  try {
+    const ranking = await calculateRanking();
+    res.json(ranking);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 

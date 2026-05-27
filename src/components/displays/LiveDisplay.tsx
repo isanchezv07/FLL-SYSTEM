@@ -5,8 +5,11 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { socket } from '@/lib/socket';
 import confetti from 'canvas-confetti';
-import { Trophy, Megaphone, Shield, Settings, X } from 'lucide-react';
+import { Trophy, Megaphone, Shield, Settings, X, MonitorUp, MonitorDown } from 'lucide-react';
+import ScoreboardBar from './ScoreboardBar';
+import WinnerReveal from './WinnerReveal';
 import BracketDisplay from './BracketDisplay';
+import SponsorsDisplay from './SponsorsDisplay';
 
 // ─── OBS Chroma-key background modes ────────────────────────────────────────
 type ChromaMode = 'transparent' | 'green' | 'magenta' | 'none';
@@ -20,18 +23,13 @@ const CHROMA_STYLES: Record<ChromaMode, React.CSSProperties> = {
 
 const CHROMA_HIDES_BLOBS = new Set<ChromaMode>(['green', 'magenta']);
 
-const formatTime = (seconds: number) => {
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
-};
-
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface TimerState {
   timeRemaining: number;
   isRunning: boolean;
   fieldCount: number;
-  displayMode?: 'live' | 'bracket';
+  displayMode?: 'live' | 'bracket' | 'sponsors';
+  layoutPosition?: 'top' | 'bottom';
   fields?: Record<string, string | null>;
 }
 
@@ -45,11 +43,15 @@ interface WinnerInfo {
 // ─── OS-style Settings Window ────────────────────────────────────────────────
 function SettingsWindow({
   mode,
+  layoutPosition,
   onChange,
+  onPositionChange,
   onClose,
 }: {
   mode: ChromaMode;
+  layoutPosition: 'top' | 'bottom';
   onChange: (m: ChromaMode) => void;
+  onPositionChange: (p: 'top' | 'bottom') => void;
   onClose: () => void;
 }) {
   const options: { value: ChromaMode; label: string; description: string; preview: React.ReactNode }[] = [
@@ -116,7 +118,7 @@ function SettingsWindow({
         {/* content */}
         <div style={{ padding: 20 }}>
           <p style={{ fontSize: 10, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.3em', color: '#6A86AE', marginBottom: 16 }}>Background Mode</p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 24 }}>
             {options.map((opt) => (
               <button
                 key={opt.value}
@@ -137,6 +139,34 @@ function SettingsWindow({
               </button>
             ))}
           </div>
+
+          <p style={{ fontSize: 10, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.3em', color: '#6A86AE', marginBottom: 16 }}>Layout Position</p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <button
+              onClick={() => onPositionChange('top')}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px',
+                borderRadius: 12, border: `1px solid ${layoutPosition === 'top' ? '#66B4B2' : '#6A86AE'}`,
+                background: layoutPosition === 'top' ? 'rgba(102,180,178,0.15)' : 'rgba(58,46,156,0.4)',
+                cursor: 'pointer', color: layoutPosition === 'top' ? '#66B4B2' : '#FEFDFD', fontWeight: 700
+              }}
+            >
+              <MonitorUp style={{ width: 18, height: 18 }} />
+              Top
+            </button>
+            <button
+              onClick={() => onPositionChange('bottom')}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px',
+                borderRadius: 12, border: `1px solid ${layoutPosition === 'bottom' ? '#66B4B2' : '#6A86AE'}`,
+                background: layoutPosition === 'bottom' ? 'rgba(102,180,178,0.15)' : 'rgba(58,46,156,0.4)',
+                cursor: 'pointer', color: layoutPosition === 'bottom' ? '#66B4B2' : '#FEFDFD', fontWeight: 700
+              }}
+            >
+              <MonitorDown style={{ width: 18, height: 18 }} />
+              Bottom
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -147,8 +177,10 @@ function SettingsWindow({
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 export default function LegoTimerDisplay() {
-  const [timer, setTimer] = useState<TimerState>({ timeRemaining: 150, isRunning: false, fieldCount: 4, fields: {} });
+  const [timer, setTimer] = useState<TimerState>({ timeRemaining: 150, isRunning: false, fieldCount: 4, fields: {}, layoutPosition: 'top' });
+  const [layoutPosition, setLayoutPosition] = useState<'top' | 'bottom'>('top');
   const [alliances, setAlliances] = useState<any>(null);
+  const [teams, setTeams] = useState<any[]>([]);
   const [selectedField, setSelectedField] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(true);
   const [activeMatch, setActiveMatch] = useState<any | null>(null);
@@ -179,8 +211,12 @@ export default function LegoTimerDisplay() {
   }, []);
 
   useEffect(() => {
+    fetchTeams();
     const saved = localStorage.getItem('chromaMode') as ChromaMode | null;
     if (saved && saved in CHROMA_STYLES) setChromaMode(saved);
+
+    const savedPos = localStorage.getItem('layoutPosition') as 'top' | 'bottom' | null;
+    if (savedPos) setLayoutPosition(savedPos);
 
     const savedField = localStorage.getItem('selectedField');
     if (savedField) {
@@ -189,9 +225,32 @@ export default function LegoTimerDisplay() {
     }
   }, []);
 
+  const fetchTeams = async () => {
+    try {
+      const res = await fetch('/api/teams');
+      const data = await res.json();
+      const teamsList = Array.isArray(data) ? data : (data.teams || []);
+      setTeams(teamsList);
+    } catch (e) {
+      console.error("Error fetching teams:", e);
+    }
+  };
+
+  const getTeamDisplay = (number: any) => {
+    if (!number || number === 'TBD' || number === '—') return number || '—';
+    const team = teams.find(t => t.number === number.toString());
+    if (!team) return `Team ${number}`;
+    return `${team.number} - ${team.name} (${team.country || 'N/A'})`;
+  };
+
   const handleChromaChange = useCallback((m: ChromaMode) => {
     setChromaMode(m);
     localStorage.setItem('chromaMode', m);
+  }, []);
+
+  const handlePositionChange = useCallback((p: 'top' | 'bottom') => {
+    setLayoutPosition(p);
+    localStorage.setItem('layoutPosition', p);
   }, []);
 
   const handleSettingsToggle = useCallback(() => setSettingsOpen((v) => !v), []);
@@ -286,6 +345,7 @@ export default function LegoTimerDisplay() {
     });
     socket.on('alliancesUpdate', (data) => setAlliances(data));
     socket.on('matchesUpdate', () => fetchActiveMatch());
+    socket.on('teamsUpdate', () => fetchTeams());
     socket.on('awardsUpdate', (data) => setAwardsData(data));
     socket.on('qualisUpdate', (data) => {
       const prev = qualisDataRef.current;
@@ -687,108 +747,31 @@ export default function LegoTimerDisplay() {
           >
             <BracketDisplay />
           </motion.div>
-        ) : winner ? (
+        ) : timer.displayMode === 'sponsors' ? (
           <motion.div
-            key="winner"
+            key="sponsors"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 z-[100] flex flex-col items-center justify-center p-10 text-center"
-            style={{ background: '#481F73' }}
+            className="absolute inset-0 z-[100]"
           >
-            <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#ffffff 2px, transparent 2px)', backgroundSize: '40px 40px' }} />
-            <motion.div
-              initial={{ scale: 0, rotate: -20 }}
-              animate={{ scale: 1, rotate: 0 }}
-              transition={{ type: 'spring', damping: 12 }}
-              className={`w-40 h-40 rounded-[48px] flex items-center justify-center mb-10 border-b-[12px] shadow-[0_20px_50px_rgba(0,0,0,0.5)] ${winner.alliance === 'A' ? 'bg-[#c0392b] border-[#a03024]' : 'bg-[#1565c0] border-[#11529c]'}`}
-            >
-              <Trophy className="text-yellow-400 w-20 h-20 drop-shadow-[0_0_15px_rgba(250,204,21,0.5)]" />
-            </motion.div>
-            <h1 className={`text-[12vw] font-black uppercase tracking-tighter leading-none mb-10 ${winner.alliance === 'A' ? 'text-red-500' : 'text-blue-500'} drop-shadow-[0_0_60px_currentColor]`}>
-              {winner.alliance === 'A' ? 'Red Alliance' : 'Blue Alliance'}
-            </h1>
-            <div className="flex gap-16 items-center justify-center backdrop-blur-md p-12 rounded-[60px] border-2 shadow-2xl" style={{ background: 'rgba(58,46,156,0.85)', borderColor: 'rgba(106,134,174,0.3)' }}>
-              <div className="text-left space-y-2">
-                <div className="text-[2vw] font-black text-white uppercase tracking-tight">{winner.team1}</div>
-                <div className="text-[2vw] font-black uppercase tracking-tight" style={{ color: '#6A86AE' }}>{winner.team2}</div>
-              </div>
-              <div className="w-1 h-24 rounded-full" style={{ background: 'rgba(106,134,174,0.4)' }} />
-              <div className="text-center">
-                <div className="text-[8vw] font-black font-mono leading-none" style={{ color: '#5AA057', textShadow: '0 0 20px rgba(90,160,87,0.4)' }}>{winner.score}</div>
-              </div>
-            </div>
+            <SponsorsDisplay />
           </motion.div>
+        ) : winner ? (
+          <WinnerReveal winner={winner} getTeamDisplay={getTeamDisplay} />
         ) : (
-          <motion.div key="timer" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full flex flex-col">
+          <motion.div key="timer" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className={`h-full flex ${layoutPosition === 'bottom' ? 'flex-col-reverse' : 'flex-col'}`}>
 
             {/* ── SCOREBOARD BAR ─────────────────────────────────────────────── */}
-            <div className="relative z-10 shrink-0" style={{ background: '#111111', boxShadow: '0 2px 20px rgba(0,0,0,0.8)' }}>
-
-              {/* Main row */}
-              <div className="flex flex-row items-stretch" style={{ height: 116 }}>
-
-                {/* Red team names — outer left */}
-                <div className="flex-1 flex flex-col justify-center px-6" style={{ borderRight: '1px solid #2a2a2a' }}>
-                  <span className="text-white font-semibold truncate" style={{ fontSize: 21 }}>{activeMatch?.teamA1 || 'TBD'}</span>
-                  <span className="font-semibold truncate" style={{ fontSize: 17, color: '#e05c6a' }}>{activeMatch?.teamA2 || '—'}</span>
-                </div>
-
-                {/* Red score — immediately left of timer */}
-                <div className="flex items-center justify-center shrink-0" style={{ background: '#c0392b', width: 140, borderRight: '2px solid #111' }}>
-                  <span className="text-white font-bold tabular-nums leading-none" style={{ fontSize: 80 }}>
-                    {activeMatch?.scoreA ?? 0}
-                  </span>
-                </div>
-
-                {/* Timer — white background, black text */}
-                <div className="flex flex-col items-center justify-center shrink-0" style={{ background: '#ffffff', width: 210, borderLeft: '2px solid #ddd', borderRight: '2px solid #ddd' }}>
-                  <motion.div animate={isCritical ? { scale: [1, 1.05, 1] } : {}} transition={{ repeat: Infinity, duration: 0.85 }}>
-                    <AnimatePresence mode="wait">
-                      <motion.div
-                        key={timer.timeRemaining}
-                        className="font-bold tabular-nums leading-none text-center"
-                        style={{
-                          fontSize: 74,
-                          color: timer.timeRemaining <= 10 ? '#dc2626' : timer.timeRemaining <= 30 ? '#ea580c' : '#111111',
-                          letterSpacing: '0.02em',
-                        }}
-                      >
-                        {formatTime(timer.timeRemaining)}
-                      </motion.div>
-                    </AnimatePresence>
-                  </motion.div>
-                </div>
-
-                {/* Blue score — immediately right of timer */}
-                <div className="flex items-center justify-center shrink-0" style={{ background: '#1565c0', width: 140, borderLeft: '2px solid #111' }}>
-                  <span className="text-white font-bold tabular-nums leading-none" style={{ fontSize: 80 }}>
-                    {activeMatch?.scoreB ?? 0}
-                  </span>
-                </div>
-
-                {/* Blue team names — outer right */}
-                <div className="flex-1 flex flex-col justify-center px-6 items-end" style={{ borderLeft: '1px solid #2a2a2a' }}>
-                  <span className="text-white font-semibold truncate" style={{ fontSize: 21 }}>{activeMatch?.teamB1 || 'TBD'}</span>
-                  <span className="font-semibold truncate" style={{ fontSize: 17, color: '#60a5fa' }}>{activeMatch?.teamB2 || '—'}</span>
-                </div>
-
-              </div>
-
-              {/* Match info subtitle row */}
-              <div className="flex items-center justify-between px-4" style={{ height: 24, background: '#0a0a0a', borderTop: '1px solid #1e1e1e' }}>
-                <span className="font-semibold uppercase" style={{ fontSize: 10, color: '#c0392b', letterSpacing: '0.2em' }}>Red Alliance</span>
-                <span className="font-semibold text-center" style={{ fontSize: 10, color: '#6A86AE', letterSpacing: '0.25em' }}>
-                  Open México 2026{activeMatch ? `  ·  Match #${activeMatch.position}  ·  Round ${activeMatch.round}` : '  ·  Arena Standby'}
-                  {selectedField && (
-                    <span onClick={() => setSelectedField(null)} className="cursor-pointer ml-2" style={{ color: '#3b82f6' }}>
-                      · {selectedField.replace('cancha', 'Cancha ')}
-                    </span>
-                  )}
-                </span>
-                <span className="font-semibold uppercase" style={{ fontSize: 10, color: '#1565c0', letterSpacing: '0.2em' }}>Blue Alliance</span>
-              </div>
-            </div>
+            <ScoreboardBar
+              activeMatch={activeMatch}
+              timer={timer}
+              teams={teams}
+              layoutPosition={layoutPosition}
+              selectedField={selectedField}
+              isCritical={isCritical}
+              onFieldClick={() => setSelectedField(null)}
+            />
 
             {/* ── TRANSPARENT CAMERA FEED AREA ───────────────────────────────── */}
             <div className="flex-1 relative">
@@ -812,7 +795,9 @@ export default function LegoTimerDisplay() {
         {settingsOpen && (
           <SettingsWindow
             mode={chromaMode}
+            layoutPosition={layoutPosition}
             onChange={handleChromaChange}
+            onPositionChange={handlePositionChange}
             onClose={handleSettingsToggle}
           />
         )}

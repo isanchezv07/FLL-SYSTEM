@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { socket } from '@/lib/socket';
-import { Trophy, Zap, Hash, Layers, RefreshCw, X, ChevronRight, Settings2, Target, Info, Play, Pause, RotateCcw, ChevronLeft, Users, Shield } from 'lucide-react';
+import { Trophy, Zap, Hash, Layers, RefreshCw, X, ChevronRight, Settings2, Target, Info, Play, Pause, RotateCcw, ChevronLeft, Users, Shield, Image } from 'lucide-react';
 import { missionBounds, missionValueFromMissionsFlat, missionValueToPatch } from '@/lib/fllMissionMapping';
 import AllianceSelection from './AllianceSelection';
 
@@ -45,13 +45,14 @@ interface Match {
 interface TimerState {
   fields: Record<string, string | null>;
   fieldCount: number;
-  displayMode?: 'live' | 'bracket';
+  displayMode?: 'live' | 'bracket' | 'sponsors';
+  layoutPosition?: 'top' | 'bottom';
 }
 
 export default function MatchesSection() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [alliances, setAlliances] = useState<any[]>([]);
-  const [timerState, setTimerState] = useState<TimerState>({ fields: {}, fieldCount: 4 });
+  const [timerState, setTimerState] = useState<TimerState>({ fields: {}, fieldCount: 4, layoutPosition: 'top' });
   const [loading, setLoading] = useState(true);
   const [bracketSize, setBracketSize] = useState(8);
   const [bracketMode, setBracketMode] = useState<'1vs1' | '2vs2'>('2vs2');
@@ -388,12 +389,23 @@ export default function MatchesSection() {
                   onClick={() => {
                     const nextMode = timerState.displayMode === 'bracket' ? 'live' : 'bracket';
                     socket.emit('updateTimer', { displayMode: nextMode });
-                    // Local fallback to update UI immediately in case of slow broadcast
                     setTimerState(prev => ({ ...prev, displayMode: nextMode }));
                   }}
-                  className={`px-3 py-1 rounded transition-all font-bold ${timerState.displayMode === 'bracket' ? 'bg-blue-600 text-white shadow-lg' : 'text-blue-600 dark:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 border border-blue-600/20'}`}
+                  className={`flex items-center gap-2 px-3 py-1 rounded transition-all font-bold ${timerState.displayMode === 'bracket' ? 'bg-blue-600 text-white shadow-lg' : 'text-blue-600 dark:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 border border-blue-600/20'}`}
                 >
+                  <Layers className="w-3 h-3" />
                   {timerState.displayMode === 'bracket' ? 'Showing Bracket' : 'Show Bracket'}
+                </button>
+                <button 
+                  onClick={() => {
+                    const nextMode = timerState.displayMode === 'sponsors' ? 'live' : 'sponsors';
+                    socket.emit('updateTimer', { displayMode: nextMode });
+                    setTimerState(prev => ({ ...prev, displayMode: nextMode }));
+                  }}
+                  className={`flex items-center gap-2 px-3 py-1 rounded transition-all font-bold ${timerState.displayMode === 'sponsors' ? 'bg-purple-600 text-white shadow-lg' : 'text-purple-600 dark:text-purple-400 hover:bg-slate-100 dark:hover:bg-slate-800 border border-purple-600/20'}`}
+                >
+                  <Image className="w-3 h-3" />
+                  {timerState.displayMode === 'sponsors' ? 'Showing Sponsors' : 'Show Sponsors'}
                 </button>
               </div>
               <div className="w-[1px] h-3 bg-slate-200 dark:bg-slate-800" />

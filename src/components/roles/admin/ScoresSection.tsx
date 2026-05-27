@@ -36,29 +36,9 @@ export default function ScoresSection() {
 
   const fetchScores = async () => {
     try {
-      const res = await fetch('/api/matches');
-      const matches: Match[] = await res.json();
-      const scoresMap: Record<string, { total: number, count: number }> = {};
-
-      const addScore = (team: string, score: number) => {
-        if (!team) return;
-        if (!scoresMap[team]) scoresMap[team] = { total: 0, count: 0 };
-        scoresMap[team].total += (score || 0);
-        scoresMap[team].count += 1;
-      };
-
-      matches.forEach(match => {
-        addScore(match.teamA1, match.scoreA / (match.teamA2 ? 2 : 1));
-        addScore(match.teamA2, match.scoreA / 2);
-        addScore(match.teamB1, match.scoreB / (match.teamB2 ? 2 : 1));
-        addScore(match.teamB2, match.scoreB / 2);
-      });
-
-      const rankingArray = Object.entries(scoresMap)
-        .map(([team, data]) => ({ team, total: Math.round(data.total), matchesPlayed: data.count }))
-        .sort((a, b) => b.total - a.total);
-
-      setRanking(rankingArray);
+      const res = await fetch('/api/ranking');
+      const data = await res.json();
+      setRanking(data.map((r: any) => ({ team: r.team, total: r.total, matchesPlayed: r.count })));
     } catch (error) {
       console.error('Error fetching scores:', error);
     } finally {

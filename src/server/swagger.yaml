@@ -99,6 +99,15 @@ paths:
         '200':
           description: Lista de matches
 
+  /api/ranking:
+    get:
+      tags:
+        - Matches
+      summary: Obtener el ranking oficial de equipos
+      responses:
+        '200':
+          description: Lista de equipos ordenados por puntaje total y promedio
+
   /api/matches/{id}:
     get:
       tags:
