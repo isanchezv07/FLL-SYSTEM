@@ -335,7 +335,7 @@ export default function AllianceSelection({ onClose }: { onClose: () => void }) 
                   return (
                     <div 
                       key={team.id || team.number}
-                      className={`p-4 rounded-lg border transition-all ${isAssigned ? 'opacity-20 grayscale pointer-events-none bg-slate-100 dark:bg-slate-800' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-blue-400 dark:hover:border-blue-900 hover:shadow-sm'}`}
+                      className={`p-4 rounded-lg border transition-all ${isAssigned ? 'bg-blue-50/50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-900/30' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-blue-400 dark:hover:border-blue-900 hover:shadow-sm'}`}
                     >
                       <div className="flex justify-between items-center">
                         <div className="flex flex-col">
@@ -346,17 +346,50 @@ export default function AllianceSelection({ onClose }: { onClose: () => void }) 
                           <span className="text-[11px] font-bold uppercase text-slate-700 dark:text-slate-200 leading-tight truncate max-w-[120px]">{team.name}</span>
                           {team.score !== undefined && <span className="text-[9px] font-bold text-slate-400 mt-1">{team.score} PTS</span>}
                         </div>
-                        {!isAssigned && (
-                          <div className="flex flex-wrap justify-end gap-1 max-w-[80px]">
-                            {alliancesData.alliances.map((a: any) => (
-                              <button 
-                                key={a.id}
-                                onClick={() => addTeamToAlliance(a.id, team.number)}
-                                className="w-6 h-6 bg-slate-100 dark:bg-slate-800 hover:bg-blue-600 text-slate-500 hover:text-white rounded flex items-center justify-center text-[9px] font-bold border border-slate-200 dark:border-slate-700 transition-all"
-                              >
-                                {a.id}
-                              </button>
-                            ))}
+                        
+                        {isAssigned ? (
+                          <button 
+                            onClick={() => {
+                              const alliance = alliancesData.alliances.find((a: any) => a.teams.includes(team.number));
+                              if (alliance) removeTeamFromAlliance(alliance.id, team.number);
+                            }}
+                            className="p-2 text-slate-300 hover:text-red-500 transition-all"
+                            title="Remove from alliance"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        ) : (
+                          <div className="relative group/alliance-select">
+                            <button className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[10px] font-black uppercase tracking-wider transition-all shadow-md active:scale-95">
+                              Assign
+                              <ChevronRight className="w-3.5 h-3.5" />
+                            </button>
+                            
+                            <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-[-10px] opacity-0 invisible group-hover/alliance-select:opacity-100 group-hover/alliance-select:visible group-hover/alliance-select:translate-x-0 transition-all z-[150] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl p-3 w-56">
+                              <div className="flex items-center justify-between mb-3 px-1">
+                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Select Alliance</span>
+                                <span className="text-[8px] font-bold px-1.5 py-0.5 bg-slate-100 dark:bg-slate-900 text-slate-500 rounded uppercase">Units: {alliancesData.alliances.length}</span>
+                              </div>
+                              <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto custom-scrollbar p-1">
+                                {alliancesData.alliances.map((a: any) => {
+                                  const isFull = a.teams.length >= (bracketMode === '2vs2' ? 2 : 1);
+                                  return (
+                                    <button 
+                                      key={a.id}
+                                      disabled={isFull}
+                                      onClick={() => addTeamToAlliance(a.id, team.number)}
+                                      className={`w-10 h-10 rounded-lg flex items-center justify-center text-[11px] font-black border transition-all ${isFull ? 'bg-slate-50 dark:bg-slate-900/50 text-slate-300 dark:text-slate-700 border-slate-100 dark:border-slate-800 cursor-not-allowed' : 'bg-white dark:bg-slate-900 text-blue-600 hover:bg-blue-600 hover:text-white border-slate-200 dark:border-slate-700 shadow-sm hover:scale-110 active:scale-95'}`}
+                                      title={isFull ? 'Alliance Full' : `Assign to Alliance ${a.id}`}
+                                    >
+                                      {a.id}
+                                    </button>
+                                  );
+                                })}
+                                {alliancesData.alliances.length === 0 && (
+                                  <div className="col-span-4 py-4 text-center text-[9px] font-bold text-slate-400 uppercase italic">No alliances created</div>
+                                )}
+                              </div>
+                            </div>
                           </div>
                         )}
                       </div>

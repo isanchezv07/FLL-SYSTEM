@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { socket } from '@/lib/socket';
-import { Trophy, Zap, Hash, Layers, RefreshCw, X, ChevronRight, Settings2, Target, Info, Play, Pause, RotateCcw, ChevronLeft, Users, Shield, Image, Volume2 } from 'lucide-react';
+import { Trophy, Zap, Hash, Layers, RefreshCw, X, ChevronRight, Settings2, Target, Info, Play, Pause, RotateCcw, ChevronLeft, Users, Shield, Image, Volume2, Search, ShieldCheck } from 'lucide-react';
 import { missionBounds, missionValueFromMissionsFlat, missionValueToPatch } from '@/lib/fllMissionMapping';
 import AllianceSelection from './AllianceSelection';
 
@@ -65,6 +65,7 @@ export default function MatchesSection() {
   // Estados para Selección Múltiple
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [allianceSearchTerm, setAllianceSearchTerm] = useState('');
 
   const requiredAlliancesCount = useMemo(() => {
     return bracketMode === '1vs1' ? bracketSize : bracketSize / 2;
@@ -602,42 +603,85 @@ export default function MatchesSection() {
       {editingAlliancesMatchId && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 lg:p-12 animate-in fade-in duration-300">
           <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-2xl" onClick={() => setEditingAlliancesMatchId(null)} />
-          <div className="relative w-full max-w-2xl bg-white dark:bg-slate-900 border border-white/20 dark:border-slate-800 rounded-[40px] shadow-2xl overflow-hidden flex flex-col p-10 transition-colors">
-            <div className="flex justify-between items-center mb-8">
-              <h2 className="text-3xl font-black uppercase tracking-tighter italic text-slate-900 dark:text-white">Seleccionar <span className="text-blue-600 dark:text-blue-400">Alianzas</span></h2>
-              <button onClick={() => setEditingAlliancesMatchId(null)} className="p-3 text-gray-300 hover:text-red-500 transition-all"><X /></button>
+          <div className="relative w-full max-w-3xl bg-white dark:bg-slate-900 border border-white/20 dark:border-slate-800 rounded-[40px] shadow-2xl overflow-hidden flex flex-col p-10 transition-colors max-h-[90vh]">
+            <div className="flex justify-between items-start mb-8">
+              <div>
+                <h2 className="text-3xl font-black uppercase tracking-tighter italic text-slate-900 dark:text-white leading-none">Assign <span className="text-blue-600 dark:text-blue-400">Alliances</span></h2>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-2">Select combat units for Match #{matches.find(m => m.id === editingAlliancesMatchId)?.position}</p>
+              </div>
+              <button onClick={() => setEditingAlliancesMatchId(null)} className="p-3 bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-red-500 rounded-2xl transition-all"><X /></button>
+            </div>
+
+            <div className="mb-6 relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input 
+                type="text" 
+                placeholder="Search alliances by unit number or team name..." 
+                value={allianceSearchTerm}
+                onChange={(e) => setAllianceSearchTerm(e.target.value)}
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl pl-12 pr-4 py-4 text-sm font-bold text-slate-900 dark:text-white outline-none focus:border-blue-500 transition-all"
+              />
             </div>
             
-            <div className="space-y-8 overflow-y-auto pr-2 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-10">
               {['A', 'B'].map((slot) => (
                 <div key={slot} className="space-y-4">
-                  <h3 className="text-sm font-black uppercase tracking-[0.2em] text-gray-400">Alianza {slot}</h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    {alliances.map(a => {
-                      const match = matches.find(m => m.id === editingAlliancesMatchId);
-                      const isSelected = slot === 'A' ? match?.teamA1 === a.teams[0] : match?.teamB1 === a.teams[0];
-                      return (
-                        <button
-                          key={a.id}
-                          onClick={() => assignAllianceToMatch(editingAlliancesMatchId, a.id, slot as 'A'|'B')}
-                          className={`p-4 rounded-2xl border-2 transition-all text-left ${isSelected ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-100 dark:border-slate-800 hover:border-gray-300 dark:hover:border-slate-700 bg-gray-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200'}`}
-                        >
-                          <div className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase mb-1">#{a.id}</div>
-                          <div className="text-[11px] font-black uppercase truncate">{a.teamNames.join(' + ')}</div>
-                        </button>
-                      );
-                    })}
+                  <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-black text-white ${slot === 'A' ? 'bg-red-600' : 'bg-blue-600'}`}>
+                      {slot}
+                    </div>
+                    <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Alliance {slot} Selection</h3>
                   </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {alliances
+                      .filter(a => 
+                        a.id.toString().includes(allianceSearchTerm) || 
+                        a.teamNames.some((name: string) => name.toLowerCase().includes(allianceSearchTerm.toLowerCase()))
+                      )
+                      .map(a => {
+                        const match = matches.find(m => m.id === editingAlliancesMatchId);
+                        const isSelected = slot === 'A' 
+                          ? match?.teamA1 === a.teams[0] 
+                          : match?.teamB1 === a.teams[0];
+                        
+                        return (
+                          <button
+                            key={a.id}
+                            onClick={() => assignAllianceToMatch(editingAlliancesMatchId, a.id, slot as 'A'|'B')}
+                            className={`p-4 rounded-2xl border-2 transition-all text-left relative group ${
+                              isSelected 
+                                ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20' 
+                                : 'border-slate-100 dark:border-slate-800 hover:border-blue-500/50 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200'
+                            }`}
+                          >
+                            <div className="flex justify-between items-start mb-1">
+                              <div className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase">Unit #{a.id}</div>
+                              {isSelected && <Shield className="w-3 h-3 text-blue-600 fill-current" />}
+                            </div>
+                            <div className="text-[11px] font-black uppercase truncate leading-tight">{a.teamNames.join(' + ')}</div>
+                            <div className="text-[8px] font-bold text-slate-400 uppercase mt-1">Teams: {a.teams.join(', ')}</div>
+                          </button>
+                        );
+                      })}
+                  </div>
+                  {alliances.length === 0 && (
+                    <div className="text-center py-10 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 text-[10px] font-bold text-slate-400 uppercase italic">
+                      No matching alliances found
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
 
-            <button 
-              onClick={() => setEditingAlliancesMatchId(null)}
-              className="mt-10 w-full bg-gray-900 dark:bg-blue-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-gray-900/20 active:scale-95 transition-all"
-            >
-              Finalizar Selección
-            </button>
+            <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800">
+              <button 
+                onClick={() => setEditingAlliancesMatchId(null)}
+                className="w-full bg-slate-900 dark:bg-blue-600 hover:bg-slate-800 dark:hover:bg-blue-700 text-white py-4 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl active:scale-95 transition-all"
+              >
+                Save & Close Protocol
+              </button>
+            </div>
           </div>
         </div>
       )}

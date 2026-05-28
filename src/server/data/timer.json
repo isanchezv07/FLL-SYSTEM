@@ -6,13 +6,13 @@
     "layoutPosition": "top",
     "fieldCount": 6,
     "fields": {
-      "cancha1": null,
-      "cancha2": null,
-      "cancha3": null,
-      "cancha4": null,
-      "cancha5": null,
-      "cancha6": null
+      "cancha1": "match-1-1",
+      "cancha2": "match-1-1",
+      "cancha3": "match-1-1",
+      "cancha4": "match-1-1",
+      "cancha5": "match-1-1",
+      "cancha6": "match-1-1"
     },
-    "updatedAt": "2026-05-28T15:50:17.849Z"
+    "updatedAt": "2026-05-28T23:17:00.988Z"
   }
 }

@@ -126,25 +126,48 @@ export default function QualisSection() {
         } else if (json.matches || json.pool) {
             updatePayload = json;
         } else {
-            updatePayload.pool = json; // Es un pool
-            if (qualisData.matches.length === 0) {
-                updatePayload.matches = [{ alliance1: [], alliance2: [], winner: null }];
+            // Detect object of objects format (like qualis_example.json)
+            const entries = Object.entries(json);
+            const isPossibleMatchList = entries.length > 0 && entries.every(([_, val]) => 
+                typeof val === 'object' && val !== null && ((val as any).team1 || (val as any).team2)
+            );
+
+            if (isPossibleMatchList) {
+                // If it has team1 and team2, it's likely a list of 1vs1 matches
+                updatePayload.matches = entries.map(([key, val]) => ({
+                    ...(val as any),
+                    id: key
+                }));
+                updatePayload.pool = json; // Also load as pool just in case
+            } else {
+                updatePayload.pool = json;
             }
         }
         
+        if (!updatePayload.matches && qualisData.matches.length === 0) {
+            updatePayload.matches = [{ alliance1: [], alliance2: [], winner: null }];
+        }
+
         const response = await fetch('/api/qualis', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
             ...updatePayload,
-            currentIndex: 0,
+            currentIndex: updatePayload.matches ? 0 : qualisData.currentIndex,
             enabled: qualisData.enabled
           })
         });
 
-        if (response.ok) toast.success('Protocol Upload Successful');
+        if (response.ok) {
+            const result = await response.json();
+            setQualisData(result);
+            toast.success(`Protocol Upload Successful: ${result.matches?.length || 0} nodes / ${Object.keys(result.pool || {}).length} pool units`);
+        } else {
+            toast.error('Server rejection during protocol synchronization');
+        }
       } catch (error) {
-        toast.error('Invalid JSON Data');
+        console.error('Qualis upload error:', error);
+        toast.error('Invalid Protocol Data Format');
       }
     };
     reader.readAsText(file);
