@@ -12,13 +12,14 @@ import BracketDisplay from './BracketDisplay';
 import SponsorsDisplay from './SponsorsDisplay';
 import SoundDisplay from './sound/SoundDisplay';
 import AllFieldsBar from './AllFieldsBar';
+import MissionScoreBreakdown from './MissionScoreBreakdown';
 import MatchSoundEffects from '../game/MatchSoundEffects';
 
 // ─── OBS Chroma-key background modes ────────────────────────────────────────
 type ChromaMode = 'transparent' | 'green' | 'magenta' | 'none';
 
 const CHROMA_STYLES: Record<ChromaMode, React.CSSProperties> = {
-  none:        { background: '#481F73' },
+  none:        { background: '#ffffff' },
   transparent: { background: 'transparent' },
   green:       { background: '#00ff00' },
   magenta:     { background: '#ff00ff' },
@@ -328,10 +329,6 @@ export default function BigTimerDisplay() {
 
     const savedPos = localStorage.getItem('layoutPosition') as 'top' | 'bottom' | null;
     if (savedPos) setLayoutPosition(savedPos);
-
-    // Initialize audio
-    victoryAudio.current = new Audio('/sounds/victory.mp3');
-    awardRevealAudio.current = new Audio('/sounds/victory.mp3'); // Reuse for now if not present
   }, []);
 
   const fetchTeams = async () => {
@@ -580,19 +577,19 @@ export default function BigTimerDisplay() {
     <style>{`@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,700;0,900;1,700;1,900&display=swap');`}</style>
     <div 
       ref={containerRef} 
-      className="h-screen w-screen text-white relative overflow-hidden flex flex-col selection:bg-none"
+      className="h-screen w-screen text-black relative overflow-hidden flex flex-col selection:bg-none"
       style={{ ...CHROMA_STYLES[chromaMode], fontFamily: "'Roboto', Arial, sans-serif" }}
     >
       <MatchSoundEffects />
       
       {!selectedField && !qualisData.enabled && (
-        <div className="fixed inset-0 z-[200] bg-[#1a0b35] flex flex-col items-center justify-center p-10">
-          <h2 className="text-4xl font-black uppercase tracking-tighter mb-10 text-[#66B4B2]">Seleccionar Cancha</h2>
+        <div className="fixed inset-0 z-[200] bg-white flex flex-col items-center justify-center p-10">
+          <h2 className="text-4xl font-black uppercase tracking-tighter mb-10 text-[#3A2E9C]">Seleccionar Cancha</h2>
           <div className="grid grid-cols-2 gap-6 max-w-2xl w-full">
             <button 
               onClick={() => handleFieldSelect('all')}
-              className="col-span-2 bg-[#2d1855] hover:bg-[#3A2E9C] border-2 border-[#66B4B2] p-8 rounded-3xl text-2xl font-black uppercase transition-all flex items-center justify-center gap-4"
-              style={{ color: '#66B4B2' }}
+              className="col-span-2 bg-[#f8fafc] hover:bg-[#f1f5f9] border-2 border-[#3A2E9C] p-8 rounded-3xl text-2xl font-black uppercase transition-all flex items-center justify-center gap-4 shadow-xl"
+              style={{ color: '#3A2E9C' }}
             >
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
               Todas las Canchas
@@ -603,7 +600,7 @@ export default function BigTimerDisplay() {
                 <button 
                   key={f}
                   onClick={() => handleFieldSelect(f)}
-                  className="bg-[#2d1855] hover:bg-[#3A2E9C] border-2 border-[#6A86AE]/30 p-10 rounded-3xl text-2xl font-black uppercase transition-all"
+                  className="bg-[#f8fafc] hover:bg-[#f1f5f9] border-2 border-slate-200 p-10 rounded-3xl text-2xl font-black uppercase transition-all text-slate-800 shadow-lg"
                 >
                   {f.replace('cancha', 'Cancha ')}
                 </button>
@@ -870,6 +867,7 @@ export default function BigTimerDisplay() {
             )}
 {/* ── MISSION BREAKDOWN AREA ─────────────────────────────────────────── */}
 <div className="flex-1 flex flex-col items-center justify-center relative overflow-hidden">
+  <MissionScoreBreakdown match={activeMatch} />
 </div>
 
 </motion.div>

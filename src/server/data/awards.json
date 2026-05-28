@@ -42,7 +42,7 @@
     }
   ],
   "announcement": {
-    "text": "",
+    "text": "test",
     "active": false
   },
   "ceremonyMode": false
