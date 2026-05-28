@@ -8,10 +8,11 @@ import confetti from 'canvas-confetti';
 import { Trophy, Megaphone, Shield, Settings, X, MonitorUp, MonitorDown } from 'lucide-react';
 import ScoreboardBar from './ScoreboardBar';
 import WinnerReveal from './WinnerReveal';
-import MissionScoreBreakdown from './MissionScoreBreakdown';
 import BracketDisplay from './BracketDisplay';
 import SponsorsDisplay from './SponsorsDisplay';
 import SoundDisplay from './sound/SoundDisplay';
+import AllFieldsBar from './AllFieldsBar';
+import MatchSoundEffects from '../game/MatchSoundEffects';
 
 // ─── OBS Chroma-key background modes ────────────────────────────────────────
 type ChromaMode = 'transparent' | 'green' | 'magenta' | 'none';
@@ -327,6 +328,10 @@ export default function BigTimerDisplay() {
 
     const savedPos = localStorage.getItem('layoutPosition') as 'top' | 'bottom' | null;
     if (savedPos) setLayoutPosition(savedPos);
+
+    // Initialize audio
+    victoryAudio.current = new Audio('/sounds/victory.mp3');
+    awardRevealAudio.current = new Audio('/sounds/victory.mp3'); // Reuse for now if not present
   }, []);
 
   const fetchTeams = async () => {
@@ -578,11 +583,20 @@ export default function BigTimerDisplay() {
       className="h-screen w-screen text-white relative overflow-hidden flex flex-col selection:bg-none"
       style={{ ...CHROMA_STYLES[chromaMode], fontFamily: "'Roboto', Arial, sans-serif" }}
     >
+      <MatchSoundEffects />
       
       {!selectedField && !qualisData.enabled && (
         <div className="fixed inset-0 z-[200] bg-[#1a0b35] flex flex-col items-center justify-center p-10">
           <h2 className="text-4xl font-black uppercase tracking-tighter mb-10 text-[#66B4B2]">Seleccionar Cancha</h2>
           <div className="grid grid-cols-2 gap-6 max-w-2xl w-full">
+            <button 
+              onClick={() => handleFieldSelect('all')}
+              className="col-span-2 bg-[#2d1855] hover:bg-[#3A2E9C] border-2 border-[#66B4B2] p-8 rounded-3xl text-2xl font-black uppercase transition-all flex items-center justify-center gap-4"
+              style={{ color: '#66B4B2' }}
+            >
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+              Todas las Canchas
+            </button>
             {Array.from({ length: timer.fieldCount || 4 }).map((_, idx) => {
               const f = `cancha${idx + 1}`;
               return (
@@ -835,23 +849,31 @@ export default function BigTimerDisplay() {
         ) : (
           <motion.div key="timer" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className={`h-full flex ${layoutPosition === 'bottom' ? 'flex-col-reverse' : 'flex-col'} relative z-10`}>
             
-            {/* ── SCOREBOARD BAR ─────────────────────────────────────────────── */}
-            <ScoreboardBar
-              activeMatch={activeMatch}
-              timer={timer}
-              teams={teams}
-              layoutPosition={layoutPosition}
-              selectedField={selectedField}
-              isCritical={isCritical}
-              onFieldClick={() => setSelectedField(null)}
-            />
+            {selectedField === 'all' ? (
+              <AllFieldsBar
+                timer={timer}
+                teams={teams}
+                layoutPosition={layoutPosition}
+                isCritical={isCritical}
+                onFieldClick={() => setSelectedField(null)}
+              />
+            ) : (
+              <ScoreboardBar
+                activeMatch={activeMatch}
+                timer={timer}
+                teams={teams}
+                layoutPosition={layoutPosition}
+                selectedField={selectedField}
+                isCritical={isCritical}
+                onFieldClick={() => setSelectedField(null)}
+              />
+            )}
+{/* ── MISSION BREAKDOWN AREA ─────────────────────────────────────────── */}
+<div className="flex-1 flex flex-col items-center justify-center relative overflow-hidden">
+</div>
 
-            {/* ── MISSION BREAKDOWN AREA ─────────────────────────────────────────── */}
-            <div className="flex-1 overflow-hidden">
-               <MissionScoreBreakdown match={activeMatch} />
-            </div>
+</motion.div>
 
-          </motion.div>
         )}
       </AnimatePresence>
     </div>

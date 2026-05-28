@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { socket } from '@/lib/socket';
+import MatchSoundEffects from '../../game/MatchSoundEffects';
 
 const SoundDisplay: React.FC = () => {
   const [isConnected, setIsConnected] = useState<boolean>(false);
@@ -189,7 +190,7 @@ const SoundDisplay: React.FC = () => {
 
   return (
     <div className="w-[95vw] max-w-[1000px] bg-[#1a1a1a] p-8 rounded-[2rem] border-[10px] border-[#333] shadow-[0_40px_100px_rgba(0,0,0,0.6)] flex flex-col items-center gap-6 font-sans select-none relative overflow-hidden scale-90 origin-top">
-
+      <MatchSoundEffects />
       <div className="flex gap-12 w-full justify-center items-center py-4 bg-black/20 rounded-3xl border-4 border-white/5">
         <VUMeter team="blue" volume={displayVolumes.blue} peakVol={peakVolumes.blue} isActive={teamStatus.blue} />
         

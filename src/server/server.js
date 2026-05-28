@@ -624,6 +624,11 @@ io.on('connection', (socket) => {
     console.log('[SOCKET] Comando recibido: reset_peaks');
     io.emit('reset_peaks');
   });
+
+  socket.on('play_sound', (data) => {
+    console.log('[SOCKET] Play sound request:', data);
+    io.emit('play_sound', data);
+  });
 });
 }
 
