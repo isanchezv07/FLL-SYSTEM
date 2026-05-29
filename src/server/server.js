@@ -549,6 +549,13 @@ io.on('connection', (socket) => {
     await broadcastTimerUpdate();
   });
 
+  socket.on('assignMatchesToFields', async (assignments) => {
+    const timer = await getTimer();
+    const fields = { ...timer.fields, ...assignments };
+    await updateTimer({ fields });
+    await broadcastTimerUpdate();
+  });
+
   socket.on('getAwards', () => socket.emit('awardsUpdate', getAwards()));
 
   socket.on('nextMatch', async () => {

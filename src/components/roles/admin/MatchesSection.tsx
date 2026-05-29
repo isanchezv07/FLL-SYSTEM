@@ -20,7 +20,9 @@ const MISSION_NAMES: Record<string, string> = {
   '12': "Salvage Operation",
   '13': "Statue Rebuild",
   '14': "Forum",
-  '15': "Precision Tokens"
+  '15': "Site Marking",
+  '16': "Gracious Professionalism",
+  '17': "Precision Tokens"
 };
 
 interface Match {
@@ -52,7 +54,8 @@ interface TimerState {
 export default function MatchesSection() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [alliances, setAlliances] = useState<any[]>([]);
-  const [timerState, setTimerState] = useState<TimerState>({ fields: {}, fieldCount: 4, layoutPosition: 'top' });
+  const [teams, setTeams] = useState<any[]>([]);
+  const [timerState, setTimerState] = useState<TimerState>({ fields: {}, fieldCount: 14, layoutPosition: 'top' });
   const [loading, setLoading] = useState(true);
   const [bracketSize, setBracketSize] = useState(8);
   const [bracketMode, setBracketMode] = useState<'1vs1' | '2vs2'>('2vs2');
@@ -66,6 +69,7 @@ export default function MatchesSection() {
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [allianceSearchTerm, setAllianceSearchTerm] = useState('');
+  const [assignmentTab, setAssignmentTab] = useState<'alliances' | 'teams'>('alliances');
 
   const requiredAlliancesCount = useMemo(() => {
     return bracketMode === '1vs1' ? bracketSize : bracketSize / 2;
@@ -101,6 +105,7 @@ export default function MatchesSection() {
   useEffect(() => {
     fetchMatches();
     fetchAlliances();
+    fetchTeams();
     const handler = () => fetchMatches();
     const onAlliancesUpdate = (data: any) => {
       if (data && data.alliances) setAlliances(data.alliances);
@@ -126,6 +131,15 @@ export default function MatchesSection() {
       const res = await fetch('/api/alliances');
       const data = await res.json();
       if (data && data.alliances) setAlliances(data.alliances);
+    } catch (e) { }
+  };
+
+  const fetchTeams = async () => {
+    try {
+      const res = await fetch('/api/teams');
+      const data = await res.json();
+      const teamsList = Array.isArray(data) ? data : (data.teams || []);
+      setTeams(teamsList);
     } catch (e) { }
   };
 
@@ -162,12 +176,36 @@ export default function MatchesSection() {
     const update: any = {};
     if (slot === 'A') {
       update.teamA1 = alliance.teams[0] || "";
-      update.teamA2 = alliance.teams[1] || "";
+      update.teamA2 = bracketMode === '1vs1' ? "" : (alliance.teams[1] || "");
       update.missionsA1 = {};
       update.missionsA2 = {};
     } else {
       update.teamB1 = alliance.teams[0] || "";
-      update.teamB2 = alliance.teams[1] || "";
+      update.teamB2 = bracketMode === '1vs1' ? "" : (alliance.teams[1] || "");
+      update.missionsB1 = {};
+      update.missionsB2 = {};
+    }
+
+    try {
+      await fetch(`/api/matches/${matchId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(update)
+      });
+      fetchMatches();
+    } catch (e) { }
+  };
+
+  const assignTeamToMatch = async (matchId: string, teamNumber: string, slot: 'A' | 'B') => {
+    const update: any = {};
+    if (slot === 'A') {
+      update.teamA1 = teamNumber;
+      update.teamA2 = ""; // En 1vs1, siempre limpiamos el slot 2
+      update.missionsA1 = {};
+      update.missionsA2 = {};
+    } else {
+      update.teamB1 = teamNumber;
+      update.teamB2 = "";
       update.missionsB1 = {};
       update.missionsB2 = {};
     }
@@ -207,27 +245,30 @@ export default function MatchesSection() {
       return;
     }
 
-    // 1. Limpiar canchas actuales
+    // 1. Limpiar canchas actuales y asignar nuevos en un solo comando
+    const assignments: Record<string, string | null> = {};
     for (let i = 1; i <= timerState.fieldCount; i++) {
-      socket.emit('assignMatchToField', { fieldId: `cancha${i}`, matchId: null });
+      assignments[`cancha${i}`] = selectedIds[i - 1] || null;
     }
+    socket.emit('assignMatchesToFields', assignments);
 
-    // 2. Asignar nuevos y poner en progreso
-    for (let i = 0; i < selectedIds.length; i++) {
-      const mId = selectedIds[i];
-      socket.emit('assignMatchToField', { fieldId: `cancha${i+1}`, matchId: mId });
+    // 2. Poner en progreso (en paralelo)
+    try {
+      await Promise.all(selectedIds.map(async (mId) => {
+        return fetch(`/api/matches/${mId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'in_progress' })
+        });
+      }));
       
-      await fetch(`/api/matches/${mId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'in_progress' })
-      });
+      setSelectionMode(false);
+      setSelectedIds([]);
+      socket.emit('resetTimer');
+      alert(`Lanzados ${selectedIds.length} partidos simultáneos`);
+    } catch (e) {
+      alert('Error al lanzar partidos simultáneos');
     }
-
-    setSelectionMode(false);
-    setSelectedIds([]);
-    socket.emit('resetTimer');
-    alert(`Lanzados ${selectedIds.length} partidos simultáneos`);
   };
 
   const fetchMatches = async () => {
@@ -429,7 +470,7 @@ export default function MatchesSection() {
               <div className="flex items-center gap-2">
                 <span>Fields:</span>
                 <select value={timerState.fieldCount} onChange={(e) => updateFieldCount(Number(e.target.value))} className="bg-transparent text-blue-600 dark:text-blue-400 outline-none">
-                  {[1, 2, 3, 4, 5, 6].map(n => <option key={n} value={n} className="bg-white dark:bg-slate-900">{n}</option>)}
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 14].map(n => <option key={n} value={n} className="bg-white dark:bg-slate-900">{n}</option>)}
                 </select>
               </div>
               <div className="w-[1px] h-3 bg-slate-200 dark:bg-slate-800" />
@@ -606,17 +647,36 @@ export default function MatchesSection() {
           <div className="relative w-full max-w-3xl bg-white dark:bg-slate-900 border border-white/20 dark:border-slate-800 rounded-[40px] shadow-2xl overflow-hidden flex flex-col p-10 transition-colors max-h-[90vh]">
             <div className="flex justify-between items-start mb-8">
               <div>
-                <h2 className="text-3xl font-black uppercase tracking-tighter italic text-slate-900 dark:text-white leading-none">Assign <span className="text-blue-600 dark:text-blue-400">Alliances</span></h2>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-2">Select combat units for Match #{matches.find(m => m.id === editingAlliancesMatchId)?.position}</p>
+                <h2 className="text-3xl font-black uppercase tracking-tighter italic text-slate-900 dark:text-white leading-none">Assign <span className="text-blue-600 dark:text-blue-400">{bracketMode === '1vs1' ? 'Individual Units' : 'Alliances'}</span></h2>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-2">
+                  {bracketMode === '1vs1' 
+                    ? `Assigning a single unit to Match #${matches.find(m => m.id === editingAlliancesMatchId)?.position}`
+                    : `Select combat units for Match #${matches.find(m => m.id === editingAlliancesMatchId)?.position}`}
+                </p>
               </div>
               <button onClick={() => setEditingAlliancesMatchId(null)} className="p-3 bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-red-500 rounded-2xl transition-all"><X /></button>
+            </div>
+
+            <div className="mb-6 flex gap-4">
+              <button 
+                onClick={() => setAssignmentTab('alliances')}
+                className={`flex-1 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all ${assignmentTab === 'alliances' ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}
+              >
+                Alliances
+              </button>
+              <button 
+                onClick={() => setAssignmentTab('teams')}
+                className={`flex-1 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all ${assignmentTab === 'teams' ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}
+              >
+                Individual Teams
+              </button>
             </div>
 
             <div className="mb-6 relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input 
                 type="text" 
-                placeholder="Search alliances by unit number or team name..." 
+                placeholder={assignmentTab === 'alliances' ? "Search alliances by unit number or team name..." : "Search teams by number or name..."}
                 value={allianceSearchTerm}
                 onChange={(e) => setAllianceSearchTerm(e.target.value)}
                 className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl pl-12 pr-4 py-4 text-sm font-bold text-slate-900 dark:text-white outline-none focus:border-blue-500 transition-all"
@@ -634,40 +694,81 @@ export default function MatchesSection() {
                   </div>
                   
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {alliances
-                      .filter(a => 
-                        a.id.toString().includes(allianceSearchTerm) || 
-                        a.teamNames.some((name: string) => name.toLowerCase().includes(allianceSearchTerm.toLowerCase()))
-                      )
-                      .map(a => {
-                        const match = matches.find(m => m.id === editingAlliancesMatchId);
-                        const isSelected = slot === 'A' 
-                          ? match?.teamA1 === a.teams[0] 
-                          : match?.teamB1 === a.teams[0];
-                        
-                        return (
-                          <button
-                            key={a.id}
-                            onClick={() => assignAllianceToMatch(editingAlliancesMatchId, a.id, slot as 'A'|'B')}
-                            className={`p-4 rounded-2xl border-2 transition-all text-left relative group ${
-                              isSelected 
-                                ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20' 
-                                : 'border-slate-100 dark:border-slate-800 hover:border-blue-500/50 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200'
-                            }`}
-                          >
-                            <div className="flex justify-between items-start mb-1">
-                              <div className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase">Unit #{a.id}</div>
-                              {isSelected && <Shield className="w-3 h-3 text-blue-600 fill-current" />}
-                            </div>
-                            <div className="text-[11px] font-black uppercase truncate leading-tight">{a.teamNames.join(' + ')}</div>
-                            <div className="text-[8px] font-bold text-slate-400 uppercase mt-1">Teams: {a.teams.join(', ')}</div>
-                          </button>
-                        );
-                      })}
+                    {assignmentTab === 'alliances' ? (
+                      alliances
+                        .filter(a => 
+                          a.id.toString().includes(allianceSearchTerm) || 
+                          a.teamNames.some((name: string) => name.toLowerCase().includes(allianceSearchTerm.toLowerCase()))
+                        )
+                        .map(a => {
+                          const match = matches.find(m => m.id === editingAlliancesMatchId);
+                          const isSelected = slot === 'A' 
+                            ? match?.teamA1 === a.teams[0] 
+                            : match?.teamB1 === a.teams[0];
+                          
+                          return (
+                            <button
+                              key={a.id}
+                              onClick={() => assignAllianceToMatch(editingAlliancesMatchId, a.id, slot as 'A'|'B')}
+                              className={`p-4 rounded-2xl border-2 transition-all text-left relative group ${
+                                isSelected 
+                                  ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20' 
+                                  : 'border-slate-100 dark:border-slate-800 hover:border-blue-500/50 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200'
+                              }`}
+                            >
+                              <div className="flex justify-between items-start mb-1">
+                                <div className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase">Unit #{a.id}</div>
+                                {isSelected && <Shield className="w-3 h-3 text-blue-600 fill-current" />}
+                              </div>
+                              <div className="text-[11px] font-black uppercase truncate leading-tight">
+                                {bracketMode === '1vs1' ? (a.teamNames[0] || 'Unknown') : a.teamNames.join(' + ')}
+                              </div>
+                              <div className="text-[8px] font-bold text-slate-400 uppercase mt-1">
+                                {bracketMode === '1vs1' ? `Team: ${a.teams[0]}` : `Teams: ${a.teams.join(', ')}`}
+                              </div>
+                            </button>
+                          );
+                        })
+                    ) : (
+                      teams
+                        .filter(t => 
+                          t.number.toString().includes(allianceSearchTerm) || 
+                          t.name.toLowerCase().includes(allianceSearchTerm.toLowerCase())
+                        )
+                        .map(t => {
+                          const match = matches.find(m => m.id === editingAlliancesMatchId);
+                          const isSelected = slot === 'A' 
+                            ? match?.teamA1 === t.number 
+                            : match?.teamB1 === t.number;
+
+                          return (
+                            <button
+                              key={t.number}
+                              onClick={() => assignTeamToMatch(editingAlliancesMatchId, t.number, slot as 'A'|'B')}
+                              className={`p-4 rounded-2xl border-2 transition-all text-left relative group ${
+                                isSelected 
+                                  ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20' 
+                                  : 'border-slate-100 dark:border-slate-800 hover:border-blue-500/50 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200'
+                              }`}
+                            >
+                              <div className="flex justify-between items-start mb-1">
+                                <div className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase">Team #{t.number}</div>
+                                {isSelected && <Shield className="w-3 h-3 text-blue-600 fill-current" />}
+                              </div>
+                              <div className="text-[11px] font-black uppercase truncate leading-tight">
+                                {t.name}
+                              </div>
+                              <div className="text-[8px] font-bold text-slate-400 uppercase mt-1">
+                                {t.country || 'N/A'}
+                              </div>
+                            </button>
+                          );
+                        })
+                    )}
                   </div>
-                  {alliances.length === 0 && (
+                  {(assignmentTab === 'alliances' ? alliances : teams).length === 0 && (
                     <div className="text-center py-10 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 text-[10px] font-bold text-slate-400 uppercase italic">
-                      No matching alliances found
+                      No matching {assignmentTab} found
                     </div>
                   )}
                 </div>

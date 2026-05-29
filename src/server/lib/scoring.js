@@ -29,7 +29,22 @@ export function calculateFLLScore(m) {
   if (isYes(m.m12_ship)) score += 10;
   const m14_artifacts = Math.min(parseInt(m.m14_artifacts) || 0, 8);
   score += m14_artifacts * 5;
-  const tokens = Math.max(0, Math.min(parseInt(m.precision_tokens) || 0, 6));
+  if (isYes(m.m15_site_marking)) score += 30;
+  
+  // Gracious Professionalism (GP) - 3 Levels
+  const gp = m.gp;
+  if (gp === 'exceeds') {
+    score += 30;
+  } else if (gp === 'accomplished' || isYes(gp)) {
+    score += 20;
+  } else if (gp === 'developing') {
+    score += 10;
+  }
+
+  const rawTokens = m.precision_tokens !== undefined && m.precision_tokens !== null ? m.precision_tokens : 6;
+  let tokens = parseInt(rawTokens);
+  if (isNaN(tokens)) tokens = 6;
+  tokens = Math.max(0, Math.min(tokens, 6));
   const precisionTable = { 6: 50, 5: 50, 4: 35, 3: 25, 2: 15, 1: 10, 0: 0 };
   score += precisionTable[tokens] || 0;
   return score;

@@ -74,6 +74,8 @@ export default function AllFieldsBar({
   const borderColor = isCritical ? 'rgba(220,38,38,0.7)' : 'rgba(102,180,178,0.35)';
   const bgColor     = isCritical ? 'rgba(80,10,10,0.93)'  : 'rgba(30,20,70,0.93)';
 
+  const gridCols = fieldCount > 8 ? Math.ceil(fieldCount / 2) : fieldCount;
+
   return (
     <div
       className={`shrink-0 w-full flex flex-col`}
@@ -105,7 +107,7 @@ export default function AllFieldsBar({
       </div>
 
       {/* One row per field */}
-      <div className={`grid gap-px`} style={{ gridTemplateColumns: `repeat(${fieldCount}, 1fr)`, background: 'rgba(106,134,174,0.15)' }}>
+      <div className={`grid gap-px`} style={{ gridTemplateColumns: `repeat(${gridCols}, 1fr)`, background: 'rgba(106,134,174,0.15)' }}>
         {fieldKeys.map((key) => {
           const match = fieldMatches[key];
           const label = key.replace('cancha', 'C');

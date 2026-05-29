@@ -28,6 +28,8 @@ export default function InteractiveMap() {
   const [selectedTeam, setSelectedTeam] = useState("");
   const [isConfigured, setIsConfigured] = useState(false);
   const [isInspectionOk, setIsInspectionOk] = useState(false);
+  const [gpStatus, setGpStatus] = useState<string | null>(null);
+  const [precisionTokens, setPrecisionTokens] = useState(6);
 
   useEffect(() => {
     fetchMatches();
@@ -66,6 +68,19 @@ export default function InteractiveMap() {
       const match = matches.find(m => m.id === selectedMatchId);
       const teamMissions = match?.[`missions${selectedTeam}`];
       setIsInspectionOk(teamMissions?.inspection === "yes" || teamMissions?.inspection === true);
+      
+      const gp = teamMissions?.gp;
+      if (gp === "exceeds" || gp === "accomplished" || gp === "developing") {
+        setGpStatus(gp);
+      } else if (gp === "yes" || gp === true) {
+        setGpStatus("accomplished");
+      } else {
+        setGpStatus(null);
+      }
+
+      const rawPrec = teamMissions?.precision_tokens;
+      const parsedPrec = parseInt(rawPrec);
+      setPrecisionTokens(isNaN(parsedPrec) ? 6 : parsedPrec);
     }
   }, [matches, selectedMatchId, selectedTeam]);
 
@@ -96,6 +111,48 @@ export default function InteractiveMap() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           [`missions${selectedTeam}`]: { inspection: nextVal ? "yes" : false }
+        }),
+      });
+    } catch (e) {
+      fetchMatches();
+    }
+  };
+
+  const cycleGp = async () => {
+    if (!selectedMatchId || !selectedTeam) return;
+    
+    let nextVal: string | null = null;
+    if (gpStatus === null) nextVal = "developing";
+    else if (gpStatus === "developing") nextVal = "accomplished";
+    else if (gpStatus === "accomplished") nextVal = "exceeds";
+    else nextVal = null;
+
+    setGpStatus(nextVal);
+    
+    try {
+      await fetch(`/api/matches/${selectedMatchId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          [`missions${selectedTeam}`]: { gp: nextVal }
+        }),
+      });
+    } catch (e) {
+      fetchMatches();
+    }
+  };
+
+  const updatePrecisionTokens = async (delta: number) => {
+    if (!selectedMatchId || !selectedTeam) return;
+    const nextVal = Math.max(0, Math.min(6, precisionTokens + delta));
+    setPrecisionTokens(nextVal);
+    
+    try {
+      await fetch(`/api/matches/${selectedMatchId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          [`missions${selectedTeam}`]: { precision_tokens: nextVal }
         }),
       });
     } catch (e) {
@@ -260,6 +317,37 @@ export default function InteractiveMap() {
               <ShieldCheck className={`w-4 h-4 ${isInspectionOk ? 'animate-bounce' : ''}`} />
               {isInspectionOk ? 'Inspección OK' : 'Inspección'}
             </button>
+
+            <button 
+              onClick={cycleGp}
+              className={`flex items-center gap-3 px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all active:scale-95 shadow-md border ${
+                gpStatus 
+                ? 'bg-[#CE1126] border-[#CE1126] text-white' 
+                : 'bg-white border-gray-200 text-gray-400 hover:border-[#CE1126] hover:text-[#CE1126]'
+              }`}
+            >
+              <Users className={`w-4 h-4 ${gpStatus === 'exceeds' ? 'animate-bounce' : gpStatus ? 'animate-pulse' : ''}`} />
+              {gpStatus ? `GP: ${gpStatus.substring(0, 3)}` : 'GP'}
+            </button>
+
+            <div className="flex items-center gap-1 bg-white p-1 rounded-2xl border border-gray-200 shadow-md">
+              <button 
+                onClick={() => updatePrecisionTokens(-1)}
+                className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-red-50 text-red-500 transition-colors"
+              >
+                -
+              </button>
+              <div className="flex flex-col items-center px-2 min-w-[60px]">
+                <span className="text-[7px] font-black text-gray-400 uppercase tracking-tighter">Fichas</span>
+                <span className="text-sm font-black text-gray-800 leading-none">{precisionTokens}</span>
+              </div>
+              <button 
+                onClick={() => updatePrecisionTokens(1)}
+                className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-green-50 text-green-500 transition-colors"
+              >
+                +
+              </button>
+            </div>
 
             <button 
               onClick={() => setIsConfigured(false)}

@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { socket } from '@/lib/socket';
 import confetti from 'canvas-confetti';
-import { Trophy, Megaphone, Shield, Settings, X, MonitorUp, MonitorDown, ZoomIn, ZoomOut, Maximize } from 'lucide-react';
+import { Trophy, Megaphone, Shield, Settings, X, MonitorUp, MonitorDown, ZoomIn, ZoomOut, Maximize, Monitor } from 'lucide-react';
 import ScoreboardBar from './ScoreboardBar';
 import WinnerReveal from './WinnerReveal';
 import BracketDisplayLive from './BracketDisplayLive';
@@ -346,7 +346,7 @@ function SettingsWindow({
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 export default function LegoTimerDisplay() {
-  const [timer, setTimer] = useState<TimerState>({ timeRemaining: 150, isRunning: false, fieldCount: 4, fields: {}, layoutPosition: 'top' });
+  const [timer, setTimer] = useState<TimerState>({ timeRemaining: 150, isRunning: false, fieldCount: 14, fields: {}, layoutPosition: 'top' });
   const [layoutPosition, setLayoutPosition] = useState<'top' | 'bottom'>('top');
   const [alliances, setAlliances] = useState<any>(null);
   const [teams, setTeams] = useState<any[]>([]);
@@ -666,37 +666,69 @@ export default function LegoTimerDisplay() {
       <MatchSoundEffects />
       {/* ── Field selector overlay ──────────────────────────────────────────── */}
       {!selectedField && !qualisData.enabled && (
-        <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center p-10" style={{ background: '#481F73' }}>
-          <h2 className="text-4xl font-black uppercase tracking-tighter mb-10" style={{ color: '#66B4B2' }}>Seleccionar Cancha</h2>
-          <div className="grid grid-cols-2 gap-6 max-w-2xl w-full">
-            {/* Generic "all fields" option */}
-            <button
-              key="all"
-              onClick={() => handleFieldSelect('all')}
-              className="col-span-2 p-8 rounded-3xl text-2xl font-black uppercase transition-all flex items-center justify-center gap-4"
-              style={{ background: 'rgba(102,180,178,0.15)', border: '2px solid #66B4B2', color: '#66B4B2' }}
-              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#66B4B2'; (e.currentTarget as HTMLButtonElement).style.color = '#fff'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(102,180,178,0.15)'; (e.currentTarget as HTMLButtonElement).style.color = '#66B4B2'; }}
-            >
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-              Todas las Canchas
-            </button>
-            {Array.from({ length: timer.fieldCount || 4 }).map((_, idx) => {
-              const f = `cancha${idx + 1}`;
-              return (
-                <button
-                  key={f}
-                  onClick={() => handleFieldSelect(f)}
-                  className="p-10 rounded-3xl text-2xl font-black uppercase transition-all"
-                  style={{ background: '#3A2E9C', border: '2px solid #6A86AE', color: '#FEFDFD' }}
-                  onMouseEnter={e => (e.currentTarget.style.background = '#66B4B2')}
-                  onMouseLeave={e => (e.currentTarget.style.background = '#3A2E9C')}
-                >
-                  {f.replace('cancha', 'Cancha ')}
-                </button>
-              );
-            })}
+        <div className="fixed inset-0 z-[200] bg-[#05080a] flex flex-col items-center justify-center p-6 sm:p-12 overflow-y-auto">
+          {/* Decorative background for the selector */}
+          <div className="absolute inset-0 pointer-events-none opacity-20">
+            <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-blue-600/20 blur-[120px] rounded-full" />
+            <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-[#66B4B2]/10 blur-[120px] rounded-full" />
+            <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
           </div>
+
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="relative z-10 w-full max-w-6xl flex flex-col items-center"
+          >
+            <div className="flex flex-col items-center mb-12 text-center">
+              <div className="w-20 h-20 bg-[#3A2E9C] rounded-3xl flex items-center justify-center mb-6 shadow-2xl shadow-blue-500/20 border border-white/10">
+                <Monitor className="w-10 h-10 text-white" />
+              </div>
+              <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tighter text-white mb-4 italic">
+                Live <span className="text-[#66B4B2]">Console</span>
+              </h2>
+              <div className="h-1 w-24 bg-gradient-to-r from-transparent via-[#66B4B2] to-transparent mb-4" />
+              <p className="text-[#6A86AE] font-black text-xs uppercase tracking-[0.4em]">Seleccionar fuente de visualización</p>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 w-full">
+              <button 
+                onClick={() => handleFieldSelect('all')}
+                className="col-span-2 md:col-span-4 lg:col-span-5 group relative overflow-hidden bg-white/5 hover:bg-white/10 border-2 border-[#3A2E9C] p-8 rounded-[32px] transition-all hover:scale-[1.01] active:scale-[0.99] shadow-2xl"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="relative z-10 flex items-center justify-center gap-6">
+                  <div className="p-4 bg-[#3A2E9C] rounded-2xl shadow-lg">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                  </div>
+                  <div className="text-left">
+                    <div className="text-[10px] font-black text-[#66B4B2] uppercase tracking-[0.3em] mb-1">Multi-View</div>
+                    <div className="text-3xl font-black text-white uppercase tracking-tighter">Todas las Canchas</div>
+                  </div>
+                </div>
+              </button>
+
+              {Array.from({ length: timer.fieldCount || 4 }).map((_, idx) => {
+                const f = `cancha${idx + 1}`;
+                return (
+                  <button 
+                    key={f}
+                    onClick={() => handleFieldSelect(f)}
+                    className="group relative overflow-hidden bg-white/5 hover:bg-[#3A2E9C] border border-white/10 hover:border-blue-400 p-6 rounded-[24px] transition-all hover:scale-105 active:scale-95 shadow-lg flex flex-col items-center justify-center gap-2"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <span className="text-[10px] font-black text-[#6A86AE] group-hover:text-blue-200 uppercase tracking-widest transition-colors">Cancha</span>
+                    <span className="text-4xl font-black text-white italic transition-transform group-hover:scale-110">{idx + 1}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="mt-16 text-white/20 font-black text-[10px] uppercase tracking-[0.5em] flex items-center gap-4">
+              <div className="w-12 h-px bg-white/10" />
+              LEGO Engine v4.0 Technical Display
+              <div className="w-12 h-px bg-white/10" />
+            </div>
+          </motion.div>
         </div>
       )}
 

@@ -4,15 +4,23 @@
     "isRunning": false,
     "displayMode": "live",
     "layoutPosition": "top",
-    "fieldCount": 6,
+    "fieldCount": 14,
     "fields": {
       "cancha1": "match-1-1",
-      "cancha2": "match-1-1",
-      "cancha3": "match-1-1",
-      "cancha4": "match-1-1",
-      "cancha5": "match-1-1",
-      "cancha6": "match-1-1"
+      "cancha2": null,
+      "cancha3": null,
+      "cancha4": null,
+      "cancha5": null,
+      "cancha6": null,
+      "cancha7": null,
+      "cancha8": null,
+      "cancha9": null,
+      "cancha10": null,
+      "cancha11": null,
+      "cancha12": null,
+      "cancha13": null,
+      "cancha14": null
     },
-    "updatedAt": "2026-05-28T23:17:00.988Z"
+    "updatedAt": "2026-05-29T15:37:05.606Z"
   }
 }

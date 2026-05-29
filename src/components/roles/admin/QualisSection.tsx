@@ -26,7 +26,7 @@ export default function QualisSection() {
   const [qualisData, setQualisData] = useState<QualisData>({ matches: [], currentIndex: -1, enabled: false, pool: {} });
   const [loading, setLoading] = useState(true);
   const [editingAllianceSlot, setEditingAllianceSlot] = useState<{ index: number, slot: 1 | 2 } | null>(null);
-  const [timerState, setTimerState] = useState<any>({ fields: {} });
+  const [timerState, setTimerState] = useState<any>({ fields: {}, fieldCount: 14 });
 
   useEffect(() => {
     fetchQualis();

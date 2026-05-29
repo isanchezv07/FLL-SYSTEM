@@ -84,11 +84,24 @@ function calculateMissionDetails(m: any): MissionInfo[] {
   const m14_pts = Math.min(parseInt(m.m14_artifacts) || 0, 8) * 5;
   addMission('14', 'Forum', m14_pts, 40, hasValue(m.m14_artifacts));
 
-  // M15 (Precision Tokens): Max = 50
-  const tokens = Math.max(0, Math.min(parseInt(m.precision_tokens) || 0, 6));
+  // M15: Max = 30
+  const m15_pts = isYes(m.m15_site_marking) ? 30 : 0;
+  addMission('15', 'Site Marking', m15_pts, 30, hasValue(m.m15_site_marking));
+
+  // GP: Max = 30
+  const gp = m.gp;
+  let gp_pts = 0;
+  if (gp === 'exceeds') gp_pts = 30;
+  else if (gp === 'accomplished' || isYes(gp)) gp_pts = 20;
+  else if (gp === 'developing') gp_pts = 10;
+  addMission('16', 'GP', gp_pts, 30, hasValue(m.gp));
+
+  // Precision Tokens: Max = 50
+  const rawTokens = m.precision_tokens !== undefined && m.precision_tokens !== null ? m.precision_tokens : 6;
+  const tokens = Math.max(0, Math.min(parseInt(rawTokens) || 0, 6));
   const precisionTable: Record<number, number> = { 6: 50, 5: 50, 4: 35, 3: 25, 2: 15, 1: 10, 0: 0 };
-  const m15_pts = precisionTable[tokens] || 0;
-  addMission('15', 'Site Marking', m15_pts, 50, hasValue(m.precision_tokens));
+  const prec_pts = precisionTable[tokens] || 0;
+  addMission('17', 'Precision', prec_pts, 50, true);
 
   return details;
 }

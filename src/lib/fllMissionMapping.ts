@@ -12,7 +12,9 @@ export type MissionKey =
   | '12'
   | '13'
   | '14'
-  | '15';
+  | '15'
+  | '16'
+  | '17';
 
 type YesNo = 'yes' | false;
 
@@ -42,7 +44,9 @@ export const missionBounds: Record<MissionKey, { min: number; max: number }> = {
   '12': { min: 0, max: 3 },
   '13': { min: 0, max: 1 },
   '14': { min: 0, max: 8 },
-  '15': { min: 0, max: 6 }, // precision_tokens: 0..6
+  '15': { min: 0, max: 1 }, // Site Marking
+  '16': { min: 0, max: 3 }, // Gracious Professionalism (0: None, 1: Developing, 2: Accomplished, 3: Exceeds)
+  '17': { min: 0, max: 6 }, // Precision Tokens
 };
 
 export const missionValueToPatch = (mission: MissionKey, value: number): FLLMissionsFlat => {
@@ -121,6 +125,12 @@ export const missionValueToPatch = (mission: MissionKey, value: number): FLLMiss
     case '14':
       return { m14_artifacts: v };
     case '15':
+      return { m15_site_marking: toYesNo(v === 1) };
+    case '16': {
+      const gpValues = [null, 'developing', 'accomplished', 'exceeds'];
+      return { gp: gpValues[v] || null };
+    }
+    case '17':
       return { precision_tokens: v };
   }
 };
@@ -182,7 +192,18 @@ export const missionValueFromMissionsFlat = (mission: MissionKey, missions: unkn
     case '14':
       return clampInt(parseInt(String(m.m14_artifacts ?? 0), 10) || 0, 0, 8);
     case '15':
-      return clampInt(parseInt(String(m.precision_tokens ?? 0), 10) || 0, 0, 6);
+      return isYes(m.m15_site_marking) ? 1 : 0;
+    case '16': {
+      const gp = m.gp;
+      if (gp === 'exceeds') return 3;
+      if (gp === 'accomplished' || isYes(gp)) return 2;
+      if (gp === 'developing') return 1;
+      return 0;
+    }
+    case '17': {
+      const val = parseInt(String(m.precision_tokens ?? 6), 10);
+      return clampInt(isNaN(val) ? 6 : val, 0, 6);
+    }
   }
 };
 

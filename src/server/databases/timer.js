@@ -18,12 +18,22 @@ const db = new Low(adapter, {
     isRunning: false,
     displayMode: 'live',
     layoutPosition: 'top',
-    fieldCount: 4,
+    fieldCount: 14,
     fields: {
       "cancha1": null,
       "cancha2": null,
       "cancha3": null,
-      "cancha4": null
+      "cancha4": null,
+      "cancha5": null,
+      "cancha6": null,
+      "cancha7": null,
+      "cancha8": null,
+      "cancha9": null,
+      "cancha10": null,
+      "cancha11": null,
+      "cancha12": null,
+      "cancha13": null,
+      "cancha14": null
     }
   }
 });
@@ -38,12 +48,22 @@ export const initTimerDB = async () => {
         isRunning: false,
         displayMode: 'live',
         layoutPosition: 'top',
-        fieldCount: 4,
+        fieldCount: 14,
         fields: {
           "cancha1": null,
           "cancha2": null,
           "cancha3": null,
-          "cancha4": null
+          "cancha4": null,
+          "cancha5": null,
+          "cancha6": null,
+          "cancha7": null,
+          "cancha8": null,
+          "cancha9": null,
+          "cancha10": null,
+          "cancha11": null,
+          "cancha12": null,
+          "cancha13": null,
+          "cancha14": null
         }
       }
     };
@@ -54,7 +74,7 @@ export const initTimerDB = async () => {
       delete db.data.timer.allianceSelection;
     }
     // Asegurar que existan las propiedades nuevas si es una base de datos vieja
-    if (db.data.timer.fieldCount === undefined) db.data.timer.fieldCount = 4;
+    if (db.data.timer.fieldCount === undefined) db.data.timer.fieldCount = 14;
     if (db.data.timer.displayMode === undefined) db.data.timer.displayMode = 'live';
     if (db.data.timer.layoutPosition === undefined) db.data.timer.layoutPosition = 'top';
     if (!db.data.timer.fields) {
